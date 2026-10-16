@@ -4,6 +4,7 @@ import * as React from "react";
 import {
   BarChart3,
   Building2,
+  ChevronRight,
   FolderClosed,
   House,
   Megaphone,
@@ -69,7 +70,7 @@ function QubitMark({ className }: { className?: string }) {
     <span
       aria-hidden
       className={cn(
-        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 via-blue-700 to-navy-900 text-[15px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]",
+        "flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-b from-blue-500 to-blue-700 text-[15px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_1px_2px_rgba(37,99,235,0.35)]",
         className,
       )}
     >
@@ -107,14 +108,19 @@ export function SidebarContent({
   };
 
   return (
-    <div className="flex h-full flex-col bg-navy-900 text-slate-300">
+    <div className="flex h-full flex-col bg-white">
       {/* Brand */}
-      <div className={cn("flex items-center gap-2.5 border-b border-navy-700/60 px-4", collapsed ? "h-14 justify-center px-0" : "h-14")}>
+      <div
+        className={cn(
+          "flex h-16 shrink-0 items-center gap-2.5 border-b border-slate-200/80 px-4",
+          collapsed && "justify-center px-0",
+        )}
+      >
         <QubitMark />
         {!collapsed && (
           <span className="min-w-0">
-            <span className="block text-[15px] font-semibold leading-tight text-white">Qubit One</span>
-            <span className="block text-[10px] leading-tight text-slate-400">Enterprise Business OS</span>
+            <span className="block text-[15px] font-semibold leading-tight tracking-tight text-slate-900">Qubit One</span>
+            <span className="block text-[10.5px] leading-tight text-slate-400">Enterprise OS</span>
           </span>
         )}
         {!collapsed && onToggleCollapse && (
@@ -122,32 +128,32 @@ export function SidebarContent({
             type="button"
             aria-label="Collapse sidebar"
             onClick={onToggleCollapse}
-            className="ml-auto rounded-md p-1.5 text-slate-400 hover:bg-navy-800 hover:text-white"
+            className="ml-auto flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-600"
           >
-            <PanelLeftClose className="h-4 w-4" />
+            <PanelLeftClose className="h-3.5 w-3.5" />
           </button>
         )}
       </div>
 
       {collapsed && onToggleCollapse && (
-        <div className="flex justify-center py-2">
+        <div className="flex justify-center py-2.5">
           <button
             type="button"
             aria-label="Expand sidebar"
             onClick={onToggleCollapse}
-            className="rounded-md p-1.5 text-slate-400 hover:bg-navy-800 hover:text-white"
+            className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-600"
           >
-            <PanelLeftOpen className="h-4 w-4" />
+            <PanelLeftOpen className="h-3.5 w-3.5" />
           </button>
         </div>
       )}
 
       {/* Navigation */}
-      <nav aria-label="Primary" className="qubit-scroll-dark flex-1 overflow-y-auto px-2.5 py-3">
+      <nav aria-label="Primary" className="qubit-scroll flex-1 overflow-y-auto px-3 pb-3 pt-3">
         {sections.map(([section, modules]) => (
           <div key={section} className="mb-4">
             {!collapsed && (
-              <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500">{section}</p>
+              <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">{section}</p>
             )}
             <ul className="space-y-0.5">
               {modules.map((m) => {
@@ -164,18 +170,23 @@ export function SidebarContent({
                         aria-expanded={enterpriseOpen}
                         onClick={() => (collapsed ? goScreen("org-structure") : setEnterpriseOpen((o) => !o))}
                         className={cn(
-                          "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium transition-colors",
-                          enterpriseActive ? "bg-navy-800 text-white" : "text-slate-300 hover:bg-navy-800/70 hover:text-white",
+                          "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-colors duration-150",
+                          enterpriseActive
+                            ? "bg-blue-50 text-blue-700"
+                            : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900",
                           collapsed && "justify-center px-0",
                         )}
                         title={collapsed ? "Enterprise" : undefined}
                       >
-                        <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                        <Icon
+                          className={cn("h-[18px] w-[18px] shrink-0", enterpriseActive ? "text-blue-600" : "text-slate-400")}
+                          aria-hidden
+                        />
                         {!collapsed && <span className="flex-1 text-left">Enterprise</span>}
                         {!collapsed && (
                           <svg
                             viewBox="0 0 12 12"
-                            className={cn("h-3 w-3 text-slate-500 transition-transform", enterpriseOpen && "rotate-90")}
+                            className={cn("h-3 w-3 text-slate-400 transition-transform duration-150", enterpriseOpen && "rotate-90")}
                             aria-hidden
                           >
                             <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -191,16 +202,16 @@ export function SidebarContent({
                                 aria-current={screen === s.id ? "page" : undefined}
                                 onClick={() => goScreen(s.id)}
                                 className={cn(
-                                  "flex w-full items-center gap-2 rounded-md py-1.5 pl-9 pr-2.5 text-[13px] transition-colors",
+                                  "flex w-full items-center gap-2 rounded-md py-1.5 pl-9 pr-2.5 text-[12.5px] transition-colors duration-150",
                                   screen === s.id
-                                    ? "bg-primary font-medium text-white"
-                                    : "text-slate-400 hover:bg-navy-800/70 hover:text-slate-100",
+                                    ? "bg-blue-50 font-medium text-blue-700"
+                                    : "text-slate-500 hover:bg-slate-100/70 hover:text-slate-800",
                                 )}
                               >
                                 <span
                                   className={cn(
                                     "w-4 shrink-0 text-left text-[10px] font-medium tabular-nums",
-                                    screen === s.id ? "text-blue-200" : "text-slate-500",
+                                    screen === s.id ? "text-blue-600" : "text-slate-400",
                                   )}
                                 >
                                   {s.num}
@@ -224,13 +235,16 @@ export function SidebarContent({
                         else onPreviewModule?.(m.id);
                       }}
                       className={cn(
-                        "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium transition-colors",
-                        isActive ? "bg-primary text-white" : "text-slate-300 hover:bg-navy-800/70 hover:text-white",
+                        "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-colors duration-150",
+                        isActive ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900",
                         collapsed && "justify-center px-0",
                       )}
                       title={collapsed ? m.label : undefined}
                     >
-                      <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                      <Icon
+                        className={cn("h-[18px] w-[18px] shrink-0", isActive ? "text-blue-600" : "text-slate-400")}
+                        aria-hidden
+                      />
                       {!collapsed && <span className="flex-1 text-left">{m.label}</span>}
                     </button>
                   </li>
@@ -241,16 +255,23 @@ export function SidebarContent({
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className={cn("border-t border-navy-700/60 px-4 py-3", collapsed && "px-2 text-center")}>
+      {/* Footer — org plan card */}
+      <div className={cn("shrink-0 border-t border-slate-200/80 p-3", collapsed && "px-2")}>
         {!collapsed ? (
-          <p className="text-[10px] leading-relaxed text-slate-500">
-            Qubit One Pvt Ltd
-            <br />
-            Phase 1 · Enterprise Architecture
-          </p>
+          <div className="flex items-center gap-2.5 rounded-xl border border-slate-200/90 bg-white px-3 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors hover:border-slate-300">
+            <QubitMark className="h-7 w-7 rounded-lg text-[13px]" />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[12.5px] font-semibold leading-tight text-slate-900">Qubit One Pvt Ltd</span>
+              <span className="block truncate text-[10.5px] leading-tight text-slate-400">
+                Phase 1 · Enterprise Architecture
+              </span>
+            </span>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-hidden />
+          </div>
         ) : (
-          <span className="text-[10px] text-slate-500">v1.0</span>
+          <div className="flex justify-center py-0.5" title="Qubit One Pvt Ltd — Phase 1 · Enterprise Architecture">
+            <QubitMark className="h-7 w-7 rounded-lg text-[13px]" />
+          </div>
         )}
       </div>
     </div>

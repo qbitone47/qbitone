@@ -157,7 +157,7 @@ export function ReportingLinesScreen() {
               ariaLabel="Search employee"
             />
             <Select value={deptFilter} onValueChange={setDeptFilter}>
-              <SelectTrigger className="h-9 w-full sm:w-44" aria-label="Filter by department">
+              <SelectTrigger className="h-10 w-full sm:w-44" aria-label="Filter by department">
                 <SelectValue placeholder="All departments" />
               </SelectTrigger>
               <SelectContent>
@@ -194,7 +194,7 @@ export function ReportingLinesScreen() {
 
       {/* People search results */}
       {qActive && matches.length > 0 && (
-        <div className="mb-4 rounded-lg border bg-white p-3">
+        <div className="qubit-card mb-4 p-3">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             People matching “{query}”
           </p>
@@ -204,7 +204,7 @@ export function ReportingLinesScreen() {
                 key={p.id}
                 type="button"
                 onClick={() => setDrawerEmployee(p)}
-                className="flex items-center gap-2 rounded-full border bg-white py-1 pl-1 pr-3 text-left transition-colors hover:border-navy-300 hover:bg-navy-50/60"
+                className="flex items-center gap-2 rounded-full border border-slate-200/90 bg-white py-1 pl-1 pr-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-colors duration-150 hover:border-blue-200 hover:bg-blue-50/50"
               >
                 <Avatar name={p.name} size="xs" />
                 <span className="text-xs">
@@ -217,7 +217,7 @@ export function ReportingLinesScreen() {
         </div>
       )}
       {qActive && matches.length === 0 && (
-        <p className="mb-4 rounded-lg border bg-white px-3.5 py-2.5 text-xs text-muted-foreground">
+        <p className="qubit-card mb-4 px-3.5 py-2.5 text-xs text-muted-foreground">
           No employees match “{query}”. Clear the search to see the full reporting structure.
         </p>
       )}
@@ -227,10 +227,10 @@ export function ReportingLinesScreen() {
         <div
           ref={focusCardId === "sagar" ? highlightRef : undefined}
           className={cn(
-            "rounded-xl border bg-white p-4 text-center shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors",
+            "qubit-card qubit-card-hover p-4 text-center",
             focusCardId === "sagar"
-              ? "border-navy-300 ring-2 ring-navy-500"
-              : "hover:border-navy-300",
+              ? "border-blue-300 ring-2 ring-blue-200"
+              : "hover:border-blue-200",
           )}
         >
           <button
@@ -267,13 +267,13 @@ export function ReportingLinesScreen() {
 
       {/* Department head cards */}
       {visibleHeads.length === 0 ? (
-        <div className="rounded-lg border bg-white">
+        <div className="qubit-card">
           <p className="px-6 py-10 text-center text-sm text-muted-foreground">
             No department heads match the current filter.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {visibleHeads.map((h) => {
             const reports = directReports(h.id).filter(
               (r) => deptFilter === "all" || r.department === deptFilter,
@@ -285,9 +285,9 @@ export function ReportingLinesScreen() {
                 key={h.id}
                 ref={isFocusCard ? highlightRef : undefined}
                 className={cn(
-                  "flex flex-col rounded-lg border bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors",
-                  isOpen ? "border-navy-300" : "hover:border-slate-300",
-                  isFocusCard && "border-navy-300 ring-2 ring-navy-500",
+                  "qubit-card qubit-card-hover flex flex-col",
+                  isOpen && "border-blue-200 ring-1 ring-blue-100",
+                  isFocusCard && "border-blue-300 ring-2 ring-blue-200",
                   qActive && !branchHasMatch(h.id) && "opacity-40",
                 )}
               >
@@ -322,8 +322,8 @@ export function ReportingLinesScreen() {
                               onClick={() => setDrawerEmployee(r)}
                               aria-label={`Open preview for ${r.name}`}
                               className={cn(
-                                "flex w-full items-center gap-2 rounded px-1.5 py-1 text-left transition-colors hover:bg-slate-50",
-                                focusId === r.id && "bg-navy-50 ring-1 ring-navy-200",
+                                "flex w-full items-center gap-2 rounded px-1.5 py-1 text-left transition-colors duration-150 hover:bg-slate-50",
+                                focusId === r.id && "bg-blue-50 ring-1 ring-blue-200",
                                 qActive && !matches.some((m) => m.id === r.id) && "opacity-50",
                               )}
                             >
@@ -344,7 +344,7 @@ export function ReportingLinesScreen() {
                   type="button"
                   onClick={() => toggleExpanded(h.id)}
                   aria-expanded={isOpen}
-                  className="mt-auto flex items-center justify-between gap-2 border-t px-3.5 py-2 text-[11px] font-medium text-navy-600 transition-colors hover:bg-navy-50"
+                  className="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 px-3.5 py-2 text-[11px] font-medium text-blue-600 transition-colors duration-150 hover:bg-blue-50/60"
                 >
                   <span>
                     {reports.length} {reports.length === 1 ? "report" : "reports"}

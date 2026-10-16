@@ -150,12 +150,12 @@ function CellButton({
             onClick={() => onChange(opt.v)}
             className={cn(
               "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[13px] hover:bg-slate-50",
-              opt.v === state ? "font-medium text-navy-800" : "text-slate-700",
+              opt.v === state ? "font-medium text-blue-700" : "text-slate-700",
             )}
           >
             <opt.icon className="h-3.5 w-3.5 text-slate-400" aria-hidden />
             {opt.label}
-            {opt.v === state && <Check className="ml-auto h-3.5 w-3.5 text-navy-700" aria-hidden />}
+            {opt.v === state && <Check className="ml-auto h-3.5 w-3.5 text-blue-600" aria-hidden />}
           </button>
         ))}
       </PopoverContent>
@@ -259,7 +259,7 @@ export function PermissionMatrixScreen() {
       <SectionCard className="mb-4" contentClassName="p-4">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-navy-50 text-navy-700">
+            <span className="qubit-icon-tile h-10 w-10 bg-blue-50 text-blue-700 [&_svg]:h-5 [&_svg]:w-5">
               <ShieldCheck className="h-4 w-4" aria-hidden />
             </span>
             <div>
@@ -298,7 +298,7 @@ export function PermissionMatrixScreen() {
           </div>
         </div>
         {dirty && (
-          <p className="mt-3 flex flex-wrap items-center gap-2 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-800" role="status">
+          <p className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-800" role="status">
             <span className="font-semibold">Unsaved changes</span>
             <span>
               {changedKeys.length} permission{changedKeys.length === 1 ? "" : "s"} modified for {role.label}.
@@ -379,7 +379,7 @@ export function PermissionMatrixScreen() {
               {roleInfo ? ` (${roleInfo.employees} employees)` : ""}.
             </p>
             {highImpact.length > 0 && (
-              <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 High impact: {highImpact.length} change{highImpact.length === 1 ? "" : "s"} affect deletion, approval or administration access —{" "}
                 {highImpact.slice(0, 4).map((k) => k.replace("::", " → ")).join(", ")}
                 {highImpact.length > 4 ? ` and ${highImpact.length - 4} more` : ""}.

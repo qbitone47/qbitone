@@ -47,21 +47,19 @@ export function DetailDrawer({
           wide && "sm:max-w-lg",
         )}
       >
-        <SheetHeader className="border-b px-5 py-4 text-left">
+        <SheetHeader className="border-b border-slate-100 px-5 py-4 text-left">
           <div className="flex items-start gap-3">
             {icon && (
-              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-navy-50 text-navy-700 [&_svg]:h-4.5 [&_svg]:w-4.5">
-                {icon}
-              </span>
+              <span className="qubit-icon-tile qubit-icon-tile-accent mt-0.5 h-10 w-10">{icon}</span>
             )}
             <div className="min-w-0">
-              <SheetTitle className="text-base font-semibold leading-snug text-slate-900">{title}</SheetTitle>
+              <SheetTitle className="text-base font-semibold leading-snug tracking-tight text-slate-900">{title}</SheetTitle>
               {subtitle && <SheetDescription className="mt-0.5 text-xs text-muted-foreground">{subtitle}</SheetDescription>}
             </div>
           </div>
         </SheetHeader>
         <div className="qubit-scroll flex-1 overflow-y-auto px-5 py-4">{children}</div>
-        {footer && <div className="border-t bg-slate-50/70 px-5 py-3">{footer}</div>}
+        {footer && <div className="border-t border-slate-100 bg-slate-50/70 px-5 py-3">{footer}</div>}
       </SheetContent>
     </Sheet>
   );

@@ -31,7 +31,7 @@ import { Field, FormDialog } from "../dialogs";
 
 const LEVEL_BADGE: Record<string, string> = {
   Executive: "bg-navy-900 text-white",
-  "Level 2": "bg-navy-100 text-navy-800",
+  "Level 2": "bg-blue-100 text-blue-800",
   "Level 3": "bg-slate-100 text-slate-700",
   "Level 4": "bg-slate-50 text-slate-600 border border-slate-200",
 };
@@ -84,7 +84,7 @@ export function RoleMatrixScreen() {
       minWidth: 180,
       render: (r) => (
         <div className="flex items-center gap-2.5">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-navy-50 text-navy-700">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
             <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
           </span>
           <div className="min-w-0">
@@ -207,7 +207,7 @@ export function RoleMatrixScreen() {
           ariaLabel="Search roles"
         />
         <Select value={dept} onValueChange={setDept}>
-          <SelectTrigger className="h-9 w-full sm:w-40" aria-label="Filter by department">
+          <SelectTrigger className="h-10 w-full sm:w-40" aria-label="Filter by department">
             <SelectValue placeholder="All departments" />
           </SelectTrigger>
           <SelectContent>
@@ -220,7 +220,7 @@ export function RoleMatrixScreen() {
           </SelectContent>
         </Select>
         <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="h-9 w-full sm:w-32" aria-label="Filter by status">
+          <SelectTrigger className="h-10 w-full sm:w-32" aria-label="Filter by status">
             <SelectValue placeholder="All status" />
           </SelectTrigger>
           <SelectContent>
@@ -230,7 +230,7 @@ export function RoleMatrixScreen() {
           </SelectContent>
         </Select>
         <Select value={level} onValueChange={setLevel}>
-          <SelectTrigger className="h-9 w-full sm:w-36" aria-label="Filter by reporting level">
+          <SelectTrigger className="h-10 w-full sm:w-36" aria-label="Filter by reporting level">
             <SelectValue placeholder="All levels" />
           </SelectTrigger>
           <SelectContent>
@@ -246,7 +246,7 @@ export function RoleMatrixScreen() {
           {filtersActive && (
             <>
               {" · "}
-              <button type="button" onClick={clearFilters} className="font-medium text-navy-600 hover:text-navy-800">
+              <button type="button" onClick={clearFilters} className="font-medium text-blue-600 hover:text-blue-700">
                 Clear filters
               </button>
             </>
@@ -315,13 +315,13 @@ export function RoleMatrixScreen() {
             <button
               type="button"
               onClick={() => { setDetail(null); navigate("permission-matrix"); }}
-              className="mt-4 flex w-full items-center justify-between rounded-md border px-3 py-2.5 text-left transition-colors hover:border-navy-300 hover:bg-navy-50/60"
+              className="mt-4 flex w-full items-center justify-between rounded-xl border border-slate-200/90 bg-white px-3 py-2.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-colors duration-150 hover:border-blue-200 hover:bg-blue-50/50"
             >
               <span>
                 <span className="block text-[13px] font-medium text-slate-800">Open Permission Matrix</span>
                 <span className="block text-[11px] text-muted-foreground">Cell-level access for this role</span>
               </span>
-              <ShieldCheck className="h-4 w-4 text-navy-600" aria-hidden />
+              <ShieldCheck className="h-4 w-4 text-blue-600" aria-hidden />
             </button>
           </>
         )}
@@ -340,11 +340,11 @@ export function RoleMatrixScreen() {
         }}
       >
         <Field label="Role name" required>
-          <Input placeholder="e.g. Regional Sales Lead" />
+          <Input placeholder="e.g. Regional Sales Lead" className="h-10" />
         </Field>
         <Field label="Department" required>
           <Select>
-            <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+            <SelectTrigger className="h-10"><SelectValue placeholder="Select department" /></SelectTrigger>
             <SelectContent>
               {departments.map((d) => (
                 <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
@@ -354,7 +354,7 @@ export function RoleMatrixScreen() {
         </Field>
         <Field label="Reporting level" required>
           <Select>
-            <SelectTrigger><SelectValue placeholder="Select level" /></SelectTrigger>
+            <SelectTrigger className="h-10"><SelectValue placeholder="Select level" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="l2">Level 2</SelectItem>
               <SelectItem value="l3">Level 3</SelectItem>
@@ -379,11 +379,11 @@ export function RoleMatrixScreen() {
           }}
         >
           <Field label="Role name" required>
-            <Input defaultValue={editRole.name} />
+            <Input defaultValue={editRole.name} className="h-10" />
           </Field>
           <Field label="Reporting level" required>
             <Select defaultValue={editRole.reportingLevel}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="Executive">Executive</SelectItem>
                 <SelectItem value="Level 2">Level 2</SelectItem>

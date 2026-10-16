@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface Crumb {
@@ -10,8 +9,10 @@ export interface Crumb {
 }
 
 /**
- * PageHeader — predictable page structure:
- * Breadcrumb → Title → Description → Actions → (workspace rendered by screen)
+ * PageHeader — predictable page structure (per Qubit One visual system):
+ * Module chip → Title → Description → Actions → (workspace rendered by screen)
+ * The topbar owns the breadcrumb; the page area opens with a module chip,
+ * matching the reference layout.
  */
 export function PageHeader({
   crumbs,
@@ -28,37 +29,43 @@ export function PageHeader({
   meta?: React.ReactNode;
   className?: string;
 }) {
+  const chip = crumbs && crumbs.length > 0 ? crumbs[0] : null;
+
   return (
-    <header className={cn("mb-5", className)}>
-      {crumbs && crumbs.length > 0 && (
-        <nav aria-label="Breadcrumb" className="mb-2.5">
-          <ol className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-            {crumbs.map((c, i) => (
-              <li key={`${c.label}-${i}`} className="flex items-center gap-1">
-                {i > 0 && <ChevronRight className="h-3 w-3 text-slate-300" aria-hidden />}
-                {c.onClick ? (
-                  <button
-                    type="button"
-                    onClick={c.onClick}
-                    className="rounded px-1 py-0.5 hover:bg-slate-100 hover:text-slate-700"
-                  >
-                    {c.label}
-                  </button>
-                ) : (
-                  <span className={cn("px-1 py-0.5", i === crumbs.length - 1 && "font-medium text-slate-600")}>{c.label}</span>
-                )}
-              </li>
-            ))}
-          </ol>
-        </nav>
-      )}
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight text-slate-900">{title}</h1>
-          {description && <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>}
-          {meta && <div className="mt-2.5">{meta}</div>}
+    <header className={cn("mb-6", className)}>
+      {chip && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          {chip.onClick ? (
+            <button
+              type="button"
+              onClick={chip.onClick}
+              className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100"
+            >
+              {chip.label}
+            </button>
+          ) : (
+            <span className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">{chip.label}</span>
+          )}
+          {crumbs!.slice(1, -1).map((c, i) => (
+            <span key={`mid-${i}`} className="text-xs text-slate-400">
+              {c.label}
+            </span>
+          ))}
         </div>
-        {actions && <div className="flex flex-wrap items-center gap-2 shrink-0">{actions}</div>}
+      )}
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-[26px] font-bold leading-tight tracking-[-0.02em] text-slate-900 md:text-[30px]">
+            {title}
+          </h1>
+          {description && (
+            <p className="mt-1.5 max-w-2xl text-[14.5px] leading-relaxed text-slate-500">{description}</p>
+          )}
+          {meta && <div className="mt-3">{meta}</div>}
+        </div>
+        {actions && (
+          <div className="flex flex-wrap items-center gap-2 shrink-0 pt-1 md:pt-1.5">{actions}</div>
+        )}
       </div>
     </header>
   );

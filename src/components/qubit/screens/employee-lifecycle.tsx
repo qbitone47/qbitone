@@ -89,8 +89,10 @@ function TaskCount({ n }: { n: number }) {
 
 function stageChipCls(active: boolean): string {
   return cn(
-    "whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
-    active ? "border-navy-600 bg-navy-50 text-navy-700" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+    "whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors duration-150",
+    active
+      ? "border-blue-200 bg-blue-50 text-blue-700"
+      : "border-slate-200/90 bg-white text-slate-600 shadow-[0_1px_2px_rgba(15,23,42,0.03)] hover:border-blue-200 hover:bg-blue-50/50",
   );
 }
 
@@ -259,25 +261,35 @@ export function EmployeeLifecycleScreen() {
                     title={stage.description}
                     aria-pressed={active}
                     className={cn(
-                      "flex shrink-0 items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors",
+                      "flex shrink-0 items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors duration-150",
                       active
-                        ? "border-navy-600 bg-navy-50"
-                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
+                        ? "border-navy-800 bg-navy-900 shadow-[0_1px_3px_rgba(13,27,51,0.25)]"
+                        : "border-slate-200/90 bg-white hover:border-slate-300 hover:bg-slate-50",
                     )}
                   >
                     <span
                       className={cn(
                         "flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
-                        active ? "bg-navy-100 text-navy-700" : "bg-slate-100 text-slate-500",
+                        active ? "bg-white/10 text-white" : "bg-slate-100 text-slate-500",
                       )}
                     >
                       <Icon className="h-3.5 w-3.5" aria-hidden />
                     </span>
                     <span className="min-w-0">
-                      <span className="block whitespace-nowrap text-[13px] font-medium leading-tight text-slate-900">
+                      <span
+                        className={cn(
+                          "block whitespace-nowrap text-[13px] font-medium leading-tight",
+                          active ? "text-white" : "text-slate-900",
+                        )}
+                      >
                         {stage.name}
                       </span>
-                      <span className="block text-[11px] leading-tight text-muted-foreground tabular-nums">
+                      <span
+                        className={cn(
+                          "block text-[11px] leading-tight tabular-nums",
+                          active ? "text-navy-300" : "text-muted-foreground",
+                        )}
+                      >
                         {stage.count.toLocaleString("en-IN")}
                       </span>
                     </span>
@@ -310,7 +322,7 @@ export function EmployeeLifecycleScreen() {
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className="font-medium text-navy-600 hover:text-navy-800"
+                  className="font-medium text-blue-600 hover:text-blue-700"
                 >
                   Clear filters
                 </button>
@@ -419,7 +431,7 @@ export function EmployeeLifecycleScreen() {
       >
         {detail && (
           <>
-            <div className="flex items-center gap-3 border-b pb-4">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
               <Avatar name={detailEmployee?.name ?? "?"} size="lg" />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-slate-900">
@@ -436,7 +448,7 @@ export function EmployeeLifecycleScreen() {
               </div>
             </div>
 
-            <dl className="divide-y pt-1">
+            <dl className="divide-y divide-slate-100 pt-1">
               <KV label="Current Stage">
                 <StagePill stage={detail.stage} />
               </KV>
@@ -449,7 +461,7 @@ export function EmployeeLifecycleScreen() {
               <KV label="Manager">{detailManager ? detailManager.name : "—"}</KV>
             </dl>
 
-            <div className="mt-5 border-t pt-4">
+            <div className="mt-5 border-t border-slate-100 pt-4">
               <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Lifecycle history
               </p>
@@ -461,7 +473,7 @@ export function EmployeeLifecycleScreen() {
                     <li key={`${h.date}-${i}`} className="relative">
                       <span
                         aria-hidden
-                        className="absolute top-1 -left-[21px] h-[9px] w-[9px] rounded-full bg-navy-600 ring-2 ring-white"
+                        className="absolute top-1 -left-[21px] h-[9px] w-[9px] rounded-full bg-blue-600 ring-2 ring-white"
                       />
                       <p className="text-xs font-semibold text-slate-900">{h.date}</p>
                       <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{h.event}</p>

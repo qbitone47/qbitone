@@ -1,0 +1,749 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import * as React from "react";
+     4→     4→import { Database, MoreHorizontal, Plus, ShieldAlert } from "lucide-react";
+     5→     5→import { Button } from "@/components/ui/button";
+     6→     6→import {
+     7→     7→  DropdownMenu,
+     8→     8→  DropdownMenuContent,
+     9→     9→  DropdownMenuItem,
+    10→    10→  DropdownMenuSeparator,
+    11→    11→  DropdownMenuTrigger,
+    12→    12→} from "@/components/ui/dropdown-menu";
+    13→    13→import {
+    14→    14→  Select,
+    15→    15→  SelectContent,
+    16→    16→  SelectItem,
+    17→    17→  SelectTrigger,
+    18→    18→  SelectValue,
+    19→    19→} from "@/components/ui/select";
+    20→    20→import { Input } from "@/components/ui/input";
+    21→    21→import { Textarea } from "@/components/ui/textarea";
+    22→    22→import { useToast } from "@/hooks/use-toast";
+    23→    23→import {
+    24→    24→  dataDomains,
+    25→    25→  employees,
+    26→    26→  getEmployee,
+    27→    27→  type DataDomain,
+    28→    28→  type Employee,
+    29→    29→  type Sensitivity,
+    30→    30→} from "@/lib/qubit/data";
+    31→    31→import { useRole } from "../role-context";
+    32→    32→import { PageHeader } from "../page-header";
+    33→    33→import { DataTable, type Column } from "../data-table";
+    34→    34→import { Avatar, FilterBar, KV, ReadOnlyBanner, SearchInput, StatusBadge } from "../primitives";
+    35→    35→import { DetailDrawer, EmployeeDrawer } from "../drawers";
+    36→    36→import { Field, FormDialog } from "../dialogs";
+    37→    37→
+    38→    38→// ============================================================
+    39→    39→// Local types & helpers (no shared-file changes needed)
+    40→    40→// ============================================================
+    41→    41→type DomainRow = DataDomain & { description?: string };
+    42→    42→type DomainOverride = Partial<DomainRow>;
+    43→    43→
+    44→    44→const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    45→    45→const SENSITIVITY_LEVELS: Sensitivity[] = ["Public", "Internal", "Confidential", "Restricted"];
+    46→    46→const DOMAIN_DEPARTMENTS = [...new Set(dataDomains.map((d) => d.ownerDepartment))];
+    47→    47→
+    48→    48→/** Parse the "2 Sep 2025" style dates used across Qubit One data. */
+    49→    49→function parseDateStr(s: string): Date | null {
+    50→    50→  const m = /^(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})$/.exec(s.trim());
+    51→    51→  if (m) {
+    52→    52→    const mi = MONTHS.findIndex((mm) => mm.toLowerCase() === m[2].slice(0, 3).toLowerCase());
+    53→    53→    if (mi >= 0) return new Date(Number(m[3]), mi, Number(m[1]));
+    54→    54→  }
+    55→    55→  const d = new Date(s);
+    56→    56→  return Number.isNaN(d.getTime()) ? null : d;
+    57→    57→}
+    58→    58→
+    59→    59→function fmtDate(d: Date): string {
+    60→    60→  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+    61→    61→}
+    62→    62→
+    63→    63→function addMonths(d: Date, n: number): Date {
+    64→    64→  const c = new Date(d);
+    65→    65→  c.setMonth(c.getMonth() + n);
+    66→    66→  return c;
+    67→    67→}
+    68→    68→
+    69→    69→interface DomainFormState {
+    70→    70→  name: string;
+    71→    71→  ownerDepartment: string;
+    72→    72→  ownerRole: string;
+    73→    73→  stewardId: string;
+    74→    74→  sensitivity: Sensitivity;
+    75→    75→  retention: string;
+    76→    76→  description: string;
+    77→    77→}
+    78→    78→
+    79→    79→const EMPTY_DOMAIN_FORM: DomainFormState = {
+    80→    80→  name: "",
+    81→    81→  ownerDepartment: "",
+    82→    82→  ownerRole: "",
+    83→    83→  stewardId: "",
+    84→    84→  sensitivity: "Internal",
+    85→    85→  retention: "",
+    86→    86→  description: "",
+    87→    87→};
+    88→    88→
+    89→    89→// ============================================================
+    90→    90→// Screen 07 — Data Ownership (governance control center)
+    91→    91→// ============================================================
+    92→    92→export function DataOwnershipScreen() {
+    93→    93→  const { can } = useRole();
+    94→    94→  const { toast } = useToast();
+    95→    95→  const canEdit = can("governance.edit");
+    96→    96→
+    97→    97→  const [query, setQuery] = React.useState("");
+    98→    98→  const [dept, setDept] = React.useState("all");
+    99→    99→  const [sens, setSens] = React.useState("all");
+   100→   100→  const [overrides, setOverrides] = React.useState<Record<string, DomainOverride>>({});
+   101→   101→  const [extraDomains, setExtraDomains] = React.useState<DomainRow[]>([]);
+   102→   102→  const [detail, setDetail] = React.useState<DomainRow | null>(null);
+   103→   103→  const [previewEmployee, setPreviewEmployee] = React.useState<Employee | null>(null);
+   104→   104→  const [addOpen, setAddOpen] = React.useState(false);
+   105→   105→  const [addForm, setAddForm] = React.useState<DomainFormState>(EMPTY_DOMAIN_FORM);
+   106→   106→  const [editDomain, setEditDomain] = React.useState<DomainRow | null>(null);
+   107→   107→  const [editForm, setEditForm] = React.useState<DomainFormState>(EMPTY_DOMAIN_FORM);
+   108→   108→
+   109→   109→  // Effective catalog = newly created domains + seeded data + local governance updates
+   110→   110→  const merged = React.useMemo<DomainRow[]>(
+   111→   111→    () => [...extraDomains, ...dataDomains].map((d) => ({ ...d, ...overrides[d.id] })),
+   112→   112→    [extraDomains, overrides],
+   113→   113→  );
+   114→   114→
+   115→   115→  const underReview = merged.filter((d) => d.status === "Under Review");
+   116→   116→
+   117→   117→  const q = query.trim().toLowerCase();
+   118→   118→  const filtered = React.useMemo(
+   119→   119→    () =>
+   120→   120→      merged.filter((d) => {
+   121→   121→        if (dept !== "all" && d.ownerDepartment !== dept) return false;
+   122→   122→        if (sens !== "all" && d.sensitivity !== sens) return false;
+   123→   123→        if (!q) return true;
+   124→   124→        const steward = getEmployee(d.stewardId);
+   125→   125→        return (
+   126→   126→          d.name.toLowerCase().includes(q) ||
+   127→   127→          d.ownerDepartment.toLowerCase().includes(q) ||
+   128→   128→          d.ownerRole.toLowerCase().includes(q) ||
+   129→   129→          (steward ? steward.name.toLowerCase().includes(q) : false)
+   130→   130→        );
+   131→   131→      }),
+   132→   132→    [merged, dept, sens, q],
+   133→   133→  );
+   134→   134→
+   135→   135→  const restrictedCount = filtered.filter((d) => d.sensitivity === "Restricted").length;
+   136→   136→  const filtersActive = q !== "" || dept !== "all" || sens !== "all";
+   137→   137→  const clearFilters = () => {
+   138→   138→    setQuery("");
+   139→   139→    setDept("all");
+   140→   140→    setSens("all");
+   141→   141→  };
+   142→   142→
+   143→   143→  // ---- governance actions (admin only) ----
+   144→   144→  const recordReview = (d: DomainRow) => {
+   145→   145→    const today = new Date();
+   146→   146→    setOverrides((o) => ({
+   147→   147→      ...o,
+   148→   148→      [d.id]: { ...o[d.id], status: "Active", lastReview: fmtDate(today) },
+   149→   149→    }));
+   150→   150→    toast({
+   151→   151→      title: "Review recorded",
+   152→   152→      description: `${d.name} marked reviewed — next review scheduled ${fmtDate(addMonths(today, 6))}.`,
+   153→   153→    });
+   154→   154→  };
+   155→   155→
+   156→   156→  const reviewNow = () => {
+   157→   157→    if (underReview.length === 0) return;
+   158→   158→    const today = new Date();
+   159→   159→    const anchor = parseDateStr(underReview[0].lastReview) ?? today;
+   160→   160→    setOverrides((o) => {
+   161→   161→      const patch: Record<string, DomainOverride> = {};
+   162→   162→      for (const d of underReview) {
+   163→   163→        patch[d.id] = { ...o[d.id], status: "Active", lastReview: fmtDate(today) };
+   164→   164→      }
+   165→   165→      return { ...o, ...patch };
+   166→   166→    });
+   167→   167→    toast({
+   168→   168→      title: "Review recorded",
+   169→   169→      description: `${underReview.length} domain${underReview.length === 1 ? "" : "s"} cleared — next review scheduled ${fmtDate(addMonths(anchor, 6))}.`,
+   170→   170→    });
+   171→   171→  };
+   172→   172→
+   173→   173→  const openEdit = (d: DomainRow) => {
+   174→   174→    setEditForm({
+   175→   175→      name: d.name,
+   176→   176→      ownerDepartment: d.ownerDepartment,
+   177→   177→      ownerRole: d.ownerRole,
+   178→   178→      stewardId: d.stewardId,
+   179→   179→      sensitivity: d.sensitivity,
+   180→   180→      retention: d.retention,
+   181→   181→      description: d.description ?? "",
+   182→   182→    });
+   183→   183→    setEditDomain(d);
+   184→   184→  };
+   185→   185→
+   186→   186→  const submitEdit = () => {
+   187→   187→    if (!editDomain) return;
+   188→   188→    const name = editForm.name.trim() || editDomain.name;
+   189→   189→    setOverrides((o) => ({
+   190→   190→      ...o,
+   191→   191→      [editDomain.id]: { ...o[editDomain.id], ...editForm, name },
+   192→   192→    }));
+   193→   193→    toast({
+   194→   194→      title: "Ownership updated",
+   195→   195→      description: `${name} saved — changes recorded in the governance audit history.`,
+   196→   196→    });
+   197→   197→    setEditDomain(null);
+   198→   198→  };
+   199→   199→
+   200→   200→  const submitAdd = () => {
+   201→   201→    const name = addForm.name.trim() || "Untitled Domain";
+   202→   202→    const steward = getEmployee(addForm.stewardId);
+   203→   203→    const created: DomainRow = {
+   204→   204→      id: `dd-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`,
+   205→   205→      name,
+   206→   206→      ownerDepartment: addForm.ownerDepartment || "Operations",
+   207→   207→      ownerRole: addForm.ownerRole.trim() || "Owner to be assigned",
+   208→   208→      stewardId: addForm.stewardId,
+   209→   209→      accessLevel: "Permission-based (default)",
+   210→   210→      sensitivity: addForm.sensitivity,
+   211→   211→      retention: addForm.retention.trim() || "To be defined",
+   212→   212→      status: "Active",
+   213→   213→      lastReview: fmtDate(new Date()),
+   214→   214→      records: "New domain — no records yet",
+   215→   215→      systems: [],
+   216→   216→      description: addForm.description.trim() || undefined,
+   217→   217→    };
+   218→   218→    setExtraDomains((x) => [created, ...x]);
+   219→   219→    toast({
+   220→   220→      title: "Data domain created",
+   221→   221→      description: `${name} registered under ${created.ownerDepartment} with steward ${steward ? steward.name : "unassigned"}.`,
+   222→   222→    });
+   223→   223→    setAddOpen(false);
+   224→   224→    setAddForm(EMPTY_DOMAIN_FORM);
+   225→   225→  };
+   226→   226→
+   227→   227→  const columns: Column<DomainRow>[] = [
+   228→   228→    {
+   229→   229→      key: "name",
+   230→   230→      header: "Data Domain",
+   231→   231→      sortable: true,
+   232→   232→      sortValue: (d) => d.name,
+   233→   233→      minWidth: 180,
+   234→   234→      render: (d) => (
+   235→   235→        <div className="min-w-0">
+   236→   236→          <p className="truncate text-[13px] font-medium text-slate-900">{d.name}</p>
+   237→   237→          <p className="truncate text-[11px] text-muted-foreground">{d.records}</p>
+   238→   238→        </div>
+   239→   239→      ),
+   240→   240→    },
+   241→   241→    {
+   242→   242→      key: "ownerDepartment",
+   243→   243→      header: "Owner Department",
+   244→   244→      sortable: true,
+   245→   245→      sortValue: (d) => d.ownerDepartment,
+   246→   246→      render: (d) => <span className="whitespace-nowrap text-[13px]">{d.ownerDepartment}</span>,
+   247→   247→    },
+   248→   248→    {
+   249→   249→      key: "ownerRole",
+   250→   250→      header: "Owner Role",
+   251→   251→      sortable: true,
+   252→   252→      sortValue: (d) => d.ownerRole,
+   253→   253→      render: (d) => <span className="whitespace-nowrap text-[13px] text-slate-600">{d.ownerRole}</span>,
+   254→   254→    },
+   255→   255→    {
+   256→   256→      key: "steward",
+   257→   257→      header: "Data Steward",
+   258→   258→      sortable: true,
+   259→   259→      sortValue: (d) => getEmployee(d.stewardId)?.name ?? "",
+   260→   260→      render: (d) => {
+   261→   261→        const steward = getEmployee(d.stewardId);
+   262→   262→        return (
+   263→   263→          <span className="flex items-center gap-2">
+   264→   264→            {steward && <Avatar name={steward.name} size="xs" />}
+   265→   265→            <span className="whitespace-nowrap text-[13px]">{steward ? steward.name : "Unassigned"}</span>
+   266→   266→          </span>
+   267→   267→        );
+   268→   268→      },
+   269→   269→    },
+   270→   270→    {
+   271→   271→      key: "access",
+   272→   272→      header: "Access Level",
+   273→   273→      hideBelow: "lg",
+   274→   274→      render: (d) => (
+   275→   275→        <span className="line-clamp-1 max-w-52 text-xs text-muted-foreground" title={d.accessLevel}>
+   276→   276→          {d.accessLevel}
+   277→   277→        </span>
+   278→   278→      ),
+   279→   279→    },
+   280→   280→    {
+   281→   281→      key: "sensitivity",
+   282→   282→      header: "Sensitivity",
+   283→   283→      sortable: true,
+   284→   284→      sortValue: (d) => d.sensitivity,
+   285→   285→      render: (d) => <StatusBadge status={d.sensitivity} size="sm" />,
+   286→   286→    },
+   287→   287→    {
+   288→   288→      key: "retention",
+   289→   289→      header: "Retention",
+   290→   290→      hideBelow: "xl",
+   291→   291→      render: (d) => (
+   292→   292→        <span className="line-clamp-1 max-w-40 text-xs text-muted-foreground" title={d.retention}>
+   293→   293→          {d.retention}
+   294→   294→        </span>
+   295→   295→      ),
+   296→   296→    },
+   297→   297→    {
+   298→   298→      key: "status",
+   299→   299→      header: "Status",
+   300→   300→      sortable: true,
+   301→   301→      sortValue: (d) => d.status,
+   302→   302→      render: (d) => <StatusBadge status={d.status} size="sm" />,
+   303→   303→    },
+   304→   304→    {
+   305→   305→      key: "lastReview",
+   306→   306→      header: "Last Review",
+   307→   307→      sortable: true,
+   308→   308→      sortValue: (d) => parseDateStr(d.lastReview)?.getTime() ?? 0,
+   309→   309→      hideBelow: "md",
+   310→   310→      render: (d) => <span className="whitespace-nowrap text-xs text-muted-foreground">{d.lastReview}</span>,
+   311→   311→    },
+   312→   312→    {
+   313→   313→      key: "actions",
+   314→   314→      header: "",
+   315→   315→      className: "w-10 text-right",
+   316→   316→      headerClassName: "text-right",
+   317→   317→      render: (d) => (
+   318→   318→        <DropdownMenu>
+   319→   319→          <DropdownMenuTrigger asChild>
+   320→   320→            <Button
+   321→   321→              variant="ghost"
+   322→   322→              size="icon"
+   323→   323→              className="h-7 w-7 text-slate-400"
+   324→   324→              aria-label={`Actions for ${d.name}`}
+   325→   325→              onClick={(e) => e.stopPropagation()}
+   326→   326→            >
+   327→   327→              <MoreHorizontal className="h-4 w-4" />
+   328→   328→            </Button>
+   329→   329→          </DropdownMenuTrigger>
+   330→   330→          <DropdownMenuContent align="end" className="w-56" onClick={(e) => e.stopPropagation()}>
+   331→   331→            <DropdownMenuItem onClick={() => setDetail(d)}>View governance details</DropdownMenuItem>
+   332→   332→            {canEdit && (
+   333→   333→              <>
+   334→   334→                <DropdownMenuSeparator />
+   335→   335→                <DropdownMenuItem onClick={() => openEdit(d)}>Edit ownership</DropdownMenuItem>
+   336→   336→                <DropdownMenuItem onClick={() => recordReview(d)}>Record review</DropdownMenuItem>
+   337→   337→              </>
+   338→   338→            )}
+   339→   339→          </DropdownMenuContent>
+   340→   340→        </DropdownMenu>
+   341→   341→      ),
+   342→   342→    },
+   343→   343→  ];
+   344→   344→
+   345→   345→  return (
+   346→   346→    <div>
+   347→   347→      <PageHeader
+   348→   348→        crumbs={[{ label: "Enterprise" }, { label: "07. Data Ownership" }]}
+   349→   349→        title="Data Ownership"
+   350→   350→        description="Enterprise data-governance control center — accountable owners, stewards, sensitivity and retention for every governed data domain."
+   351→   351→        actions={
+   352→   352→          canEdit && (
+   353→   353→            <Button size="sm" className="h-9" onClick={() => setAddOpen(true)}>
+   354→   354→              <Plus className="h-4 w-4" /> Add Data Domain
+   355→   355→            </Button>
+   356→   356→          )
+   357→   357→        }
+   358→   358→      />
+   359→   359→
+   360→   360→      {!canEdit && <ReadOnlyBanner message="You have view-only access to governance records." />}
+   361→   361→
+   362→   362→      {/* Governance alert */}
+   363→   363→      {underReview.length > 0 && (
+   364→   364→        <div
+   365→   365→          className="mt-4 mb-4 flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+   366→   366→          role="alert"
+   367→   367→        >
+   368→   368→          <div className="flex items-start gap-3">
+   369→   369→            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-700">
+   370→   370→              <ShieldAlert className="h-4 w-4" aria-hidden />
+   371→   371→            </span>
+   372→   372→            <p className="text-[13px] leading-relaxed text-amber-900">
+   373→   373→              {underReview.length} data domain{underReview.length === 1 ? " is" : "s are"} pending governance
+   374→   374→              review —{" "}
+   375→   375→              {underReview.map((d) => `${d.name}, last reviewed ${d.lastReview}`).join("; ")}.
+   376→   376→            </p>
+   377→   377→          </div>
+   378→   378→          {canEdit && (
+   379→   379→            <Button size="sm" className="h-8 shrink-0" onClick={reviewNow}>
+   380→   380→              Review now
+   381→   381→            </Button>
+   382→   382→          )}
+   383→   383→        </div>
+   384→   384→      )}
+   385→   385→
+   386→   386→      <FilterBar
+   387→   387→        className={underReview.length > 0 ? "mb-4" : "mt-4 mb-4"}
+   388→   388→        left={
+   389→   389→          <>
+   390→   390→            <SearchInput
+   391→   391→              value={query}
+   392→   392→              onChange={setQuery}
+   393→   393→              placeholder="Search data domain…"
+   394→   394→              className="w-full sm:w-64"
+   395→   395→              ariaLabel="Search data domain"
+   396→   396→            />
+   397→   397→            <Select value={dept} onValueChange={setDept}>
+   398→   398→              <SelectTrigger className="h-9 w-full sm:w-44" aria-label="Filter by owner department">
+   399→   399→                <SelectValue placeholder="All departments" />
+   400→   400→              </SelectTrigger>
+   401→   401→              <SelectContent>
+   402→   402→                <SelectItem value="all">All departments</SelectItem>
+   403→   403→                {DOMAIN_DEPARTMENTS.map((d) => (
+   404→   404→                  <SelectItem key={d} value={d}>
+   405→   405→                    {d}
+   406→   406→                  </SelectItem>
+   407→   407→                ))}
+   408→   408→              </SelectContent>
+   409→   409→            </Select>
+   410→   410→            <Select value={sens} onValueChange={setSens}>
+   411→   411→              <SelectTrigger className="h-9 w-full sm:w-40" aria-label="Filter by sensitivity">
+   412→   412→                <SelectValue placeholder="All sensitivity" />
+   413→   413→              </SelectTrigger>
+   414→   414→              <SelectContent>
+   415→   415→                <SelectItem value="all">All sensitivity</SelectItem>
+   416→   416→                {SENSITIVITY_LEVELS.map((s) => (
+   417→   417→                  <SelectItem key={s} value={s}>
+   418→   418→                    {s}
+   419→   419→                  </SelectItem>
+   420→   420→                ))}
+   421→   421→              </SelectContent>
+   422→   422→            </Select>
+   423→   423→          </>
+   424→   424→        }
+   425→   425→        right={
+   426→   426→          <p className="text-xs text-muted-foreground">
+   427→   427→            {filtered.length} domain{filtered.length === 1 ? "" : "s"} · {restrictedCount} restricted
+   428→   428→            {filtersActive && (
+   429→   429→              <>
+   430→   430→                {" · "}
+   431→   431→                <button
+   432→   432→                  type="button"
+   433→   433→                  onClick={clearFilters}
+   434→   434→                  className="font-medium text-navy-600 hover:text-navy-800"
+   435→   435→                >
+   436→   436→                  Clear filters
+   437→   437→                </button>
+   438→   438→              </>
+   439→   439→            )}
+   440→   440→          </p>
+   441→   441→        }
+   442→   442→      />
+   443→   443→
+   444→   444→      <DataTable
+   445→   445→        columns={columns}
+   446→   446→        rows={filtered}
+   447→   447→        rowKey={(d) => d.id}
+   448→   448→        onRowClick={(d) => setDetail(d)}
+   449→   449→        pageSize={8}
+   450→   450→        caption="Governed data domains"
+   451→   451→        emptyTitle="No data domains match"
+   452→   452→        emptyMessage="Try a different search term or filter combination."
+   453→   453→        mobileCard={(d) => (
+   454→   454→          <div className="flex items-start justify-between gap-3">
+   455→   455→            <div className="min-w-0">
+   456→   456→              <p className="truncate text-sm font-medium text-slate-900">{d.name}</p>
+   457→   457→              <p className="mt-0.5 truncate text-xs text-muted-foreground">{d.records}</p>
+   458→   458→              <p className="mt-1.5 truncate text-xs text-slate-600">
+   459→   459→                {d.ownerDepartment} · {d.ownerRole}
+   460→   460→              </p>
+   461→   461→            </div>
+   462→   462→            <div className="flex shrink-0 flex-col items-end gap-1.5">
+   463→   463→              <StatusBadge status={d.sensitivity} size="sm" />
+   464→   464→              <StatusBadge status={d.status} size="sm" />
+   465→   465→            </div>
+   466→   466→          </div>
+   467→   467→        )}
+   468→   468→      />
+   469→   469→
+   470→   470→      {/* Domain governance drawer */}
+   471→   471→      <DetailDrawer
+   472→   472→        open={!!detail}
+   473→   473→        onOpenChange={(o) => !o && setDetail(null)}
+   474→   474→        title={detail?.name ?? ""}
+   475→   475→        subtitle={detail ? `${detail.ownerDepartment} · ${detail.ownerRole}` : undefined}
+   476→   476→        icon={<Database />}
+   477→   477→        footer={
+   478→   478→          canEdit && detail ? (
+   479→   479→            <Button
+   480→   480→              size="sm"
+   481→   481→              variant="outline"
+   482→   482→              className="h-8"
+   483→   483→              onClick={() => {
+   484→   484→                const d = detail;
+   485→   485→                setDetail(null);
+   486→   486→                openEdit(d);
+   487→   487→              }}
+   488→   488→            >
+   489→   489→              Edit ownership
+   490→   490→            </Button>
+   491→   491→          ) : (
+   492→   492→            <p className="text-xs text-muted-foreground">
+   493→   493→              Read-only — data ownership changes require an administrator.
+   494→   494→            </p>
+   495→   495→          )
+   496→   496→        }
+   497→   497→      >
+   498→   498→        {detail && (
+   499→   499→          <dl className="divide-y">
+   500→   500→            <KV label="Owner Department">{detail.ownerDepartment}</KV>
+   501→   501→            <KV label="Owner Role">{detail.ownerRole}</KV>
+   502→   502→            <KV label="Data Steward">
+   503→   503→              {(() => {
+   504→   504→                const steward = getEmployee(detail.stewardId);
+   505→   505→                if (!steward) return <span className="text-muted-foreground">Unassigned</span>;
+   506→   506→                return (
+   507→   507→                  <button
+   508→   508→                    type="button"
+   509→   509→                    onClick={() => {
+   510→   510→                      setDetail(null);
+   511→   511→                      setPreviewEmployee(steward);
+   512→   512→                    }}
+   513→   513→                    className="-mx-1.5 inline-flex items-center gap-2 rounded-md px-1.5 py-1 transition-colors hover:bg-slate-100"
+   514→   514→                  >
+   515→   515→                    <Avatar name={steward.name} size="xs" />
+   516→   516→                    <span className="font-medium text-slate-800">{steward.name}</span>
+   517→   517→                  </button>
+   518→   518→                );
+   519→   519→              })()}
+   520→   520→            </KV>
+   521→   521→            <KV label="Access Level">{detail.accessLevel}</KV>
+   522→   522→            <KV label="Sensitivity">
+   523→   523→              <StatusBadge status={detail.sensitivity} size="sm" />
+   524→   524→            </KV>
+   525→   525→            <KV label="Retention">{detail.retention}</KV>
+   526→   526→            <KV label="Status">
+   527→   527→              <StatusBadge status={detail.status} size="sm" />
+   528→   528→            </KV>
+   529→   529→            <KV label="Last Review">{detail.lastReview}</KV>
+   530→   530→            <KV label="Records">{detail.records}</KV>
+   531→   531→            {detail.description && <KV label="Description">{detail.description}</KV>}
+   532→   532→            <KV label="Systems">
+   533→   533→              {detail.systems.length > 0 ? (
+   534→   534→                <span className="flex flex-wrap gap-1.5">
+   535→   535→                  {detail.systems.map((s) => (
+   536→   536→                    <span
+   537→   537→                      key={s}
+   538→   538→                      className="rounded-md border bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600"
+   539→   539→                    >
+   540→   540→                      {s}
+   541→   541→                    </span>
+   542→   542→                  ))}
+   543→   543→                </span>
+   544→   544→              ) : (
+   545→   545→                <span className="text-muted-foreground">None connected</span>
+   546→   546→              )}
+   547→   547→            </KV>
+   548→   548→          </dl>
+   549→   549→        )}
+   550→   550→      </DetailDrawer>
+   551→   551→
+   552→   552→      {/* Steward preview (shared drawer) */}
+   553→   553→      <EmployeeDrawer
+   554→   554→        employee={previewEmployee}
+   555→   555→        open={!!previewEmployee}
+   556→   556→        onOpenChange={(o) => !o && setPreviewEmployee(null)}
+   557→   557→      />
+   558→   558→
+   559→   559→      {/* Add data domain */}
+   560→   560→      <FormDialog
+   561→   561→        open={addOpen}
+   562→   562→        onOpenChange={(o) => {
+   563→   563→          setAddOpen(o);
+   564→   564→          if (!o) setAddForm(EMPTY_DOMAIN_FORM);
+   565→   565→        }}
+   566→   566→        title="Add Data Domain"
+   567→   567→        description="Register a governed data domain with an accountable owner department and steward."
+   568→   568→        submitLabel="Create domain"
+   569→   569→        wide
+   570→   570→        onSubmit={submitAdd}
+   571→   571→      >
+   572→   572→        <Field label="Domain name" required>
+   573→   573→          <Input
+   574→   574→            value={addForm.name}
+   575→   575→            onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))}
+   576→   576→            placeholder="e.g. Vendor Data"
+   577→   577→          />
+   578→   578→        </Field>
+   579→   579→        <div className="grid gap-4 sm:grid-cols-2">
+   580→   580→          <Field label="Owner department" required>
+   581→   581→            <Select
+   582→   582→              value={addForm.ownerDepartment}
+   583→   583→              onValueChange={(v) => setAddForm((f) => ({ ...f, ownerDepartment: v }))}
+   584→   584→            >
+   585→   585→              <SelectTrigger>
+   586→   586→                <SelectValue placeholder="Select department" />
+   587→   587→              </SelectTrigger>
+   588→   588→              <SelectContent>
+   589→   589→                {DOMAIN_DEPARTMENTS.map((d) => (
+   590→   590→                  <SelectItem key={d} value={d}>
+   591→   591→                    {d}
+   592→   592→                  </SelectItem>
+   593→   593→                ))}
+   594→   594→              </SelectContent>
+   595→   595→            </Select>
+   596→   596→          </Field>
+   597→   597→          <Field label="Owner role" required>
+   598→   598→            <Input
+   599→   599→              value={addForm.ownerRole}
+   600→   600→              onChange={(e) => setAddForm((f) => ({ ...f, ownerRole: e.target.value }))}
+   601→   601→              placeholder="e.g. Procurement Head"
+   602→   602→            />
+   603→   603→          </Field>
+   604→   604→        </div>
+   605→   605→        <Field label="Data steward" required hint="Day-to-day custodian accountable for quality and access.">
+   606→   606→          <Select value={addForm.stewardId} onValueChange={(v) => setAddForm((f) => ({ ...f, stewardId: v }))}>
+   607→   607→            <SelectTrigger>
+   608→   608→              <SelectValue placeholder="Select steward" />
+   609→   609→            </SelectTrigger>
+   610→   610→            <SelectContent>
+   611→   611→              {employees.map((e) => (
+   612→   612→                <SelectItem key={e.id} value={e.id}>
+   613→   613→                  {e.name} — {e.title}
+   614→   614→                </SelectItem>
+   615→   615→              ))}
+   616→   616→            </SelectContent>
+   617→   617→          </Select>
+   618→   618→        </Field>
+   619→   619→        <div className="grid gap-4 sm:grid-cols-2">
+   620→   620→          <Field label="Sensitivity" required>
+   621→   621→            <Select
+   622→   622→              value={addForm.sensitivity}
+   623→   623→              onValueChange={(v) => setAddForm((f) => ({ ...f, sensitivity: v as Sensitivity }))}
+   624→   624→            >
+   625→   625→              <SelectTrigger>
+   626→   626→                <SelectValue />
+   627→   627→              </SelectTrigger>
+   628→   628→              <SelectContent>
+   629→   629→                {SENSITIVITY_LEVELS.map((s) => (
+   630→   630→                  <SelectItem key={s} value={s}>
+   631→   631→                    {s}
+   632→   632→                  </SelectItem>
+   633→   633→                ))}
+   634→   634→              </SelectContent>
+   635→   635→            </Select>
+   636→   636→          </Field>
+   637→   637→          <Field label="Retention">
+   638→   638→            <Input
+   639→   639→              value={addForm.retention}
+   640→   640→              onChange={(e) => setAddForm((f) => ({ ...f, retention: e.target.value }))}
+   641→   641→              placeholder="e.g. 7 years after contract end"
+   642→   642→            />
+   643→   643→          </Field>
+   644→   644→        </div>
+   645→   645→        <Field label="Description">
+   646→   646→          <Textarea
+   647→   647→            rows={3}
+   648→   648→            value={addForm.description}
+   649→   649→            onChange={(e) => setAddForm((f) => ({ ...f, description: e.target.value }))}
+   650→   650→            placeholder="What data belongs to this domain?"
+   651→   651→          />
+   652→   652→        </Field>
+   653→   653→      </FormDialog>
+   654→   654→
+   655→   655→      {/* Edit ownership */}
+   656→   656→      <FormDialog
+   657→   657→        open={!!editDomain}
+   658→   658→        onOpenChange={(o) => !o && setEditDomain(null)}
+   659→   659→        title={editDomain ? `Edit ownership — ${editDomain.name}` : "Edit ownership"}
+   660→   660→        description="Ownership, stewardship and classification are audited. Changes take effect immediately."
+   661→   661→        submitLabel="Save changes"
+   662→   662→        wide
+   663→   663→        onSubmit={submitEdit}
+   664→   664→      >
+   665→   665→        <Field label="Domain name" required>
+   666→   666→          <Input
+   667→   667→            value={editForm.name}
+   668→   668→            onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+   669→   669→          />
+   670→   670→        </Field>
+   671→   671→        <div className="grid gap-4 sm:grid-cols-2">
+   672→   672→          <Field label="Owner department" required>
+   673→   673→            <Select
+   674→   674→              value={editForm.ownerDepartment}
+   675→   675→              onValueChange={(v) => setEditForm((f) => ({ ...f, ownerDepartment: v }))}
+   676→   676→            >
+   677→   677→              <SelectTrigger>
+   678→   678→                <SelectValue placeholder="Select department" />
+   679→   679→              </SelectTrigger>
+   680→   680→              <SelectContent>
+   681→   681→                {DOMAIN_DEPARTMENTS.map((d) => (
+   682→   682→                  <SelectItem key={d} value={d}>
+   683→   683→                    {d}
+   684→   684→                  </SelectItem>
+   685→   685→                ))}
+   686→   686→              </SelectContent>
+   687→   687→            </Select>
+   688→   688→          </Field>
+   689→   689→          <Field label="Owner role" required>
+   690→   690→            <Input
+   691→   691→              value={editForm.ownerRole}
+   692→   692→              onChange={(e) => setEditForm((f) => ({ ...f, ownerRole: e.target.value }))}
+   693→   693→            />
+   694→   694→          </Field>
+   695→   695→        </div>
+   696→   696→        <Field label="Data steward" required>
+   697→   697→          <Select
+   698→   698→            value={editForm.stewardId}
+   699→   699→            onValueChange={(v) => setEditForm((f) => ({ ...f, stewardId: v }))}
+   700→   700→          >
+   701→   701→            <SelectTrigger>
+   702→   702→              <SelectValue placeholder="Select steward" />
+   703→   703→            </SelectTrigger>
+   704→   704→            <SelectContent>
+   705→   705→              {employees.map((e) => (
+   706→   706→                <SelectItem key={e.id} value={e.id}>
+   707→   707→                  {e.name} — {e.title}
+   708→   708→                </SelectItem>
+   709→   709→              ))}
+   710→   710→            </SelectContent>
+   711→   711→          </Select>
+   712→   712→        </Field>
+   713→   713→        <div className="grid gap-4 sm:grid-cols-2">
+   714→   714→          <Field label="Sensitivity" required>
+   715→   715→            <Select
+   716→   716→              value={editForm.sensitivity}
+   717→   717→              onValueChange={(v) => setEditForm((f) => ({ ...f, sensitivity: v as Sensitivity }))}
+   718→   718→            >
+   719→   719→              <SelectTrigger>
+   720→   720→                <SelectValue />
+   721→   721→              </SelectTrigger>
+   722→   722→              <SelectContent>
+   723→   723→                {SENSITIVITY_LEVELS.map((s) => (
+   724→   724→                  <SelectItem key={s} value={s}>
+   725→   725→                    {s}
+   726→   726→                  </SelectItem>
+   727→   727→                ))}
+   728→   728→              </SelectContent>
+   729→   729→            </Select>
+   730→   730→          </Field>
+   731→   731→          <Field label="Retention">
+   732→   732→            <Input
+   733→   733→              value={editForm.retention}
+   734→   734→              onChange={(e) => setEditForm((f) => ({ ...f, retention: e.target.value }))}
+   735→   735→            />
+   736→   736→          </Field>
+   737→   737→        </div>
+   738→   738→        <Field label="Description">
+   739→   739→          <Textarea
+   740→   740→            rows={3}
+   741→   741→            value={editForm.description}
+   742→   742→            onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+   743→   743→          />
+   744→   744→        </Field>
+   745→   745→      </FormDialog>
+   746→   746→    </div>
+   747→   747→  );
+   748→   748→}
+   749→   749→

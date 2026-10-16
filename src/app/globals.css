@@ -4,6 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-workspace: #F5F7FB;
   --color-navy-50: #F2F6FB;
   --color-navy-100: #E4EBF5;
   --color-navy-200: #C3D2E8;
@@ -55,7 +56,7 @@
 }
 
 :root {
-  --radius: 0.5rem;
+  --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.23 0.03 264);
   --card: oklch(1 0 0);
@@ -137,6 +138,74 @@ html {
   scrollbar-gutter: stable;
 }
 
+/* ============================================================
+   Qubit One surface system — one card language for every screen
+   (layered so utility overrides like border-blue-200 still win)
+   ============================================================ */
+@layer components {
+  .qubit-card {
+    border-radius: 0.75rem;
+    border: 1px solid rgb(226 232 240 / 0.9);
+    background-color: #ffffff;
+    box-shadow:
+      0 1px 2px rgb(15 23 42 / 0.04),
+      0 1px 3px rgb(15 23 42 / 0.03);
+  }
+
+  .qubit-card-hover {
+    transition: box-shadow 180ms ease, border-color 180ms ease;
+  }
+  .qubit-card-hover:hover {
+    border-color: rgb(203 213 225);
+    box-shadow:
+      0 2px 4px rgb(15 23 42 / 0.05),
+      0 10px 24px -6px rgb(15 23 42 / 0.07);
+  }
+
+  /* Soft colored icon tile — pair with bg-X-50 / text-X-700 tone classes */
+  .qubit-icon-tile {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+  }
+  .qubit-icon-tile > svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  /* Blue-tinted accent tile for neutral detail surfaces */
+  .qubit-icon-tile-accent {
+    background-color: #eff6ff;
+    color: #2563eb;
+  }
+
+  /* Kbd chip used in search surfaces */
+  .qubit-kbd {
+    border: 1px solid rgb(226 232 240);
+    background: #fff;
+    border-radius: 0.375rem;
+    padding: 0.125rem 0.375rem;
+    font-size: 10px;
+    font-weight: 500;
+    color: rgb(100 116 139);
+    line-height: 1.4;
+  }
+
+  /* Segmented control (view switches) */
+  .qubit-segmented {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    border-radius: 0.625rem;
+    border: 1px solid rgb(226 232 240 / 0.9);
+    background-color: #fff;
+    padding: 3px;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+  }
+}
+
 /* Enterprise scrollbar styling */
 .qubit-scroll {
   scrollbar-width: thin;
@@ -192,7 +261,7 @@ html {
 
 /* Restrained focus ring for enterprise a11y */
 :where(a, button, [role="button"], input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid oklch(0.546 0.215 262.88);
+  outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
 

@@ -362,11 +362,11 @@ export function DataOwnershipScreen() {
       {/* Governance alert */}
       {underReview.length > 0 && (
         <div
-          className="mt-4 mb-4 flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+          className="mt-4 mb-4 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
           role="alert"
         >
           <div className="flex items-start gap-3">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-700">
+            <span className="qubit-icon-tile h-10 w-10 shrink-0 bg-amber-100 text-amber-700 [&_svg]:h-5 [&_svg]:w-5">
               <ShieldAlert className="h-4 w-4" aria-hidden />
             </span>
             <p className="text-[13px] leading-relaxed text-amber-900">
@@ -395,7 +395,7 @@ export function DataOwnershipScreen() {
               ariaLabel="Search data domain"
             />
             <Select value={dept} onValueChange={setDept}>
-              <SelectTrigger className="h-9 w-full sm:w-44" aria-label="Filter by owner department">
+              <SelectTrigger className="h-10 w-full sm:w-44" aria-label="Filter by owner department">
                 <SelectValue placeholder="All departments" />
               </SelectTrigger>
               <SelectContent>
@@ -408,7 +408,7 @@ export function DataOwnershipScreen() {
               </SelectContent>
             </Select>
             <Select value={sens} onValueChange={setSens}>
-              <SelectTrigger className="h-9 w-full sm:w-40" aria-label="Filter by sensitivity">
+              <SelectTrigger className="h-10 w-full sm:w-40" aria-label="Filter by sensitivity">
                 <SelectValue placeholder="All sensitivity" />
               </SelectTrigger>
               <SelectContent>
@@ -431,7 +431,7 @@ export function DataOwnershipScreen() {
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className="font-medium text-navy-600 hover:text-navy-800"
+                  className="font-medium text-blue-600 hover:text-blue-700"
                 >
                   Clear filters
                 </button>
@@ -496,7 +496,7 @@ export function DataOwnershipScreen() {
         }
       >
         {detail && (
-          <dl className="divide-y">
+          <dl className="divide-y divide-slate-100">
             <KV label="Owner Department">{detail.ownerDepartment}</KV>
             <KV label="Owner Role">{detail.ownerRole}</KV>
             <KV label="Data Steward">
@@ -510,7 +510,7 @@ export function DataOwnershipScreen() {
                       setDetail(null);
                       setPreviewEmployee(steward);
                     }}
-                    className="-mx-1.5 inline-flex items-center gap-2 rounded-md px-1.5 py-1 transition-colors hover:bg-slate-100"
+                    className="-mx-1.5 inline-flex items-center gap-2 rounded-md px-1.5 py-1 transition-colors duration-150 hover:bg-slate-100"
                   >
                     <Avatar name={steward.name} size="xs" />
                     <span className="font-medium text-slate-800">{steward.name}</span>

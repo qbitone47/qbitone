@@ -261,7 +261,7 @@ export function WorkflowCatalogScreen() {
           ariaLabel="Search workflows"
         />
         <Select value={dept} onValueChange={setDept}>
-          <SelectTrigger className="h-9 w-full sm:w-40" aria-label="Filter by department">
+          <SelectTrigger className="h-10 w-full sm:w-40" aria-label="Filter by department">
             <SelectValue placeholder="All departments" />
           </SelectTrigger>
           <SelectContent>
@@ -274,7 +274,7 @@ export function WorkflowCatalogScreen() {
           </SelectContent>
         </Select>
         <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="h-9 w-full sm:w-32" aria-label="Filter by status">
+          <SelectTrigger className="h-10 w-full sm:w-32" aria-label="Filter by status">
             <SelectValue placeholder="All status" />
           </SelectTrigger>
           <SelectContent>
@@ -287,7 +287,7 @@ export function WorkflowCatalogScreen() {
           </SelectContent>
         </Select>
         <Select value={trigger} onValueChange={setTrigger}>
-          <SelectTrigger className="h-9 w-full sm:w-44" aria-label="Filter by trigger">
+          <SelectTrigger className="h-10 w-full sm:w-44" aria-label="Filter by trigger">
             <SelectValue placeholder="All triggers" />
           </SelectTrigger>
           <SelectContent>
@@ -307,7 +307,7 @@ export function WorkflowCatalogScreen() {
             {filtersActive && (
               <>
                 {" · "}
-                <button type="button" onClick={clearFilters} className="font-medium text-navy-600 hover:text-navy-800">
+                <button type="button" onClick={clearFilters} className="font-medium text-blue-600 hover:text-blue-700">
                   Clear filters
                 </button>
               </>
@@ -383,13 +383,13 @@ export function WorkflowCatalogScreen() {
       >
         {detail && (
           <>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <StatTile icon={<Activity />} value={detail.runsThisMonth.toLocaleString("en-IN")} label="Runs this month" />
               <StatTile icon={<Timer />} value={detail.avgCompletion} label="Avg completion" />
             </div>
 
             {/* Five-step flow — horizontal rail on md+, vertical guide on mobile */}
-            <section className="mt-6 border-t pt-4">
+            <section className="mt-6 border-t border-slate-100 pt-4">
               <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Flow · {detail.steps.length} steps
               </p>
@@ -434,7 +434,7 @@ export function WorkflowCatalogScreen() {
               </ol>
             </section>
 
-            <dl className="mt-6 divide-y border-t pt-1">
+            <dl className="mt-6 divide-y divide-slate-100 border-t border-slate-100 pt-1">
               <KV label="Department">{detail.department}</KV>
               <KV label="Trigger">{detail.trigger}</KV>
               <KV label="Owner">{getEmployee(detail.ownerId)?.name ?? "—"}</KV>

@@ -48,7 +48,7 @@ const FREQUENCY_OPTIONS = ["Immediate", "Immediate + 15 min before", "Hourly dig
 function ChannelChip({ label }: { label: string }) {
   const Icon = CHANNEL_ICONS[label] ?? Bell;
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600">
+    <span className="inline-flex items-center gap-1 rounded-md border border-slate-200/90 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600">
       <Icon className="h-3 w-3" aria-hidden />
       {label}
     </span>
@@ -66,7 +66,7 @@ function ChannelToggle({
 }) {
   const Icon = CHANNEL_ICONS[label] ?? Bell;
   return (
-    <label className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-2.5 py-2 text-[13px] text-slate-700 transition-colors hover:bg-slate-50 has-[[data-state=checked]]:border-navy-300 has-[[data-state=checked]]:bg-navy-50/60">
+    <label className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-2.5 py-2 text-[13px] text-slate-700 transition-colors duration-150 hover:bg-slate-50 has-[[data-state=checked]]:border-blue-200 has-[[data-state=checked]]:bg-blue-50/60">
       <Checkbox checked={checked} onCheckedChange={onToggle} aria-label={`Send via ${label}`} />
       <Icon className="h-3.5 w-3.5 text-slate-500" aria-hidden />
       {label}
@@ -294,7 +294,7 @@ export function NotificationRulesScreen() {
           ariaLabel="Search events"
         />
         <Select value={dept} onValueChange={setDept}>
-          <SelectTrigger className="h-9 w-full sm:w-40" aria-label="Filter by department">
+          <SelectTrigger className="h-10 w-full sm:w-40" aria-label="Filter by department">
             <SelectValue placeholder="All departments" />
           </SelectTrigger>
           <SelectContent>
@@ -307,7 +307,7 @@ export function NotificationRulesScreen() {
           </SelectContent>
         </Select>
         <Select value={priority} onValueChange={setPriority}>
-          <SelectTrigger className="h-9 w-full sm:w-32" aria-label="Filter by priority">
+          <SelectTrigger className="h-10 w-full sm:w-32" aria-label="Filter by priority">
             <SelectValue placeholder="All priorities" />
           </SelectTrigger>
           <SelectContent>
@@ -318,7 +318,7 @@ export function NotificationRulesScreen() {
           </SelectContent>
         </Select>
         <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="h-9 w-full sm:w-32" aria-label="Filter by status">
+          <SelectTrigger className="h-10 w-full sm:w-32" aria-label="Filter by status">
             <SelectValue placeholder="All status" />
           </SelectTrigger>
           <SelectContent>
@@ -335,7 +335,7 @@ export function NotificationRulesScreen() {
             {filtersActive && (
               <>
                 {" · "}
-                <button type="button" onClick={clearFilters} className="font-medium text-navy-600 hover:text-navy-800">
+                <button type="button" onClick={clearFilters} className="font-medium text-blue-600 hover:text-blue-700">
                   Clear filters
                 </button>
               </>
@@ -395,7 +395,7 @@ export function NotificationRulesScreen() {
                   <p className="mt-2 text-[11px] text-muted-foreground">just now</p>
                 </div>
               </div>
-              <div className="mt-3 flex flex-wrap gap-1 border-t border-slate-200 pt-3">
+              <div className="mt-3 flex flex-wrap gap-1 border-t border-slate-100 pt-3">
                 {preview.channels.map((c) => (
                   <ChannelChip key={c} label={c} />
                 ))}

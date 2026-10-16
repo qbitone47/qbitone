@@ -121,7 +121,7 @@ export function ApprovalMatrixScreen() {
                     e.stopPropagation();
                     moveRule(r, -1);
                   }}
-                  className="rounded p-px text-slate-400 transition-colors hover:bg-slate-100 hover:text-navy-700 disabled:pointer-events-none disabled:opacity-25"
+                  className="rounded p-px text-slate-400 transition-colors duration-150 hover:bg-slate-100 hover:text-blue-700 disabled:pointer-events-none disabled:opacity-25"
                 >
                   <ChevronUp className="h-3.5 w-3.5" />
                 </button>
@@ -133,7 +133,7 @@ export function ApprovalMatrixScreen() {
                     e.stopPropagation();
                     moveRule(r, 1);
                   }}
-                  className="rounded p-px text-slate-400 transition-colors hover:bg-slate-100 hover:text-navy-700 disabled:pointer-events-none disabled:opacity-25"
+                  className="rounded p-px text-slate-400 transition-colors duration-150 hover:bg-slate-100 hover:text-blue-700 disabled:pointer-events-none disabled:opacity-25"
                 >
                   <ChevronDown className="h-3.5 w-3.5" />
                 </button>
@@ -282,7 +282,7 @@ export function ApprovalMatrixScreen() {
           role="alert"
           className="mb-4 flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50/70 p-4 sm:flex-row sm:items-start"
         >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-red-100 text-red-600">
+          <span className="qubit-icon-tile h-10 w-10 shrink-0 bg-red-100 text-red-600 [&_svg]:h-5 [&_svg]:w-5">
             <TriangleAlert className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
@@ -399,7 +399,7 @@ export function ApprovalMatrixScreen() {
                     <li key={`${h.date}-${h.event}`} className="relative">
                       <span
                         aria-hidden
-                        className="absolute -left-[25px] top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-navy-600 ring-1 ring-slate-200"
+                        className="absolute -left-[25px] top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-blue-600 ring-1 ring-slate-200"
                       />
                       <p className="text-[13px] font-medium text-slate-800">{h.event}</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">

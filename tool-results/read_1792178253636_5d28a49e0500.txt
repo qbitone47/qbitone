@@ -1,0 +1,692 @@
+     1→"use client";
+     2→
+     3→import * as React from "react";
+     4→import {
+     5→  Banknote,
+     6→  BarChart3,
+     7→  Building2,
+     8→  Calendar,
+     9→  ChevronDown,
+    10→  ChevronUp,
+    11→  CircleCheck,
+    12→  Eye,
+    13→  FileText,
+    14→  FolderClosed,
+    15→  Gauge,
+    16→  House,
+    17→  LayoutDashboard,
+    18→  ListTodo,
+    19→  Megaphone,
+    20→  MessageSquare,
+    21→  Package,
+    22→  Plus,
+    23→  Receipt,
+    24→  Settings2,
+    25→  Sparkles,
+    26→  TrendingUp,
+    27→  UserPlus,
+    28→  UserRound,
+    29→  Users,
+    30→  Video,
+    31→  Wallet,
+    32→  Wrench,
+    33→} from "lucide-react";
+    34→import { Button } from "@/components/ui/button";
+    35→import { Input } from "@/components/ui/input";
+    36→import { Switch } from "@/components/ui/switch";
+    37→import { Checkbox } from "@/components/ui/checkbox";
+    38→import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+    39→import {
+    40→  Select,
+    41→  SelectContent,
+    42→  SelectItem,
+    43→  SelectTrigger,
+    44→  SelectValue,
+    45→} from "@/components/ui/select";
+    46→import {
+    47→  DropdownMenu,
+    48→  DropdownMenuContent,
+    49→  DropdownMenuItem,
+    50→  DropdownMenuSeparator,
+    51→  DropdownMenuTrigger,
+    52→} from "@/components/ui/dropdown-menu";
+    53→import { useToast } from "@/hooks/use-toast";
+    54→import { cn } from "@/lib/utils";
+    55→import { navModules, navRoles, type NavModule } from "@/lib/qubit/data";
+    56→import { useRole } from "../role-context";
+    57→import { PageHeader } from "../page-header";
+    58→import { EmptyState, KV, ReadOnlyBanner, SectionCard, TreeRow } from "../primitives";
+    59→import { ConfirmDialog, Field, FormDialog } from "../dialogs";
+    60→
+    61→const ICONS: Record<string, React.ElementType> = {
+    62→  home: House, layout: LayoutDashboard, user: UserRound, check: ListTodo, calendar: Calendar,
+    63→  video: Video, "check-circle": CircleCheck, folder: FolderClosed, trending: TrendingUp,
+    64→  gauge: Gauge, users: Users, building: Building2, "file-text": FileText, wallet: Wallet,
+    65→  receipt: Receipt, "user-plus": UserPlus, banknote: Banknote, package: Package,
+    66→  megaphone: Megaphone, wrench: Wrench, sparkles: Sparkles, "bar-chart": BarChart3,
+    67→  settings: Settings2, message: MessageSquare,
+    68→};
+    69→
+    70→const ModuleIcon = ({ name, className }: { name: string; className?: string }) => {
+    71→  const Icon = ICONS[name] ?? CircleCheck;
+    72→  return <Icon className={className} aria-hidden />;
+    73→};
+    74→
+    75→function roleCanSee(mod: NavModule, roleId: string): boolean {
+    76→  if (roleId === "administrator") return true;
+    77→  if (!mod.allowedRoles.includes("all") && !mod.allowedRoles.includes(roleId)) return false;
+    78→  if (mod.parent) {
+    79→    const parent = navModules.find((m) => m.id === mod.parent);
+    80→    return parent ? roleCanSee(parent, roleId) : true;
+    81→  }
+    82→  return true;
+    83→}
+    84→
+    85→export function EnterpriseNavigationScreen() {
+    86→  const { can } = useRole();
+    87→  const { toast } = useToast();
+    88→  const canEdit = can("navigation.edit");
+    89→
+    90→  const [modules, setModules] = React.useState<NavModule[]>(() => navModules.map((m) => ({ ...m, allowedRoles: [...m.allowedRoles] })));
+    91→  const [baselineModules, setBaselineModules] = React.useState<NavModule[]>(() => navModules.map((m) => ({ ...m, allowedRoles: [...m.allowedRoles] })));
+    92→  const dirty = React.useMemo(() => JSON.stringify(modules) !== JSON.stringify(baselineModules), [modules, baselineModules]);
+    93→
+    94→  const [selectedId, setSelectedId] = React.useState<string>("nm-workspace");
+    95→  const [expanded, setExpanded] = React.useState<Set<string>>(() => new Set(["nm-workspace", "nm-sales"]));
+    96→  const [previewRole, setPreviewRole] = React.useState("administrator");
+    97→  const [renameFor, setRenameFor] = React.useState<NavModule | null>(null);
+    98→  const [reparentFor, setReparentFor] = React.useState<NavModule | null>(null);
+    99→  const [deleteFor, setDeleteFor] = React.useState<NavModule | null>(null);
+   100→  const [addOpen, setAddOpen] = React.useState<{ parent: string | null } | null>(null);
+   101→  const [previewTabRole, setPreviewTabRole] = React.useState("sales-exec");
+   102→
+   103→  const selected = modules.find((m) => m.id === selectedId) ?? modules[0];
+   104→  const topLevel = React.useMemo(
+   105→    () => modules.filter((m) => m.parent === null).sort((a, b) => a.order - b.order),
+   106→    [modules],
+   107→  );
+   108→  const childrenOf = (parentId: string) =>
+   109→    modules.filter((m) => m.parent === parentId).sort((a, b) => a.order - b.order);
+   110→  const children = selected ? childrenOf(selected.id) : [];
+   111→
+   112→  const mutate = (fn: (draft: NavModule[]) => void) => {
+   113→    setModules((prev) => {
+   114→      const draft = prev.map((m) => ({ ...m, allowedRoles: [...m.allowedRoles] }));
+   115→      fn(draft);
+   116→      return draft;
+   117→    });
+   118→  };
+   119→
+   120→  const move = (mod: NavModule, dir: -1 | 1) => {
+   121→    mutate((draft) => {
+   122→      const sibs = draft
+   123→        .filter((m) => m.parent === mod.parent)
+   124→        .sort((a, b) => a.order - b.order);
+   125→      const idx = sibs.findIndex((m) => m.id === mod.id);
+   126→      const swapIdx = idx + dir;
+   127→      if (swapIdx < 0 || swapIdx >= sibs.length) return;
+   128→      const a = draft.find((m) => m.id === sibs[idx].id)!;
+   129→      const b = draft.find((m) => m.id === sibs[swapIdx].id)!;
+   130→      const tmp = a.order;
+   131→      a.order = b.order;
+   132→      b.order = tmp;
+   133→    });
+   134→  };
+   135→
+   136→  const toggleStatus = (mod: NavModule) =>
+   137→    mutate((draft) => {
+   138→      const m = draft.find((x) => x.id === mod.id)!;
+   139→      m.status = m.status === "Active" ? "Disabled" : "Active";
+   140→      if (m.status === "Disabled") {
+   141→        // disable descendants too — navigation cannot show orphan children
+   142→        for (const c of draft.filter((x) => x.parent === m.id)) c.status = "Disabled";
+   143→      }
+   144→    });
+   145→
+   146→  const save = () => {
+   147→    setBaselineModules(modules.map((m) => ({ ...m, allowedRoles: [...m.allowedRoles] })));
+   148→    toast({
+   149→      title: "Navigation saved",
+   150→      description: "Module structure, ordering and visibility updated for the organization.",
+   151→    });
+   152→  };
+   153→
+   154→  const previewing = previewRole !== "administrator";
+   155→
+   156→  // ---------- tree ----------
+   157→  const renderTreeLevel = (parentId: string | null, depth: number) => {
+   158→    const items = (parentId === null ? topLevel : childrenOf(parentId));
+   159→    return items.map((m) => {
+   160→      const kids = childrenOf(m.id);
+   161→      const isOpen = expanded.has(m.id);
+   162→      const visible = roleCanSee(m, previewRole);
+   163→      return (
+   164→        <React.Fragment key={m.id}>
+   165→          <TreeRow
+   166→            depth={depth}
+   167→            expandable={kids.length > 0}
+   168→            expanded={isOpen}
+   169→            onToggle={() =>
+   170→              setExpanded((s) => {
+   171→                const next = new Set(s);
+   172→                if (next.has(m.id)) next.delete(m.id);
+   173→                else next.add(m.id);
+   174→                return next;
+   175→              })
+   176→            }
+   177→            selected={selectedId === m.id}
+   178→            onClick={() => setSelectedId(m.id)}
+   179→            dimmed={m.status === "Disabled" || (previewing && !visible)}
+   180→          >
+   181→            <span className="inline-flex items-center gap-2">
+   182→              <ModuleIcon name={m.icon} className="h-3.5 w-3.5 text-slate-500" />
+   183→              <span className={cn(m.status === "Disabled" && "line-through decoration-slate-300")}>{m.name}</span>
+   184→            </span>
+   185→          </TreeRow>
+   186→          {isOpen && kids.length > 0 && renderTreeLevel(m.id, depth + 1)}
+   187→        </React.Fragment>
+   188→      );
+   189→    });
+   190→  };
+   191→
+   192→  // ---------- derived form state ----------
+   193→  const dirtyFields = (patch: Partial<NavModule>) =>
+   194→    mutate((draft) => {
+   195→      const m = draft.find((x) => x.id === selected.id)!;
+   196→      Object.assign(m, patch);
+   197→    });
+   198→
+   199→  return (
+   200→    <div>
+   201→      <PageHeader
+   202→        crumbs={[{ label: "Enterprise" }, { label: "12. Enterprise Navigation" }]}
+   203→        title="Enterprise Navigation"
+   204→        description="Master information architecture for Qubit One — module structure, ordering, routes and role-aware visibility across the entire application."
+   205→        actions={
+   206→          canEdit ? (
+   207→            <Button size="sm" className="h-9" disabled={!dirty} onClick={save}>
+   208→              Save Changes
+   209→              {dirty && <span className="ml-1 rounded-full bg-blue-200 px-1.5 text-[10px] font-semibold text-blue-900">•</span>}
+   210→            </Button>
+   211→          ) : undefined
+   212→        }
+   213→      />
+   214→
+   215→      {!canEdit && (
+   216→        <div className="mb-4">
+   217→          <ReadOnlyBanner message="Navigation architecture changes require an Administrator. You can preview role visibility." />
+   218→        </div>
+   219→      )}
+   220→
+   221→      {dirty && canEdit && (
+   222→        <p className="mb-4 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-800" role="status">
+   223→          <span className="font-semibold">Unsaved changes</span> — structure, ordering or visibility edits are not live until you save.
+   224→        </p>
+   225→      )}
+   226→
+   227→      {/* Preview-as bar */}
+   228→      <SectionCard className="mb-4" contentClassName="p-4">
+   229→        <div className="flex flex-wrap items-center gap-3">
+   230→          <span className="flex h-9 w-9 items-center justify-center rounded-md bg-navy-50 text-navy-700">
+   231→            <Eye className="h-4 w-4" aria-hidden />
+   232→          </span>
+   233→          <div>
+   234→            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Role-aware preview</p>
+   235→            <Select value={previewRole} onValueChange={setPreviewRole}>
+   236→              <SelectTrigger className="mt-0.5 h-8 w-56 border-0 bg-slate-50 px-2.5 text-sm font-semibold text-slate-900 shadow-none focus:ring-1" aria-label="Preview navigation as role">
+   237→                <SelectValue />
+   238→              </SelectTrigger>
+   239→              <SelectContent>
+   240→                {navRoles.map((r) => (
+   241→                  <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>
+   242→                ))}
+   243→              </SelectContent>
+   244→            </Select>
+   245→          </div>
+   246→          <p className="max-w-lg text-xs text-muted-foreground">
+   247→            {previewing
+   248→              ? "Modules not assigned to this role are marked Hidden in the tree below — exactly what this role experiences in the sidebar."
+   249→              : "Preview how the sidebar appears for any role before publishing changes."}
+   250→          </p>
+   251→        </div>
+   252→      </SectionCard>
+   253→
+   254→      {/* Three panes */}
+   255→      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+   256→        {/* LEFT — navigation tree */}
+   257→        <SectionCard
+   258→          noPadding
+   259→          title="Navigation Tree"
+   260→          description={`${topLevel.length} top-level modules`}
+   261→          className="lg:w-72 lg:shrink-0"
+   262→          contentClassName="p-2 max-lg:max-h-72 qubit-scroll max-lg:overflow-y-auto"
+   263→        >
+   264→          <nav aria-label="Application navigation tree">
+   265→            <TreeRow depth={0} expandable expanded onClick={() => setExpanded((s) => new Set(s).add("nm-workspace"))}>
+   266→              <span className="inline-flex items-center gap-2 font-semibold text-slate-900">
+   267→                <Building2 className="h-4 w-4 text-navy-700" />
+   268→                Qubit One
+   269→              </span>
+   270→            </TreeRow>
+   271→            {renderTreeLevel(null, 1)}
+   272→          </nav>
+   273→        </SectionCard>
+   274→
+   275→        {/* CENTER — structure management */}
+   276→        <SectionCard
+   277→          noPadding
+   278→          title={`Navigation Structure — ${selected?.name ?? ""}`}
+   279→          description="Order, enable and organize modules. Structure applies org-wide after save."
+   280→          className="min-w-0 flex-1"
+   281→          actions={
+   282→            canEdit && (
+   283→              <>
+   284→                <Button variant="outline" size="sm" className="h-8" onClick={() => setAddOpen({ parent: null })}>
+   285→                  <Plus className="h-3.5 w-3.5" /> Top-level module
+   286→                </Button>
+   287→                <Button variant="outline" size="sm" className="h-8" onClick={() => setAddOpen({ parent: selected.id })}>
+   288→                  <Plus className="h-3.5 w-3.5" /> Submodule
+   289→                </Button>
+   290→              </>
+   291→            )
+   292→          }
+   293→          contentClassName="p-2"
+   294→        >
+   295→          {children.length === 0 ? (
+   296→            <EmptyState
+   297→              icon={<FolderClosed />}
+   298→              title="No submodules"
+   299→              message={selected?.parent ? "This is a leaf module — it renders directly in the sidebar." : "Add submodules to build this section of the navigation."}
+   300→            />
+   301→          ) : (
+   302→            <ul className="divide-y">
+   303→              {children.map((m, idx) => {
+   304→                const visible = roleCanSee(m, previewRole);
+   305→                return (
+   306→                  <li key={m.id} className="flex items-center gap-2 px-1.5 py-2">
+   307→                    {canEdit && (
+   308→                      <div className="flex flex-col">
+   309→                        <button
+   310→                          type="button"
+   311→                          aria-label={`Move ${m.name} up`}
+   312→                          disabled={idx === 0}
+   313→                          onClick={() => move(m, -1)}
+   314→                          className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30"
+   315→                        >
+   316→                          <ChevronUp className="h-3.5 w-3.5" />
+   317→                        </button>
+   318→                        <button
+   319→                          type="button"
+   320→                          aria-label={`Move ${m.name} down`}
+   321→                          disabled={idx === children.length - 1}
+   322→                          onClick={() => move(m, 1)}
+   323→                          className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30"
+   324→                        >
+   325→                          <ChevronDown className="h-3.5 w-3.5" />
+   326→                        </button>
+   327→                      </div>
+   328→                    )}
+   329→                    <button
+   330→                      type="button"
+   331→                      onClick={() => { setSelectedId(m.id); setExpanded((s) => new Set(s).add(m.parent!)); }}
+   332→                      className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 py-1 text-left hover:bg-slate-50"
+   333→                    >
+   334→                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-500">
+   335→                        <ModuleIcon name={m.icon} className="h-3.5 w-3.5" />
+   336→                      </span>
+   337→                      <span className="min-w-0">
+   338→                        <span className={cn("block truncate text-[13px] font-medium", m.status === "Active" ? "text-slate-900" : "text-slate-400 line-through")}>
+   339→                          {m.name}
+   340→                        </span>
+   341→                        <span className="block truncate font-mono text-[11px] text-muted-foreground">{m.route}</span>
+   342→                      </span>
+   343→                    </button>
+   344→                    <span className="hidden shrink-0 rounded border bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 sm:inline">
+   345→                      {m.visibility}
+   346→                    </span>
+   347→                    {previewing && !visible && (
+   348→                      <span className="shrink-0 rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">Hidden for role</span>
+   349→                    )}
+   350→                    {canEdit ? (
+   351→                      <Switch
+   352→                        checked={m.status === "Active"}
+   353→                        onCheckedChange={() => toggleStatus(m)}
+   354→                        aria-label={`Toggle ${m.name}`}
+   355→                        className="scale-90"
+   356→                      />
+   357→                    ) : (
+   358→                      <span className={cn("h-5 w-9 rounded-full p-0.5", m.status === "Active" ? "bg-emerald-100" : "bg-slate-200")}>
+   359→                        <span className={cn("block h-4 w-4 rounded-full bg-white shadow", m.status === "Active" && "translate-x-4")} />
+   360→                      </span>
+   361→                    )}
+   362→                    {canEdit && (
+   363→                      <DropdownMenu>
+   364→                        <DropdownMenuTrigger asChild>
+   365→                          <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400" aria-label={`Actions for ${m.name}`}>
+   366→                            <Settings2 className="h-3.5 w-3.5" />
+   367→                          </Button>
+   368→                        </DropdownMenuTrigger>
+   369→                        <DropdownMenuContent align="end" className="w-44">
+   370→                          <DropdownMenuItem onClick={() => setRenameFor(m)}>Rename</DropdownMenuItem>
+   371→                          <DropdownMenuItem onClick={() => setReparentFor(m)}>Set parent module</DropdownMenuItem>
+   372→                          <DropdownMenuSeparator />
+   373→                          <DropdownMenuItem
+   374→                            className="text-red-600 focus:text-red-700"
+   375→                            onClick={() => {
+   376→                              const kidCount = childrenOf(m.id).length;
+   377→                              if (kidCount > 0) {
+   378→                                toast({ title: "Cannot delete", description: `${m.name} has ${kidCount} submodule${kidCount === 1 ? "" : "s"}. Move or delete them first.` });
+   379→                              } else setDeleteFor(m);
+   380→                            }}
+   381→                          >
+   382→                            Delete module
+   383→                          </DropdownMenuItem>
+   384→                        </DropdownMenuContent>
+   385→                      </DropdownMenu>
+   386→                    )}
+   387→                  </li>
+   388→                );
+   389→              })}
+   390→            </ul>
+   391→          )}
+   392→        </SectionCard>
+   393→
+   394→        {/* RIGHT — module details */}
+   395→        <SectionCard noPadding className="lg:w-96 lg:shrink-0">
+   396→          <Tabs defaultValue="details">
+   397→            <div className="border-b px-4 pt-3">
+   398→              <TabsList className="grid w-full grid-cols-3">
+   399→                <TabsTrigger value="details" className="text-xs">Details</TabsTrigger>
+   400→                <TabsTrigger value="roles" className="text-xs">Role Visibility</TabsTrigger>
+   401→                <TabsTrigger value="preview" className="text-xs">Preview</TabsTrigger>
+   402→              </TabsList>
+   403→            </div>
+   404→
+   405→            <TabsContent value="details" className="px-4 pb-4 pt-3">
+   406→              {selected && (
+   407→                <>
+   408→                  <div className="mb-3 flex items-center gap-2.5">
+   409→                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-navy-50 text-navy-700">
+   410→                      <ModuleIcon name={selected.icon} className="h-4 w-4" />
+   411→                    </span>
+   412→                    <div className="min-w-0">
+   413→                      <p className="truncate text-sm font-semibold text-slate-900">{selected.name}</p>
+   414→                      <p className="font-mono text-[11px] text-muted-foreground">{selected.route}</p>
+   415→                    </div>
+   416→                  </div>
+   417→                  <div className="space-y-3.5">
+   418→                    <Field label="Module name">
+   419→                      <Input
+   420→                        defaultValue={selected.name}
+   421→                        key={`name-${selected.id}`}
+   422→                        disabled={!canEdit}
+   423→                        onBlur={(e) => e.target.value !== selected.name && dirtyFields({ name: e.target.value })}
+   424→                      />
+   425→                    </Field>
+   426→                    <div className="grid grid-cols-2 gap-3">
+   427→                      <Field label="Icon">
+   428→                        <Select
+   429→                          value={selected.icon}
+   430→                          onValueChange={(v) => dirtyFields({ icon: v })}
+   431→                          disabled={!canEdit}
+   432→                        >
+   433→                          <SelectTrigger><SelectValue /></SelectTrigger>
+   434→                          <SelectContent>
+   435→                            {Object.keys(ICONS).map((k) => (
+   436→                              <SelectItem key={k} value={k}>
+   437→                                <span className="inline-flex items-center gap-2">
+   438→                                  <ModuleIcon name={k} className="h-3.5 w-3.5" /> {k}
+   439→                                </span>
+   440→                              </SelectItem>
+   441→                            ))}
+   442→                          </SelectContent>
+   443→                        </Select>
+   444→                      </Field>
+   445→                      <Field label="Parent module">
+   446→                        <Select
+   447→                          value={selected.parent ?? "none"}
+   448→                          onValueChange={(v) => dirtyFields({ parent: v === "none" ? null : v, order: 99 })}
+   449→                          disabled={!canEdit}
+   450→                        >
+   451→                          <SelectTrigger><SelectValue /></SelectTrigger>
+   452→                          <SelectContent>
+   453→                            <SelectItem value="none">None (top level)</SelectItem>
+   454→                            {topLevel.filter((m) => m.id !== selected.id).map((m) => (
+   455→                              <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+   456→                            ))}
+   457→                          </SelectContent>
+   458→                        </Select>
+   459→                      </Field>
+   460→                    </div>
+   461→                    <Field label="Route" hint="Application route this module opens.">
+   462→                      <Input
+   463→                        key={`route-${selected.id}`}
+   464→                        defaultValue={selected.route}
+   465→                        disabled={!canEdit}
+   466→                        className="font-mono text-xs"
+   467→                        onBlur={(e) => e.target.value !== selected.route && dirtyFields({ route: e.target.value })}
+   468→                      />
+   469→                    </Field>
+   470→                    <div className="grid grid-cols-2 gap-3">
+   471→                      <Field label="Status">
+   472→                        <Select value={selected.status} onValueChange={(v) => dirtyFields({ status: v as NavModule["status"] })} disabled={!canEdit}>
+   473→                          <SelectTrigger><SelectValue /></SelectTrigger>
+   474→                          <SelectContent>
+   475→                            <SelectItem value="Active">Active</SelectItem>
+   476→                            <SelectItem value="Disabled">Disabled</SelectItem>
+   477→                          </SelectContent>
+   478→                        </Select>
+   479→                      </Field>
+   480→                      <Field label="Visibility">
+   481→                        <Select value={selected.visibility} onValueChange={(v) => dirtyFields({ visibility: v as NavModule["visibility"] })} disabled={!canEdit}>
+   482→                          <SelectTrigger><SelectValue /></SelectTrigger>
+   483→                          <SelectContent>
+   484→                            <SelectItem value="All Roles">All Roles</SelectItem>
+   485→                            <SelectItem value="Restricted">Restricted</SelectItem>
+   486→                          </SelectContent>
+   487→                        </Select>
+   488→                      </Field>
+   489→                    </div>
+   490→                    <Field label="Description">
+   491→                      <Input
+   492→                        key={`desc-${selected.id}`}
+   493→                        defaultValue={selected.description}
+   494→                        disabled={!canEdit}
+   495→                        onBlur={(e) => e.target.value !== selected.description && dirtyFields({ description: e.target.value })}
+   496→                      />
+   497→                    </Field>
+   498→                    <dl className="divide-y border-t pt-1">
+   499→                      <KV label="Allowed roles">
+   500→                        {selected.allowedRoles.includes("all")
+   501→                          ? "All employees"
+   502→                          : selected.allowedRoles.map((r) => navRoles.find((x) => x.id === r)?.label ?? r).join(", ")}
+   503→                      </KV>
+   504→                    </dl>
+   505→                  </div>
+   506→                </>
+   507→              )}
+   508→            </TabsContent>
+   509→
+   510→            <TabsContent value="roles" className="px-4 pb-4 pt-3">
+   511→              <p className="mb-3 text-xs text-muted-foreground">
+   512→                Choose which roles see <span className="font-medium text-slate-700">{selected?.name}</span> in their sidebar.
+   513→              </p>
+   514→              <ul className="space-y-1">
+   515→                {navRoles.map((r) => {
+   516→                  const isAll = selected?.allowedRoles.includes("all");
+   517→                  const checked = isAll || selected?.allowedRoles.includes(r.id);
+   518→                  return (
+   519→                    <li key={r.id} className="flex items-center justify-between gap-2 rounded-md px-2 py-2 hover:bg-slate-50">
+   520→                      <label className="flex items-center gap-2.5 text-[13px] text-slate-700">
+   521→                        <Checkbox
+   522→                          checked={!!checked}
+   523→                          disabled={!canEdit || isAll || r.id === "administrator"}
+   524→                          onCheckedChange={(v) => {
+   525→                            mutate((draft) => {
+   526→                              const m = draft.find((x) => x.id === selected.id)!;
+   527→                              if (v) m.allowedRoles = [...m.allowedRoles.filter((x) => x !== "all"), r.id];
+   528→                              else m.allowedRoles = m.allowedRoles.filter((x) => x !== r.id);
+   529→                            });
+   530→                          }}
+   531→                          aria-label={`${r.label} can see ${selected?.name}`}
+   532→                        />
+   533→                        {r.label}
+   534→                      </label>
+   535→                      {isAll && <span className="text-[11px] text-muted-foreground">All-roles module</span>}
+   536→                    </li>
+   537→                  );
+   538→                })}
+   539→              </ul>
+   540→              <p className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-[11px] text-muted-foreground">
+   541→                Restricted modules must list explicit roles. Administrators always retain access for governance.
+   542→              </p>
+   543→            </TabsContent>
+   544→
+   545→            <TabsContent value="preview" className="px-4 pb-4 pt-3">
+   546→              <Field label="Preview as role">
+   547→                <Select value={previewTabRole} onValueChange={setPreviewTabRole}>
+   548→                  <SelectTrigger><SelectValue /></SelectTrigger>
+   549→                  <SelectContent>
+   550→                    {navRoles.map((r) => (
+   551→                      <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>
+   552→                    ))}
+   553→                  </SelectContent>
+   554→                </Select>
+   555→              </Field>
+   556→              <div className="mt-3 rounded-lg bg-navy-900 p-3">
+   557→                <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-widest text-slate-500">Sidebar preview</p>
+   558→                <ul className="space-y-0.5">
+   559→                  {topLevel
+   560→                    .filter((m) => roleCanSee(m, previewTabRole))
+   561→                    .map((m) => (
+   562→                      <li
+   563→                        key={m.id}
+   564→                        className="flex items-center gap-2.5 rounded-md bg-navy-800/60 px-2.5 py-1.5 text-[13px] text-slate-200"
+   565→                      >
+   566→                        <ModuleIcon name={m.icon} className="h-4 w-4 text-slate-400" />
+   567→                        {m.name}
+   568→                      </li>
+   569→                    ))}
+   570→                  {topLevel.filter((m) => roleCanSee(m, previewTabRole)).length === 0 && (
+   571→                    <li className="px-2 py-4 text-center text-xs text-slate-500">No modules visible for this role.</li>
+   572→                  )}
+   573→                </ul>
+   574→              </div>
+   575→              <p className="mt-3 text-[11px] text-muted-foreground">
+   576→                {topLevel.filter((m) => roleCanSee(m, previewTabRole)).length} of {topLevel.length} top-level modules visible to{" "}
+   577→                {navRoles.find((r) => r.id === previewTabRole)?.label}.
+   578→              </p>
+   579→            </TabsContent>
+   580→          </Tabs>
+   581→        </SectionCard>
+   582→      </div>
+   583→
+   584→      {/* Dialogs */}
+   585→      {renameFor && (
+   586→        <FormDialog
+   587→          open
+   588→          onOpenChange={(o) => !o && setRenameFor(null)}
+   589→          title={`Rename — ${renameFor.name}`}
+   590→          submitLabel="Rename"
+   591→          onSubmit={() => {
+   592→            const input = document.getElementById("rename-input") as HTMLInputElement | null;
+   593→            const value = input?.value.trim();
+   594→            if (value) mutate((draft) => { draft.find((m) => m.id === renameFor.id)!.name = value; });
+   595→            toast({ title: "Module renamed", description: "Remember to save changes to apply navigation updates." });
+   596→            setRenameFor(null);
+   597→          }}
+   598→        >
+   599→          <Field label="Module name" required>
+   600→            <Input id="rename-input" defaultValue={renameFor.name} autoFocus />
+   601→          </Field>
+   602→        </FormDialog>
+   603→      )}
+   604→
+   605→      {reparentFor && (
+   606→        <FormDialog
+   607→          open
+   608→          onOpenChange={(o) => !o && setReparentFor(null)}
+   609→          title={`Set parent — ${reparentFor.name}`}
+   610→          submitLabel="Move module"
+   611→          onSubmit={() => {
+   612→            toast({ title: "Module moved", description: "Parent updated. Save changes to apply." });
+   613→            setReparentFor(null);
+   614→          }}
+   615→        >
+   616→          <Field label="New parent" required>
+   617→            <Select
+   618→              defaultValue={reparentFor.parent ?? "none"}
+   619→              onValueChange={(v) =>
+   620→                mutate((draft) => {
+   621→                  const m = draft.find((x) => x.id === reparentFor.id)!;
+   622→                  m.parent = v === "none" ? null : v;
+   623→                  m.order = 99;
+   624→                })
+   625→              }
+   626→            >
+   627→              <SelectTrigger><SelectValue /></SelectTrigger>
+   628→              <SelectContent>
+   629→                <SelectItem value="none">None (top level)</SelectItem>
+   630→                {topLevel.filter((m) => m.id !== reparentFor.id).map((m) => (
+   631→                  <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+   632→                ))}
+   633→              </SelectContent>
+   634→            </Select>
+   635→          </Field>
+   636→        </FormDialog>
+   637→      )}
+   638→
+   639→      {addOpen && (
+   640→        <FormDialog
+   641→          open
+   642→          onOpenChange={(o) => !o && setAddOpen(null)}
+   643→          title={addOpen.parent ? "Add Submodule" : "Add Top-level Module"}
+   644→          submitLabel="Create module"
+   645→          onSubmit={() => {
+   646→            toast({ title: "Module created", description: "It appears in the tree once saved. Configure route and roles in Details." });
+   647→            setAddOpen(null);
+   648→          }}
+   649→        >
+   650→          <Field label="Module name" required>
+   651→            <Input placeholder="e.g. Reports" />
+   652→          </Field>
+   653→          <div className="grid grid-cols-2 gap-3">
+   654→            <Field label="Icon">
+   655→              <Select defaultValue="folder">
+   656→                <SelectTrigger><SelectValue /></SelectTrigger>
+   657→                <SelectContent>
+   658→                  {Object.keys(ICONS).slice(0, 12).map((k) => (
+   659→                    <SelectItem key={k} value={k}>{k}</SelectItem>
+   660→                  ))}
+   661→                </SelectContent>
+   662→              </Select>
+   663→            </Field>
+   664→            <Field label="Route" required>
+   665→              <Input placeholder="/reports" className="font-mono text-xs" />
+   666→            </Field>
+   667→          </div>
+   668→          {addOpen.parent && (
+   669→            <p className="rounded-md bg-slate-50 px-3 py-2 text-[11px] text-muted-foreground">
+   670→              Parent: <span className="font-medium text-slate-700">{modules.find((m) => m.id === addOpen.parent)?.name}</span>
+   671→            </p>
+   672→          )}
+   673→        </FormDialog>
+   674→      )}
+   675→
+   676→      <ConfirmDialog
+   677→        open={!!deleteFor}
+   678→        onOpenChange={(o) => !o && setDeleteFor(null)}
+   679→        title={`Delete ${deleteFor?.name}?`}
+   680→        destructive
+   681→        confirmLabel="Delete module"
+   682→        description="Users lose access to this navigation entry immediately after save. Routes and permissions are retained for restore."
+   683→        onConfirm={() => {
+   684→          mutate((draft) => draft.filter((m) => m.id !== deleteFor!.id));
+   685→          toast({ title: "Module deleted", description: "Save changes to apply. Restore is available from audit history." });
+   686→          setDeleteFor(null);
+   687→        }}
+   688→      />
+   689→    </div>
+   690→  );
+   691→}
+   692→

@@ -166,7 +166,7 @@ export function OrganizationStructureScreen() {
           ariaLabel="Search organization"
         />
         <Select value={deptFilter} onValueChange={setDeptFilter}>
-          <SelectTrigger className="h-9 w-full sm:w-44" aria-label="Filter by department">
+          <SelectTrigger className="h-10 w-full rounded-lg sm:w-44" aria-label="Filter by department">
             <SelectValue placeholder="All departments" />
           </SelectTrigger>
           <SelectContent>
@@ -185,7 +185,7 @@ export function OrganizationStructureScreen() {
 
       {/* People search results */}
       {peopleMatches.length > 0 && (
-        <div className="mb-4 rounded-lg border bg-white p-3">
+        <div className="qubit-card mb-5 p-3">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">People matching “{query}”</p>
           <div className="flex flex-wrap gap-2">
             {peopleMatches.map((p) => (
@@ -193,7 +193,7 @@ export function OrganizationStructureScreen() {
                 key={p.id}
                 type="button"
                 onClick={() => setDrawerEmployee(p)}
-                className="flex items-center gap-2 rounded-full border bg-white py-1 pl-1 pr-3 text-left transition-colors hover:border-navy-300 hover:bg-navy-50/60"
+                className="flex items-center gap-2 rounded-full border border-slate-200/90 bg-white py-1 pl-1 pr-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-colors duration-150 hover:border-blue-200 hover:bg-blue-50/50"
               >
                 <Avatar name={p.name} size="xs" />
                 <span className="text-xs">
@@ -207,23 +207,27 @@ export function OrganizationStructureScreen() {
       )}
 
       {/* Company root */}
-      <div className="mx-auto max-w-md">
+      <div className="mx-auto w-full max-w-3xl">
         <button
           type="button"
           onClick={() => setDrawerEmployee(ceo)}
-          className="group w-full rounded-xl border bg-white p-4 text-center shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors hover:border-navy-300"
+          aria-label={`Open preview for ${ceo.name}`}
+          className="qubit-card qubit-card-hover flex w-full flex-col items-center gap-4 px-5 py-4 text-center sm:flex-row sm:text-left"
         >
-          <p className="flex items-center justify-center gap-1.5 text-[15px] font-semibold text-slate-900">
-            <Building2 className="h-4 w-4 text-navy-600" aria-hidden />
-            {COMPANY_NAME}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {COMPANY_EMPLOYEES.toLocaleString("en-IN")} employees · 8 departments · 7 locations
-          </p>
-          <span className="mt-3 inline-flex items-center gap-2.5 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2 transition-colors group-hover:border-navy-200 group-hover:bg-navy-50">
-            <Avatar name={ceo.name} size="md" />
+          <span className="qubit-icon-tile qubit-icon-tile-accent h-14 w-14 [&_svg]:h-7 [&_svg]:w-7">
+            <Building2 aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-lg font-bold tracking-tight text-slate-900">{COMPANY_NAME}</span>
+            <span className="mt-0.5 block text-[13px] text-muted-foreground">
+              {COMPANY_EMPLOYEES.toLocaleString("en-IN")} employees · 8 departments · 7 locations
+            </span>
+          </span>
+          <span className="hidden h-12 w-px bg-slate-100 sm:block" aria-hidden />
+          <span className="flex items-center gap-2.5">
+            <Avatar name={ceo.name} size="lg" />
             <span className="text-left">
-              <span className="block text-sm font-medium text-slate-900">{ceo.name}</span>
+              <span className="block text-sm font-semibold text-slate-900">{ceo.name}</span>
               <span className="block text-xs text-muted-foreground">{ceo.title}</span>
             </span>
           </span>
@@ -245,13 +249,13 @@ export function OrganizationStructureScreen() {
 
       {/* Departments grid */}
       {visibleDepts.length === 0 ? (
-        <div className="rounded-lg border bg-white">
+        <div className="qubit-card">
           <p className="px-6 py-10 text-center text-sm text-muted-foreground">
             No departments match “{query}”. Clear the search or filter to see the full structure.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {visibleDepts.map((d) => {
             const Icon = DEPT_ICONS[d.name] ?? Building2;
             const tone = DEPT_TONES[d.name] ?? DEPT_TONES.Operations;
@@ -261,18 +265,18 @@ export function OrganizationStructureScreen() {
               <div
                 key={d.id}
                 className={cn(
-                  "flex flex-col rounded-lg border bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors",
-                  isOpen ? "border-navy-300" : "hover:border-slate-300",
+                  "qubit-card qubit-card-hover flex flex-col",
+                  isOpen && "border-blue-200 ring-1 ring-blue-100",
                 )}
               >
-                <div className="flex items-start justify-between gap-2 px-3.5 pt-3.5">
-                  <div className="flex min-w-0 items-start gap-2.5">
-                    <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-md", tone.bg, tone.fg)}>
-                      <Icon className="h-4 w-4" aria-hidden />
+                <div className="flex items-start justify-between gap-2 p-4 pb-0">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className={cn("qubit-icon-tile h-11 w-11 [&_svg]:h-[22px] [&_svg]:w-[22px]", tone.bg, tone.fg)}>
+                      <Icon aria-hidden />
                     </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-slate-900">{d.name}</p>
-                      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{d.code}</p>
+                    <div className="min-w-0 pt-0.5">
+                      <p className="truncate text-[15px] font-semibold tracking-tight text-slate-900">{d.name}</p>
+                      <p className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">{d.code}</p>
                     </div>
                   </div>
                   <DropdownMenu>
@@ -302,30 +306,38 @@ export function OrganizationStructureScreen() {
                 <button
                   type="button"
                   onClick={() => head && setDrawerEmployee(head)}
-                  className="mt-3 mx-3.5 flex items-center gap-2.5 rounded-md border border-transparent px-2 py-1.5 text-left transition-colors hover:border-slate-200 hover:bg-slate-50"
+                  className="mx-4 mt-3.5 flex items-center gap-2.5 rounded-lg border border-transparent px-2 py-1.5 text-left transition-colors duration-150 hover:border-slate-200 hover:bg-slate-50"
                   aria-label={`Open preview for ${head?.name}`}
                 >
-                  <Avatar name={head?.name ?? "?"} size="sm" />
+                  <Avatar name={head?.name ?? "?"} size="md" />
                   <span className="min-w-0">
                     <span className="block truncate text-[13px] font-medium text-slate-800">{head?.name}</span>
                     <span className="block truncate text-[11px] text-muted-foreground">{head?.title}</span>
                   </span>
                 </button>
 
-                <div className="mt-3 flex items-center gap-3 border-t px-3.5 py-2.5 text-[11px] text-muted-foreground">
-                  <span className="inline-flex items-center gap-1">
-                    <Users className="h-3 w-3" aria-hidden /> {d.employeeCount}
+                <div className="mt-3.5 grid grid-cols-3 divide-x divide-slate-100 border-t border-slate-100 px-2 py-2.5 text-[11px] text-muted-foreground">
+                  <span className="flex flex-col items-center gap-0.5">
+                    <span className="inline-flex items-center gap-1 text-[13px] font-semibold tabular-nums text-slate-800">
+                      <Users className="h-3.5 w-3.5 text-slate-400" aria-hidden /> {d.employeeCount}
+                    </span>
                   </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Building2 className="h-3 w-3" aria-hidden /> {d.subDepartments.length} sub-depts
+                  <span className="flex flex-col items-center gap-0.5 px-1">
+                    <span className="inline-flex items-center gap-1 text-[13px] font-semibold tabular-nums text-slate-800">
+                      <Building2 className="h-3.5 w-3.5 text-slate-400" aria-hidden /> {d.subDepartments.length}
+                    </span>
+                    <span className="truncate">sub-depts</span>
                   </span>
-                  <span className="inline-flex items-center gap-1 truncate">
-                    <Settings2 className="h-3 w-3" aria-hidden /> {d.locations.length} locations
+                  <span className="flex flex-col items-center gap-0.5 px-1">
+                    <span className="inline-flex items-center gap-1 text-[13px] font-semibold tabular-nums text-slate-800">
+                      <Settings2 className="h-3.5 w-3.5 text-slate-400" aria-hidden /> {d.locations.length}
+                    </span>
+                    <span className="truncate">locations</span>
                   </span>
                 </div>
 
                 {isOpen && (
-                  <div className="border-t bg-slate-50/60 px-3.5 py-2.5">
+                  <div className="border-t border-slate-100 bg-slate-50/60 px-4 py-2.5">
                     <ul className="space-y-1">
                       {d.subDepartments.map((s) => (
                         <li key={s.id} className="flex items-center justify-between gap-2 text-xs">
@@ -344,7 +356,7 @@ export function OrganizationStructureScreen() {
                   type="button"
                   onClick={() => toggle(d.id)}
                   aria-expanded={isOpen}
-                  className="mt-auto flex items-center justify-center gap-1 border-t py-2 text-[11px] font-medium text-navy-600 transition-colors hover:bg-navy-50"
+                  className="mt-auto flex items-center justify-center gap-1 border-t border-slate-100 py-2.5 text-[11.5px] font-medium text-blue-600 transition-colors duration-150 hover:bg-blue-50/60 hover:text-blue-700"
                 >
                   {isOpen ? "Hide sub-departments" : `Show ${d.subDepartments.length} sub-departments`}
                 </button>

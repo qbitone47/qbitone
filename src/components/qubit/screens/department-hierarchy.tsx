@@ -180,7 +180,7 @@ export function DepartmentHierarchyScreen() {
               }
             >
               <span className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 shrink-0 text-navy-600" aria-hidden />
+                <Building2 className="h-4 w-4 shrink-0 text-blue-600" aria-hidden />
                 <span className="truncate font-medium text-slate-800">{COMPANY_NAME}</span>
               </span>
             </TreeRow>
@@ -204,7 +204,7 @@ export function DepartmentHierarchyScreen() {
                   >
                     <span className="flex items-center gap-2">
                       <Icon
-                        className={cn("h-3.5 w-3.5 shrink-0", isSelected ? "text-navy-700" : "text-slate-400")}
+                        className={cn("h-3.5 w-3.5 shrink-0", isSelected ? "text-blue-700" : "text-slate-400")}
                         aria-hidden
                       />
                       <span className="truncate">{dept.name}</span>
@@ -238,8 +238,8 @@ export function DepartmentHierarchyScreen() {
           className="min-w-0 flex-1"
           title={
             <span className="flex items-center gap-2.5">
-              <span className={cn("flex h-8 w-8 items-center justify-center rounded-md", iconTone.bg, iconTone.fg)}>
-                <SelectedIcon className="h-4 w-4" aria-hidden />
+              <span className={cn("qubit-icon-tile h-10 w-10", iconTone.bg, iconTone.fg, "[&_svg]:h-5 [&_svg]:w-5")}>
+                <SelectedIcon aria-hidden />
               </span>
               <span>{selected.name}</span>
               <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
@@ -289,7 +289,7 @@ export function DepartmentHierarchyScreen() {
             <ReadOnlyBanner message="You have view-only access — department changes require structure edit permission." />
           )}
 
-          <div className={cn("grid gap-3 sm:grid-cols-3", !canEdit && "mt-3")}>
+          <div className={cn("grid gap-4 sm:grid-cols-3", !canEdit && "mt-3")}>
             <StatTile icon={<Users />} value={selected.employeeCount} label="Employees" />
             <StatTile icon={<Building2 />} value={selected.subDepartments.length} label="Sub-departments" />
             <StatTile icon={<MapPin />} value={selected.locations.length} label="Locations" />
@@ -339,7 +339,7 @@ export function DepartmentHierarchyScreen() {
                     {selected.locations.map((loc) => (
                       <span
                         key={loc}
-                        className="inline-flex items-center gap-1 rounded-full border bg-white px-2.5 py-0.5 text-xs text-slate-600"
+                        className="inline-flex items-center gap-1 rounded-full border border-slate-200/90 bg-white px-2.5 py-0.5 text-xs text-slate-600 shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
                       >
                         <MapPin className="h-3 w-3 text-slate-400" aria-hidden />
                         {loc}
@@ -362,7 +362,7 @@ export function DepartmentHierarchyScreen() {
                   message="This department has no sub-teams yet."
                 />
               ) : (
-                <ul className="divide-y rounded-md border">
+                <ul className="qubit-card divide-y divide-slate-100 overflow-hidden">
                   {selected.subDepartments.map((sub) => {
                     const subHead = getEmployee(sub.headId);
                     const row = (
@@ -402,7 +402,7 @@ export function DepartmentHierarchyScreen() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="mt-3 w-full border-dashed text-navy-700 hover:bg-navy-50 hover:text-navy-800"
+                  className="mt-3 w-full border-dashed text-blue-600 hover:bg-blue-50/60 hover:text-blue-700"
                   onClick={() => setAddOpen(true)}
                 >
                   <Plus className="h-3.5 w-3.5" /> Add sub-department
@@ -419,7 +419,7 @@ export function DepartmentHierarchyScreen() {
                   message="No employee records are mapped to this department yet."
                 />
               ) : (
-                <ul className="divide-y rounded-md border">
+                <ul className="qubit-card divide-y divide-slate-100 overflow-hidden">
                   {deptPeople.map((p) => (
                     <li key={p.id}>
                       <button
@@ -472,14 +472,14 @@ export function DepartmentHierarchyScreen() {
           }}
         >
           <Field label="Department name" required>
-            <Input defaultValue={selected.name} />
+            <Input defaultValue={selected.name} className="h-10" />
           </Field>
           <Field label="Department code" required hint="Short code used across modules (e.g. SAL, FIN).">
-            <Input defaultValue={selected.code} maxLength={4} />
+            <Input defaultValue={selected.code} maxLength={4} className="h-10" />
           </Field>
           <Field label="Department head" required>
             <Select defaultValue={selected.headId}>
-              <SelectTrigger>
+              <SelectTrigger className="h-10">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -551,11 +551,11 @@ function AddChildDepartmentDialog({
       }}
     >
       <Field label="Department name" required>
-        <Input placeholder="e.g. Channel Partners" />
+        <Input placeholder="e.g. Channel Partners" className="h-10" />
       </Field>
       <Field label="Department head" hint="Optional — can be assigned later.">
         <Select>
-          <SelectTrigger>
+          <SelectTrigger className="h-10">
             <SelectValue placeholder="Select an employee" />
           </SelectTrigger>
           <SelectContent>
@@ -568,7 +568,7 @@ function AddChildDepartmentDialog({
         </Select>
       </Field>
       <Field label="Employee count" required>
-        <Input type="number" min={0} placeholder="0" />
+        <Input type="number" min={0} placeholder="0" className="h-10" />
       </Field>
     </FormDialog>
   );

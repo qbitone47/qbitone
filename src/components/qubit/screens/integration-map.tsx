@@ -81,7 +81,7 @@ function IntegrationCard({
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full rounded-lg border bg-white p-3.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all hover:border-navy-300 hover:shadow-[0_2px_6px_rgba(15,23,42,0.08)]",
+        "qubit-card qubit-card-hover w-full p-3.5 text-left",
         integration.status === "Warning" && "border-amber-200",
         integration.status === "Configuration Required" && "border-violet-200",
         integration.status === "Disconnected" && "opacity-75",
@@ -90,8 +90,8 @@ function IntegrationCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-50 text-slate-500">
-            <Icon className="h-4 w-4" aria-hidden />
+          <span className="qubit-icon-tile h-10 w-10 bg-slate-100 text-slate-600 [&_svg]:h-5 [&_svg]:w-5">
+            <Icon aria-hidden />
           </span>
           <div className="min-w-0">
             <p className="truncate text-[13px] font-semibold text-slate-900">{integration.name}</p>
@@ -235,8 +235,8 @@ export function IntegrationMapScreen() {
               aria-selected={isActive}
               onClick={() => setFilter(f.id)}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                isActive ? "border-navy-700 bg-navy-900 text-white" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors duration-150",
+                isActive ? "border-blue-600 bg-blue-600 text-white shadow-[0_1px_2px_rgba(37,99,235,0.3)]" : "border-slate-200/90 bg-white text-slate-600 shadow-[0_1px_2px_rgba(15,23,42,0.03)] hover:border-blue-200 hover:bg-blue-50/50",
               )}
             >
               {f.label}
@@ -278,7 +278,7 @@ export function IntegrationMapScreen() {
           </div>
 
           <div className="flex flex-col items-center justify-center gap-5">
-            <div ref={hubRef} className="w-full rounded-xl border border-navy-200 bg-gradient-to-b from-navy-900 to-navy-950 p-5 text-center text-white shadow-lg">
+            <div ref={hubRef} className="w-full rounded-xl border border-navy-800 bg-gradient-to-b from-navy-900 to-navy-950 p-5 text-center text-white shadow-[0_12px_32px_-12px_rgba(13,27,51,0.45)]">
               <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-800 text-xl font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
                 Q
               </span>
@@ -319,12 +319,12 @@ export function IntegrationMapScreen() {
       </div>
 
       {/* Mobile / tablet grid */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:hidden">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:hidden">
         {shown.map((i) => (
           <IntegrationCard key={i.id} integration={i} onClick={() => setDetail(i)} />
         ))}
         {shown.length === 0 && (
-          <p className="col-span-full rounded-lg border bg-white px-6 py-10 text-center text-sm text-muted-foreground">
+          <p className="qubit-card col-span-full px-6 py-10 text-center text-sm text-muted-foreground">
             No integrations with this status.
           </p>
         )}
@@ -376,11 +376,11 @@ export function IntegrationMapScreen() {
           <>
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <StatusBadge status={detail.status} />
-              <span className="rounded border bg-slate-50 px-1.5 py-0.5 text-[11px] font-medium text-slate-500">{detail.environment}</span>
+              <span className="rounded-md border border-slate-200/90 bg-slate-50 px-1.5 py-0.5 text-[11px] font-medium text-slate-500">{detail.environment}</span>
               <span className="text-xs text-muted-foreground">Health {detail.health}%</span>
             </div>
             <p className="mb-4 text-sm text-slate-600">{detail.description}</p>
-            <dl className="divide-y">
+            <dl className="divide-y divide-slate-100">
               <KV label="API status">{detail.apiStatus}</KV>
               <KV label="Last synchronization">{detail.lastSync}</KV>
               <KV label="Data direction">{detail.dataDirection}</KV>
@@ -393,7 +393,7 @@ export function IntegrationMapScreen() {
                 </span>
               </KV>
             </dl>
-            <div className="mt-5 border-t pt-4">
+            <div className="mt-5 border-t border-slate-100 pt-4">
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Recent activity</p>
               <ul className="space-y-2.5">
                 {detail.logs.map((l, i) => (

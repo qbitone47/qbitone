@@ -2,9 +2,13 @@
 
 import * as React from "react";
 import {
+  ArrowLeft,
+  ArrowRight,
   Bell,
   BookOpen,
   Check,
+  ChevronDown,
+  ChevronRight,
   CircleHelp,
   LifeBuoy,
   LogOut,
@@ -46,7 +50,7 @@ export function TopBar({
   onOpenPalette: () => void;
   onPreviewModuleCleared?: () => void;
 }) {
-  const { screen } = useQubitNav();
+  const { screen, canBack, canForward, back, forward } = useQubitNav();
   const { role, setRole, isAdmin } = useRole();
   const { toast } = useToast();
   const meta = screenMeta(screen);
@@ -63,7 +67,7 @@ export function TopBar({
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b bg-white px-3 md:px-5">
+    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-slate-200/80 bg-white px-3 md:px-5">
       {/* Mobile nav */}
       <Button
         variant="ghost"
@@ -75,24 +79,45 @@ export function TopBar({
         <Menu className="h-5 w-5" />
       </Button>
 
+      {/* Back / forward */}
+      <div className="hidden items-center gap-1.5 md:flex">
+        <button
+          type="button"
+          aria-label="Navigate back"
+          disabled={!canBack}
+          onClick={back}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors duration-150 hover:border-slate-300 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+        </button>
+        <button
+          type="button"
+          aria-label="Navigate forward"
+          disabled={!canForward}
+          onClick={forward}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-colors duration-150 hover:border-slate-300 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <ArrowRight className="h-4 w-4" aria-hidden />
+        </button>
+      </div>
+
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="min-w-0 flex-1 overflow-hidden">
         <ol className="flex flex-nowrap items-center gap-1.5 text-[13px]">
           <li className="hidden items-center gap-1.5 sm:flex">
             <QubitMark className="h-5 w-5 rounded-md text-[10px]" />
             <span className="font-medium text-slate-500">Qubit One</span>
-            <span className="text-slate-300" aria-hidden>/</span>
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300" aria-hidden />
           </li>
-          <li className="text-slate-400" aria-hidden>/</li>
           <li className="flex items-center gap-1">
             <button
               type="button"
               onClick={onPreviewModuleCleared}
-              className="rounded px-1 py-0.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+              className="hidden rounded px-1 py-0.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 min-[480px]:block"
             >
               Enterprise
             </button>
-            <span className="text-slate-300" aria-hidden>/</span>
+            <ChevronRight className="hidden h-3.5 w-3.5 text-slate-300 min-[480px]:block" aria-hidden />
             <span aria-current="page" className="truncate px-1 py-0.5 font-medium text-slate-800">
               {meta.num}. {meta.title}
             </span>
@@ -106,11 +131,11 @@ export function TopBar({
           type="button"
           onClick={onOpenPalette}
           aria-label="Search anything (Command palette)"
-          className="hidden h-9 w-60 items-center gap-2 rounded-md border border-slate-200 bg-slate-50/80 px-3 text-sm text-slate-400 transition-colors hover:border-slate-300 hover:bg-slate-50 lg:flex"
+          className="hidden h-10 items-center gap-2.5 rounded-full border border-slate-200 bg-slate-50/80 pl-4 pr-2.5 text-sm text-slate-400 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 lg:flex lg:w-72 xl:w-80"
         >
-          <Search className="h-3.5 w-3.5" aria-hidden />
+          <Search className="h-4 w-4" aria-hidden />
           <span className="flex-1 text-left">Search anything…</span>
-          <kbd className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-500">⌘K</kbd>
+          <span className="qubit-kbd">⌘ K</span>
         </button>
         <Button variant="ghost" size="icon" className="h-9 w-9 lg:hidden" aria-label="Search" onClick={onOpenPalette}>
           <Search className="h-4.5 w-4.5" />
@@ -198,7 +223,7 @@ export function TopBar({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-slate-100"
+              className="flex items-center gap-1.5 rounded-full py-1 pl-1 pr-1.5 transition-colors hover:bg-slate-100"
               aria-label="User menu"
             >
               <Avatar name="Sagar Singh" size="sm" />
@@ -206,6 +231,7 @@ export function TopBar({
                 <span className="block text-[13px] font-medium leading-tight text-slate-800">Sagar Singh</span>
                 <span className="block text-[11px] leading-tight text-muted-foreground">Administrator</span>
               </span>
+              <ChevronDown className="hidden h-3.5 w-3.5 text-slate-400 md:block" aria-hidden />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-64">

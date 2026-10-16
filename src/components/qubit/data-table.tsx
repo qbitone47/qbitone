@@ -90,10 +90,10 @@ export function DataTable<T>({
   const cellPad = dense ? "px-3 py-2" : "px-3 py-2.5 md:px-4 md:py-3";
 
   return (
-    <div className="overflow-hidden rounded-lg border bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+    <div className="qubit-card overflow-hidden">
       {/* Mobile: structured cards */}
       {mobileCard && (
-        <div className="md:hidden divide-y" role="list">
+        <div className="divide-y divide-slate-100 md:hidden" role="list">
           {visible.length === 0 ? (
             <EmptyState icon={<Inbox />} title={emptyTitle} message={emptyMessage} />
           ) : (
@@ -115,7 +115,7 @@ export function DataTable<T>({
       <div className={cn("qubit-scroll overflow-x-auto", mobileCard && "hidden md:block")}>
         <table className="w-full border-collapse text-sm" style={{ minWidth: columns.length * 110 }} aria-label={caption}>
           <thead className="sticky top-0 z-10">
-            <tr className="border-b border-slate-200 bg-slate-50/95 backdrop-blur-sm">
+            <tr className="border-b border-slate-200/90 bg-slate-50/95 backdrop-blur-sm">
               {columns.map((col) => {
                 const sortedActive = sort?.key === col.key;
                 return (
@@ -124,7 +124,7 @@ export function DataTable<T>({
                     scope="col"
                     aria-sort={sortedActive ? (sort!.dir === "asc" ? "ascending" : "descending") : col.sortable ? "none" : undefined}
                     className={cn(
-                      "whitespace-nowrap px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 md:px-4",
+                      "whitespace-nowrap px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500 md:px-4",
                       col.headerClassName,
                       col.hideBelow && HIDE_BELOW_CLS[col.hideBelow],
                       col.sortable && "cursor-pointer select-none hover:text-slate-800",
@@ -168,8 +168,8 @@ export function DataTable<T>({
                       : undefined
                   }
                   className={cn(
-                    "transition-colors",
-                    onRowClick && "cursor-pointer hover:bg-navy-50/50 focus-visible:bg-navy-50",
+                    "transition-colors duration-150",
+                    onRowClick && "cursor-pointer hover:bg-blue-50/40 focus-visible:bg-blue-50/60",
                     rowClassName?.(row),
                   )}
                 >
@@ -190,7 +190,7 @@ export function DataTable<T>({
 
       {/* Pagination */}
       {effectivePageSize > 0 && total > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/50 px-4 py-2.5">
           <p className="text-xs text-muted-foreground" aria-live="polite">
             Showing <span className="font-medium text-slate-700">{safePage * effectivePageSize + 1}–{Math.min((safePage + 1) * effectivePageSize, total)}</span> of{" "}
             <span className="font-medium text-slate-700">{total}</span>

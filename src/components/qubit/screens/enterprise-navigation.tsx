@@ -227,8 +227,8 @@ export function EnterpriseNavigationScreen() {
       {/* Preview-as bar */}
       <SectionCard className="mb-4" contentClassName="p-4">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-md bg-navy-50 text-navy-700">
-            <Eye className="h-4 w-4" aria-hidden />
+          <span className="qubit-icon-tile qubit-icon-tile-accent h-10 w-10">
+            <Eye aria-hidden />
           </span>
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Role-aware preview</p>
@@ -264,7 +264,7 @@ export function EnterpriseNavigationScreen() {
           <nav aria-label="Application navigation tree">
             <TreeRow depth={0} expandable expanded onClick={() => setExpanded((s) => new Set(s).add("nm-workspace"))}>
               <span className="inline-flex items-center gap-2 font-semibold text-slate-900">
-                <Building2 className="h-4 w-4 text-navy-700" />
+                <Building2 className="h-4 w-4 text-blue-600" />
                 Qubit One
               </span>
             </TreeRow>
@@ -329,9 +329,9 @@ export function EnterpriseNavigationScreen() {
                     <button
                       type="button"
                       onClick={() => { setSelectedId(m.id); setExpanded((s) => new Set(s).add(m.parent!)); }}
-                      className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 py-1 text-left hover:bg-slate-50"
+                      className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 py-1 text-left transition-colors duration-150 hover:bg-slate-100/70"
                     >
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-500">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
                         <ModuleIcon name={m.icon} className="h-3.5 w-3.5" />
                       </span>
                       <span className="min-w-0">
@@ -341,7 +341,7 @@ export function EnterpriseNavigationScreen() {
                         <span className="block truncate font-mono text-[11px] text-muted-foreground">{m.route}</span>
                       </span>
                     </button>
-                    <span className="hidden shrink-0 rounded border bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 sm:inline">
+                    <span className="hidden shrink-0 rounded-md border border-slate-200/90 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 sm:inline">
                       {m.visibility}
                     </span>
                     {previewing && !visible && (
@@ -406,8 +406,8 @@ export function EnterpriseNavigationScreen() {
               {selected && (
                 <>
                   <div className="mb-3 flex items-center gap-2.5">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-navy-50 text-navy-700">
-                      <ModuleIcon name={selected.icon} className="h-4 w-4" />
+                    <span className="qubit-icon-tile qubit-icon-tile-accent h-10 w-10">
+                      <ModuleIcon name={selected.icon} className="h-5 w-5" />
                     </span>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-slate-900">{selected.name}</p>
@@ -553,15 +553,15 @@ export function EnterpriseNavigationScreen() {
                   </SelectContent>
                 </Select>
               </Field>
-              <div className="mt-3 rounded-lg bg-navy-900 p-3">
-                <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-widest text-slate-500">Sidebar preview</p>
+              <div className="mt-3 rounded-xl border border-slate-200/90 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+                <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-widest text-slate-400">Sidebar preview</p>
                 <ul className="space-y-0.5">
                   {topLevel
                     .filter((m) => roleCanSee(m, previewTabRole))
                     .map((m) => (
                       <li
                         key={m.id}
-                        className="flex items-center gap-2.5 rounded-md bg-navy-800/60 px-2.5 py-1.5 text-[13px] text-slate-200"
+                        className="flex items-center gap-2.5 rounded-lg bg-slate-50 px-2.5 py-1.5 text-[13px] font-medium text-slate-600"
                       >
                         <ModuleIcon name={m.icon} className="h-4 w-4 text-slate-400" />
                         {m.name}

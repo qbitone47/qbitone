@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronRight, Search, X } from "lucide-react";
+import { ArrowRight, ChevronRight, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -56,17 +56,17 @@ export function StatusBadge({
 }
 
 // ============================================================
-// Avatar — initials, deterministic muted enterprise palette
+// Avatar — initials, deterministic enterprise palette
 // ============================================================
 const AVATAR_STYLES = [
-  "bg-navy-700 text-white",
-  "bg-teal-700 text-white",
-  "bg-rose-700 text-white",
-  "bg-amber-600 text-white",
-  "bg-violet-700 text-white",
+  "bg-blue-700 text-white",
+  "bg-teal-600 text-white",
+  "bg-rose-600 text-white",
+  "bg-amber-500 text-white",
+  "bg-violet-600 text-white",
   "bg-slate-600 text-white",
-  "bg-emerald-700 text-white",
-  "bg-cyan-800 text-white",
+  "bg-emerald-600 text-white",
+  "bg-cyan-700 text-white",
 ];
 
 export function initialsOf(name: string): string {
@@ -133,11 +133,11 @@ export function SectionCard({
   noPadding?: boolean;
 }) {
   return (
-    <section className={cn("rounded-lg border bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]", className)}>
+    <section className={cn("qubit-card overflow-hidden", className)}>
       {(title || actions) && (
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 md:px-5">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3.5 md:px-5">
           <div className="min-w-0">
-            {title && <h2 className="text-sm font-semibold text-slate-900 truncate">{title}</h2>}
+            {title && <h2 className="text-sm font-semibold tracking-tight text-slate-900 truncate">{title}</h2>}
             {description && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
           </div>
           {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
@@ -181,15 +181,15 @@ export function StatTile({
     <Comp
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 rounded-lg border bg-white px-3.5 py-3 text-left",
-        onClick && "transition-colors hover:border-navy-300 hover:bg-navy-50/60",
+        "flex items-center gap-3 rounded-xl border border-slate-200/80 bg-white px-3.5 py-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.03)]",
+        onClick && "transition-all duration-150 hover:border-blue-200 hover:bg-blue-50/40",
         className,
       )}
     >
-      {icon && <span className="flex h-8 w-8 items-center justify-center rounded-md bg-navy-50 text-navy-700 [&_svg]:h-4 [&_svg]:w-4">{icon}</span>}
+      {icon && <span className="qubit-icon-tile qubit-icon-tile-accent h-9 w-9 [&_svg]:h-4 [&_svg]:w-4">{icon}</span>}
       <span className="min-w-0">
-        <span className="block text-base font-semibold leading-tight text-slate-900">{value}</span>
-        <span className="block text-xs text-muted-foreground truncate">{label}</span>
+        <span className="block text-[17px] font-semibold leading-tight tracking-tight text-slate-900">{value}</span>
+        <span className="block truncate text-xs text-muted-foreground">{label}</span>
       </span>
     </Comp>
   );
@@ -214,9 +214,7 @@ export function EmptyState({
   return (
     <div className={cn("flex flex-col items-center justify-center px-6 py-12 text-center", className)}>
       {icon && (
-        <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-400 [&_svg]:h-5 [&_svg]:w-5">
-          {icon}
-        </span>
+        <span className="qubit-icon-tile qubit-icon-tile-accent mb-3.5 h-12 w-12">{icon}</span>
       )}
       <p className="text-sm font-semibold text-slate-900">{title}</p>
       {message && <p className="mt-1 max-w-sm text-xs text-muted-foreground">{message}</p>}
@@ -251,7 +249,7 @@ export function SearchInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-9 border-slate-200 bg-white pl-9 pr-8 text-sm shadow-none"
+        className="h-10 rounded-lg border-slate-200 bg-white pl-9 pr-8 text-sm shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
       />
       {value && (
         <button
@@ -334,9 +332,9 @@ export function TreeRow({
         if (e.key === "ArrowLeft" && expandable && expanded) onToggle?.();
       }}
       className={cn(
-        "group relative flex w-full items-center gap-2 rounded-md py-1.5 pr-2 text-sm outline-none transition-colors",
-        onClick && "cursor-pointer hover:bg-slate-50",
-        selected ? "bg-navy-50 text-navy-900" : "text-slate-700",
+        "group relative flex w-full items-center gap-2 rounded-lg py-1.5 pr-2 text-sm outline-none transition-colors duration-150",
+        onClick && "cursor-pointer hover:bg-slate-100/70",
+        selected ? "bg-blue-50 font-medium text-blue-800" : "text-slate-700",
         dimmed && "opacity-40",
         className,
       )}
@@ -370,6 +368,75 @@ export function TreeRow({
       {locked && <LockHint />}
       {trailing && <span className="ml-auto flex items-center gap-1.5 shrink-0">{trailing}</span>}
     </div>
+  );
+}
+
+// ============================================================
+// IconTile — soft colored tile behind an icon (unified pattern)
+// ============================================================
+export function IconTile({
+  icon,
+  tone = "blue",
+  size = "md",
+  className,
+}: {
+  icon: React.ReactNode;
+  tone?: "blue" | "emerald" | "violet" | "rose" | "amber" | "teal" | "cyan" | "slate";
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}) {
+  const tones: Record<string, string> = {
+    blue: "bg-blue-50 text-blue-700",
+    emerald: "bg-emerald-50 text-emerald-700",
+    violet: "bg-violet-50 text-violet-700",
+    rose: "bg-rose-50 text-rose-700",
+    amber: "bg-amber-50 text-amber-700",
+    teal: "bg-teal-50 text-teal-700",
+    cyan: "bg-cyan-50 text-cyan-700",
+    slate: "bg-slate-100 text-slate-600",
+  };
+  const sizes = {
+    sm: "h-8 w-8 rounded-lg [&_svg]:h-4 [&_svg]:w-4",
+    md: "h-10 w-10 rounded-xl",
+    lg: "h-12 w-12 rounded-xl",
+  } as const;
+  return (
+    <span aria-hidden className={cn("qubit-icon-tile", tones[tone], sizes[size], className)}>
+      {icon}
+    </span>
+  );
+}
+
+// ============================================================
+// ArrowLink — quiet blue "View X →" affordance (unified pattern)
+// ============================================================
+export function ArrowLink({
+  children,
+  onClick,
+  className,
+  ariaLabel,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  className?: string;
+  ariaLabel?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel}
+      className={cn(
+        "group/link inline-flex items-center gap-1.5 text-[13px] font-medium text-blue-600 transition-colors duration-150 hover:text-blue-700",
+        className,
+      )}
+    >
+      {children}
+      <ArrowRight
+        className="h-3.5 w-3.5 transition-transform duration-150 group-hover/link:translate-x-0.5"
+        aria-hidden
+      />
+    </button>
   );
 }
 
