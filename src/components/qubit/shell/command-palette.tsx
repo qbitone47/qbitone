@@ -69,6 +69,20 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
           ))}
         </CommandGroup>
         <CommandSeparator />
+        <CommandGroup heading="Security — Phase 3 screens">
+          {screensByModule("security").map((s) => (
+            <CommandItem
+              key={s.id}
+              value={`${s.num} ${s.title} ${s.shortTitle} security sign-in login mfa audit`}
+              onSelect={() => run(() => navigate(s.id))}
+              className="gap-3"
+            >
+              <span className="w-6 text-[10px] font-semibold tabular-nums text-slate-400">{s.num}</span>
+              <span className="text-[13px] font-medium text-slate-800">{s.title}</span>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+        <CommandSeparator />
         <CommandGroup heading="Actions">
           {VIEW_AS_ROLES.map((r) => (
             <CommandItem key={`role-${r.id}`} value={`preview as role ${r.label}`} onSelect={() => run(() => setRole(r.id))}>

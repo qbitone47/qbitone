@@ -24,10 +24,12 @@ export type Capability =
   | "workflows.edit" // create/disable workflows
   | "navigation.edit" // edit enterprise navigation
   | "notifications.edit"
-  | "integrations.manage";
+  | "integrations.manage"
+  | "security.admin" // network policies, privileged security controls (Phase 3)
+  | "audit.export"; // export audit records (Phase 3)
 
 const ROLE_CAPABILITIES: Record<ViewAsRole, Capability[]> = {
-  administrator: ["governance.edit", "structure.edit", "workflows.edit", "navigation.edit", "notifications.edit", "integrations.manage"],
+  administrator: ["governance.edit", "structure.edit", "workflows.edit", "navigation.edit", "notifications.edit", "integrations.manage", "security.admin", "audit.export"],
   "dept-head": ["structure.edit", "workflows.edit", "notifications.edit"],
   "sales-exec": [],
   "hr-manager": ["structure.edit", "notifications.edit"],

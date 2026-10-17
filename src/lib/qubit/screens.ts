@@ -1,6 +1,7 @@
 // Screen metadata for Qubit One — pure data, no JSX (safe for contexts)
 // Phase 1: Enterprise Architecture (screens 01–12)
 // Phase 2: Enterprise Design System (screens 13–30)
+// Phase 3: Authentication & Security (screens 31–40)
 
 export type ScreenId =
   | "org-structure"
@@ -32,9 +33,22 @@ export type ScreenId =
   | "error-states"
   | "toast-alerts"
   | "accessibility"
-  | "responsive-grid";
+  | "responsive-grid"
+  | "login"
+  | "mfa-verification"
+  | "sso-provider-selection"
+  | "password-recovery"
+  | "device-sessions"
+  | "security-center"
+  | "role-access-request"
+  | "ip-network-policy"
+  | "audit-log"
+  | "security-alerts";
 
-export type ScreenModule = "enterprise" | "design-system";
+export type ScreenModule = "enterprise" | "design-system" | "security";
+
+/** Screens rendered without the app shell (standalone authentication) */
+export const AUTH_SCREENS: ScreenId[] = ["login", "mfa-verification", "sso-provider-selection"];
 
 export interface ScreenMeta {
   id: ScreenId;
@@ -78,6 +92,17 @@ export const SCREENS: ScreenMeta[] = [
   { id: "toast-alerts", num: "28", title: "Toast & Alerts", shortTitle: "Toasts & Alerts", description: "Transient feedback and persistent system messaging.", module: "design-system" },
   { id: "accessibility", num: "29", title: "Accessibility Patterns", shortTitle: "Accessibility", description: "Inclusive defaults — keyboard, focus, ARIA and touch targets.", module: "design-system" },
   { id: "responsive-grid", num: "30", title: "Responsive Grid", shortTitle: "Responsive Grid", description: "Layout system from desktop workspace to mobile single column.", module: "design-system" },
+  // ——— Phase 3 · Authentication & Security ———
+  { id: "login", num: "31", title: "Login", shortTitle: "Login", description: "Enterprise authentication entry point — password, SSO and passkey.", module: "security" },
+  { id: "mfa-verification", num: "32", title: "MFA Verification", shortTitle: "MFA Verification", description: "Second-factor verification — authenticator, push, passkey, recovery.", module: "security" },
+  { id: "sso-provider-selection", num: "33", title: "SSO Provider Selection", shortTitle: "SSO Providers", description: "Choose among the organization's configured identity providers.", module: "security" },
+  { id: "password-recovery", num: "34", title: "Password & Recovery", shortTitle: "Passwords", description: "Password lifecycle and account recovery with step-up authentication.", module: "security" },
+  { id: "device-sessions", num: "35", title: "Device Sessions", shortTitle: "Sessions", description: "See and control every active session on your account.", module: "security" },
+  { id: "security-center", num: "36", title: "Security Center", shortTitle: "Security Center", description: "Personal security posture, factors, sessions and recommendations.", module: "security" },
+  { id: "role-access-request", num: "37", title: "Role Access Request", shortTitle: "Access Requests", description: "Request role access along the approval path — never self-granted.", module: "security" },
+  { id: "ip-network-policy", num: "38", title: "IP / Network Policy", shortTitle: "Network Policy", description: "Admin network rules with conflict checks and lockout protection.", module: "security" },
+  { id: "audit-log", num: "39", title: "Audit Log", shortTitle: "Audit Log", description: "Trustworthy, searchable enterprise security history.", module: "security" },
+  { id: "security-alerts", num: "40", title: "Security Alerts", shortTitle: "Alerts", description: "Calibrated, actionable alerts with recommended next steps.", module: "security" },
 ];
 
 export const screenMeta = (id: ScreenId): ScreenMeta =>
@@ -92,4 +117,8 @@ export interface ScreenParams {
   employeeId?: string;
   stageId?: string;
   focusNodeId?: string;
+  /** MFA challenge id passed from Login (31) to MFA Verification (32) */
+  challengeId?: string;
+  /** Alert / audit correlation focus */
+  correlationId?: string;
 }

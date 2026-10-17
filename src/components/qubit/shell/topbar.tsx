@@ -115,7 +115,7 @@ export function TopBar({
               onClick={onPreviewModuleCleared}
               className="hidden rounded px-1 py-0.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 min-[480px]:block"
             >
-              {meta.module === "design-system" ? "Design System" : "Enterprise"}
+              {meta.module === "design-system" ? "Design System" : meta.module === "security" ? "Security" : "Enterprise"}
             </button>
             <ChevronRight className="hidden h-3.5 w-3.5 text-slate-300 min-[480px]:block" aria-hidden />
             <span aria-current="page" className="truncate px-1 py-0.5 font-medium text-slate-800">
@@ -179,7 +179,7 @@ export function TopBar({
               ))}
             </ul>
             <div className="border-t px-4 py-2">
-              <p className="text-center text-[11px] text-muted-foreground">Full notification center arrives in Phase 3</p>
+              <p className="text-center text-[11px] text-muted-foreground">Full notification center arrives in a later phase</p>
             </div>
           </PopoverContent>
         </Popover>

@@ -20,7 +20,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { KeyRound, Loader2, ShieldCheck } from "lucide-react";
 
 // ============================================================
 // ConfirmDialog — only for destructive / high-impact actions
@@ -146,5 +148,108 @@ export function Field({
       {children}
       {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
     </div>
+  );
+}
+
+// ============================================================
+// StepUpDialog — reauthentication for sensitive security changes
+// (Phase 3). Factor changes, policy application and session-wide
+// revocation confirm identity before the server allows the action.
+// ============================================================
+export function StepUpDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmLabel = "Confirm",
+  onConfirm,
+  verifying,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description: string;
+  confirmLabel?: string;
+  onConfirm: (password: string) => void;
+  verifying?: boolean;
+}) {
+  const [password, setPassword] = React.useState("");
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (open) {
+      setPassword("");
+      setError(null);
+    }
+  }, [open]);
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!password) {
+      setError("Enter your password to confirm this change.");
+      return;
+    }
+    setError(null);
+    onConfirm(password);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ShieldCheck className="h-4.5 w-4.5 text-blue-600" aria-hidden />
+            {title}
+          </DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={submit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label htmlFor="stepup-password" className="block text-xs font-medium text-slate-700">
+              Current password
+            </label>
+            <Input
+              id="stepup-password"
+              type="password"
+              autoComplete="current-password"
+              autoFocus
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) setError(null);
+              }}
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? "stepup-error" : "stepup-hint"}
+              className="h-9 rounded-lg"
+            />
+            {error ? (
+              <p id="stepup-error" role="alert" className="text-[11.5px] font-medium text-red-600">
+                {error}
+              </p>
+            ) : (
+              <p id="stepup-hint" className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                <KeyRound className="h-3 w-3" aria-hidden />
+                Step-up authentication — valid for the next 5 minutes only.
+              </p>
+            )}
+          </div>
+          <DialogFooter className="mt-5">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={verifying}>
+              {verifying ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  Verifying…
+                </>
+              ) : (
+                confirmLabel
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

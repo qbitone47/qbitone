@@ -32,6 +32,16 @@ import { ErrorStatesScreen } from "./screens/error-states";
 import { ToastAlertsScreen } from "./screens/toast-alerts";
 import { AccessibilityScreen } from "./screens/accessibility";
 import { ResponsiveGridScreen } from "./screens/responsive-grid";
+import { LoginScreen } from "./screens/login";
+import { MfaVerificationScreen } from "./screens/mfa-verification";
+import { SsoProviderSelectionScreen } from "./screens/sso-provider-selection";
+import { PasswordRecoveryScreen } from "./screens/password-recovery";
+import { DeviceSessionsScreen } from "./screens/device-sessions";
+import { SecurityCenterScreen } from "./screens/security-center";
+import { RoleAccessRequestScreen } from "./screens/role-access-request";
+import { IpNetworkPolicyScreen } from "./screens/ip-network-policy";
+import { AuditLogScreen } from "./screens/audit-log";
+import { SecurityAlertsScreen } from "./screens/security-alerts";
 
 export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "org-structure": OrganizationStructureScreen,
@@ -64,4 +74,14 @@ export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "toast-alerts": ToastAlertsScreen,
   accessibility: AccessibilityScreen,
   "responsive-grid": ResponsiveGridScreen,
+  login: LoginScreen,
+  "mfa-verification": MfaVerificationScreen,
+  "sso-provider-selection": SsoProviderSelectionScreen,
+  "password-recovery": PasswordRecoveryScreen,
+  "device-sessions": DeviceSessionsScreen,
+  "security-center": SecurityCenterScreen,
+  "role-access-request": RoleAccessRequestScreen,
+  "ip-network-policy": IpNetworkPolicyScreen,
+  "audit-log": AuditLogScreen,
+  "security-alerts": SecurityAlertsScreen,
 };

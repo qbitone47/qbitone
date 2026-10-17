@@ -13,6 +13,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Settings2,
+  ShieldCheck,
   Sparkles,
   TrendingUp,
   UserRound,
@@ -48,6 +49,7 @@ export const SIDEBAR_MODULES: SidebarModule[] = [
   { id: "ai", label: "AI", icon: Sparkles, section: "Intelligence" },
   { id: "analytics", label: "Analytics", icon: BarChart3, section: "Intelligence" },
   { id: "documents", label: "Documents", icon: FolderClosed, section: "Intelligence" },
+  { id: "security", label: "Security", icon: ShieldCheck, section: "System", expandableModule: "security" },
   { id: "design-system", label: "Design System", icon: Palette, section: "System", expandableModule: "design-system" },
   { id: "settings", label: "Settings", icon: Settings2, section: "System" },
 ];
@@ -66,6 +68,7 @@ export const MODULE_PHASE: Record<string, string> = {
   analytics: "Phase 13 — Analytics & Reporting",
   documents: "Phase 14 — Documents & Knowledge",
   "design-system": "Phase 2 — Enterprise Design System",
+  security: "Phase 3 — Authentication & Security",
   settings: "Phase 15 — Administration & Settings",
 };
 
@@ -95,8 +98,8 @@ export function SidebarContent({
   onNavigate?: () => void;
 }) {
   const { screen, navigate } = useQubitNav();
-  // Enterprise starts expanded (Phase 1 home); Design System starts collapsed.
-  const [open, setOpen] = React.useState<Record<string, boolean>>({ enterprise: true, "design-system": false });
+  // Enterprise starts expanded (Phase 1 home); Design System and Security start collapsed.
+  const [open, setOpen] = React.useState<Record<string, boolean>>({ enterprise: true, "design-system": false, security: false });
 
   const sections = React.useMemo(() => {
     const map = new Map<string, SidebarModule[]>();
@@ -272,13 +275,13 @@ export function SidebarContent({
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[12.5px] font-semibold leading-tight text-slate-900">Qubit One Pvt Ltd</span>
               <span className="block truncate text-[10.5px] leading-tight text-slate-400">
-                Phase 2 · Enterprise Design System
+                Phase 3 · Security & Identity
               </span>
             </span>
             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-hidden />
           </div>
         ) : (
-          <div className="flex justify-center py-0.5" title="Qubit One Pvt Ltd — Phase 2 · Enterprise Design System">
+          <div className="flex justify-center py-0.5" title="Qubit One Pvt Ltd — Phase 3 · Security & Identity">
             <QubitMark className="h-7 w-7 rounded-lg text-[13px]" />
           </div>
         )}

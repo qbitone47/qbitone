@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { SCREENS } from "@/lib/qubit/screens";
+import { AUTH_SCREENS, SCREENS } from "@/lib/qubit/screens";
 import { useQubitNav } from "../nav-context";
 import { SidebarContent, SIDEBAR_MODULES } from "./sidebar";
 import { TopBar } from "./topbar";
@@ -17,7 +17,7 @@ function ShellFooter() {
         <p>© 2026 Qubit One Pvt Ltd · Enterprise Business Operating System</p>
         <p className="flex items-center gap-2">
           <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 font-medium text-slate-500 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
-            Phase 2 — Enterprise Design System
+            Phase 3 — Authentication & Security
           </span>
           <span>v1.0.0</span>
         </p>
@@ -38,6 +38,16 @@ export function AppShell() {
   const previewModuleName = previewModule
     ? SIDEBAR_MODULES.find((m) => m.id === previewModule)?.label ?? ""
     : "";
+
+  // Authentication screens (31–33) render standalone — the real
+  // sign-in experience has no workspace chrome around it.
+  if (AUTH_SCREENS.includes(screen)) {
+    return (
+      <div key={`${screen}-${navKey}`} className="h-dvh overflow-hidden">
+        <ScreenComp />
+      </div>
+    );
+  }
 
   const content = previewModule ? (
     <ModulePlaceholder moduleId={previewModule} moduleName={previewModuleName} />

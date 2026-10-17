@@ -22,11 +22,16 @@ const TONES: Record<Tone, { dot: string; text: string; bg: string; border: strin
 
 const STATUS_TONE: Record<string, Tone> = {
   Active: "emerald", Connected: "emerald", Completed: "emerald", Enabled: "emerald", Public: "emerald", Operational: "emerald",
+  Resolved: "emerald", Approved: "emerald", Trusted: "emerald",
   Draft: "amber", Pending: "amber", Warning: "amber", "Under Review": "amber", "Notice Period": "amber", Confidential: "amber", "On Hold": "amber",
+  "Pending Approval": "amber", Acknowledged: "amber", "Require Verification": "amber",
   Disconnected: "red", Conflict: "red", Restricted: "red", "Exit Initiated": "red", High: "red",
+  Revoked: "red", Suspicious: "red", Critical: "red", Rejected: "red", Denied: "red",
   "In Progress": "blue", Probation: "blue", Internal: "blue", Medium: "amber",
+  Submitted: "blue", Scheduled: "blue", Info: "blue", New: "blue",
   "Configuration Required": "violet", "On Leave": "violet",
   Inactive: "slate", Archived: "slate", Paused: "slate", Disabled: "slate", Low: "slate",
+  Expired: "slate", "Action needed": "amber", Degraded: "amber",
 };
 
 export function StatusBadge({
