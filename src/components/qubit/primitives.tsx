@@ -36,6 +36,7 @@ const STATUS_TONE: Record<string, Tone> = {
   "On Track": "emerald", Watch: "amber", "At Risk": "red", Generating: "blue", Failed: "red",
   Live: "emerald", Delayed: "amber", Stale: "amber", Unavailable: "red", Dismissed: "slate",
   Assigned: "blue", Ready: "emerald", Forecast: "violet", Estimated: "violet", Finalized: "emerald",
+  Attention: "amber", Investigating: "blue", Reopened: "blue",
 };
 
 export function StatusBadge({

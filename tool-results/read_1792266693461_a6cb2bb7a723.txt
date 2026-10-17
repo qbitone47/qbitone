@@ -1,0 +1,1812 @@
+     1→     1→// ============================================================
+     2→     2→// Qubit One — Executive data model (Phase 5 · CEO Command Center)
+     3→     3→// ============================================================
+     4→     4→// ONE canonical underlying data source for every executive screen
+     5→     5→// (spec §9 — Data Consistency): the same revenue, pipeline, cash
+     6→     6→// and health numbers are reused by CEO Overview (59), Revenue
+     7→     7→// Snapshot (60), Sales Command (61), Finance Snapshot (62),
+     8→     8→// KPI Drilldown (71) and Reports (72). The CEO layer is a
+     9→     9→// presentation/decision layer over the existing business domains —
+    10→    10→// it never invents parallel numbers.
+    11→    11→//
+    12→    12→// Shared client + server. Server authorization lives in
+    13→    13→// executive-server.ts behind /api/executive.
+    14→    14→// ============================================================
+    15→    15→
+    16→    16→import type { ScreenId, ScreenParams } from "./screens";
+    17→    17→import { WORKSPACE_NOW } from "./workspace-data";
+    18→    18→
+    19→    19→// ---------- reporting context (one period across every screen) ----------
+    20→    20→
+    21→    21→export const EXEC_PERIOD = {
+    22→    22→  /** Current fiscal quarter — Indian FY: Q3 = Oct–Dec */
+    23→    23→  label: "Q3 FY27",
+    24→    24→  window: "1 Oct – 31 Dec 2026",
+    25→    25→  asOf: WORKSPACE_NOW,
+    26→    26→  asOfLabel: "Friday, 13 November 2026 · 09:42 IST",
+    27→    27→  elapsedPct: 48.6,
+    28→    28→  /** data up to end of October is final; November is month-to-date */
+    29→    29→  monthLabel: "November 2026 (month-to-date)",
+    30→    30→} as const;
+    31→    31→
+    32→    32→export type DomainId =
+    33→    33→  | "revenue"
+    34→    34→  | "sales"
+    35→    35→  | "finance"
+    36→    36→  | "people"
+    37→    37→  | "marketing"
+    38→    38→  | "service"
+    39→    39→  | "inventory"
+    40→    40→  | "field";
+    41→    41→
+    42→    42→export type DomainStatus = "live" | "ok" | "delayed" | "stale" | "unavailable";
+    43→    43→
+    44→    44→export interface Freshness {
+    45→    45→  status: DomainStatus;
+    46→    46→  /** epoch of the last successful source sync */
+    47→    47→  updatedAt: number;
+    48→    48→  /** human label, e.g. "Updated 18 min ago" */
+    49→    49→  label: string;
+    50→    50→  /** when delayed/stale — say why, never look live (spec §7) */
+    51→    51→  detail?: string;
+    52→    52→}
+    53→    53→
+    54→    54→// ---------- INR helpers (values are stored in crores; 1 Cr = ₹1,00,00,000) ----------
+    55→    55→
+    56→    56→/** ₹1.24 Cr / ₹68.0 L / ₹18,400 — a single enterprise formatting voice */
+    57→    57→export function formatINR(cr: number): string {
+    58→    58→  const abs = Math.abs(cr);
+    59→    59→  if (abs >= 1) return `₹${cr.toFixed(2)} Cr`;
+    60→    60→  if (abs >= 0.01) return `₹${(cr * 100).toFixed(cr * 100 >= 100 ? 0 : 1)} L`;
+    61→    61→  return `₹${Math.round(cr * 1e7).toLocaleString("en-IN")}`;
+    62→    62→}
+    63→    63→
+    64→    64→/** For whole-rupee values (e.g. CPL) */
+    65→    65→export function formatRupees(n: number): string {
+    66→    66→  return `₹${Math.round(n).toLocaleString("en-IN")}`;
+    67→    67→}
+    68→    68→
+    69→    69→export function formatPct(n: number, digits = 1): string {
+    70→    70→  return `${n.toFixed(digits)}%`;
+    71→    71→}
+    72→    72→
+    73→    73→// ============================================================
+    74→    74→// Domain freshness map — one source may be delayed without
+    75→    75→// breaking the rest of the command center (spec §18).
+    76→    76→// ============================================================
+    77→    77→
+    78→    78→const min = (m: number) => WORKSPACE_NOW - m * 60_000;
+    79→    79→
+    80→    80→export const DOMAIN_FRESHNESS: Record<DomainId, Freshness> = {
+    81→    81→  revenue: { status: "ok", updatedAt: min(18), label: "Updated 18 min ago" },
+    82→    82→  sales: { status: "ok", updatedAt: min(26), label: "Updated 26 min ago" },
+    83→    83→  finance: { status: "ok", updatedAt: min(34), label: "Updated 34 min ago" },
+    84→    84→  people: { status: "ok", updatedAt: min(62), label: "Updated 1 h ago" },
+    85→    85→  marketing: {
+    86→    86→    status: "delayed",
+    87→    87→    updatedAt: Date.parse("2026-10-31T23:30:00+05:30"),
+    88→    88→    label: "Delayed — source sync since 04:00 IST",
+    89→    89→    detail: "Marketing Automation connector is re-running its nightly sync. Figures are final as of 31 Oct; November is incomplete, not missing.",
+    90→    90→  },
+    91→    91→  service: { status: "live", updatedAt: min(12), label: "Live · updated 12 min ago" },
+    92→    92→  inventory: { status: "ok", updatedAt: Date.parse("2026-11-13T07:45:00+05:30"), label: "Updated 07:45 IST" },
+    93→    93→  field: { status: "live", updatedAt: min(9), label: "Live · updated 9 min ago" },
+    94→    94→};
+    95→    95→
+    96→    96→// ============================================================
+    97→    97→// Revenue (recognized revenue, INR crores) — canonical numbers
+    98→    98→// ============================================================
+    99→    99→
+   100→   100→export interface RevenuePoint {
+   101→   101→  month: string;
+   102→   102→  /** null = future month (not yet actual) */
+   103→   103→  actual: number | null;
+   104→   104→  target: number;
+   105→   105→  forecast?: number | null;
+   106→   106→}
+   107→   107→
+   108→   108→export interface RevenueByUnit {
+   109→   109→  id: string;
+   110→   110→  name: string;
+   111→   111→  recognized: number;
+   112→   112→  target: number;
+   113→   113→  trendPct: number;
+   114→   114→}
+   115→   115→
+   116→   116→export interface RevenueContributor {
+   117→   117→  account: string;
+   118→   118→  industry: string;
+   119→   119→  owner: string;
+   120→   120→  region: string;
+   121→   121→  recognized: number;
+   122→   122→  growthPct: number;
+   123→   123→}
+   124→   124→
+   125→   125→export interface RevenueData {
+   126→   126→  freshness: Freshness;
+   127→   127→  /** financial-year to date (1 Apr – 13 Nov 2026) */
+   128→   128→  ytd: { actual: number; target: number };
+   129→   129→  quarter: { actualToDate: number; target: number; forecast: number; elapsedPct: number };
+   130→   130→  /** November month-to-date, three accounting definitions (spec §24) */
+   131→   131→  mtd: { booked: number; recognized: number; collected: number; label: string };
+   132→   132→  q2SamePoint: { actual: number; target: number };
+   133→   133→  trend: RevenuePoint[];
+   134→   134→  byBusinessUnit: RevenueByUnit[];
+   135→   135→  byRegion: { region: string; recognized: number; target: number }[];
+   136→   136→  topContributors: RevenueContributor[];
+   137→   137→  variance: { driver: string; impact: string; detail: string }[];
+   138→   138→  definitions: { booked: string; recognized: string; collected: string };
+   139→   139→}
+   140→   140→
+   141→   141→export const REVENUE: RevenueData = {
+   142→   142→  freshness: DOMAIN_FRESHNESS.revenue,
+   143→   143→  ytd: { actual: 12.13, target: 11.5 },
+   144→   144→  quarter: { actualToDate: 2.3, target: 2.53, forecast: 5.12, elapsedPct: 48.6 },
+   145→   145→  mtd: {
+   146→   146→    booked: 0.68,
+   147→   147→    recognized: 0.62,
+   148→   148→    collected: 0.51,
+   149→   149→    label: "1 – 13 Nov 2026 (month-to-date)",
+   150→   150→  },
+   151→   151→  q2SamePoint: { actual: 2.18, target: 2.1 },
+   152→   152→  trend: [
+   153→   153→    { month: "Apr", actual: 1.52, target: 1.5 },
+   154→   154→    { month: "May", actual: 1.61, target: 1.55 },
+   155→   155→    { month: "Jun", actual: 1.73, target: 1.6 },
+   156→   156→    { month: "Jul", actual: 1.79, target: 1.65 },
+   157→   157→    { month: "Aug", actual: 1.86, target: 1.7 },
+   158→   158→    { month: "Sep", actual: 1.94, target: 1.75 },
+   159→   159→    { month: "Oct", actual: 1.68, target: 1.75 },
+   160→   160→    { month: "Nov", actual: null, target: 1.8, forecast: 1.74 },
+   161→   161→    { month: "Dec", actual: null, target: 1.8, forecast: 1.7 },
+   162→   162→  ],
+   163→   163→  byBusinessUnit: [
+   164→   164→    { id: "bu-enterprise", name: "Enterprise Solutions", recognized: 1.06, target: 1.1, trendPct: -11.2 },
+   165→   165→    { id: "bu-digital", name: "Digital Services", recognized: 0.72, target: 0.85, trendPct: 8.4 },
+   166→   166→    { id: "bu-amc", name: "Support & AMC", recognized: 0.52, target: 0.58, trendPct: 3.1 },
+   167→   167→  ],
+   168→   168→  byRegion: [
+   169→   169→    { region: "West", recognized: 0.94, target: 0.95 },
+   170→   170→    { region: "South", recognized: 0.66, target: 0.72 },
+   171→   171→    { region: "North", recognized: 0.41, target: 0.51 },
+   172→   172→    { region: "East", recognized: 0.29, target: 0.35 },
+   173→   173→  ],
+   174→   174→  topContributors: [
+   175→   175→    { account: "Acme Manufacturing", industry: "Manufacturing", owner: "Pankaj Sharma", region: "West", recognized: 0.382, growthPct: 12.4 },
+   176→   176→    { account: "Zenith Industries", industry: "Industrial", owner: "Meera Iyer", region: "South", recognized: 0.315, growthPct: 6.8 },
+   177→   177→    { account: "Meridian Trend", industry: "Retail", owner: "Vikram Singh", region: "North", recognized: 0.248, growthPct: -18.2 },
+   178→   178→    { account: "Halcyon Logistics", industry: "Logistics", owner: "Rohit Verma", region: "West", recognized: 0.198, growthPct: 9.1 },
+   179→   179→    { account: "Orbit Retail", industry: "Retail", owner: "Vikram Singh", region: "North", recognized: 0.171, growthPct: -4.6 },
+   180→   180→  ],
+   181→   181→  variance: [
+   182→   182→    {
+   183→   183→      driver: "Two enterprise deals slipped from October to December",
+   184→   184→      impact: "−₹0.86 Cr October recognized revenue",
+   185→   185→      detail: "Meridian Trend platform rollout and National Retail Co full-suite rollout both moved to December after procurement delays. Both are tracked as at-risk opportunities in Sales (61).",
+   186→   186→    },
+   187→   187→    {
+   188→   188→      driver: "North region underdelivery",
+   189→   189→      impact: "−₹0.10 Cr vs regional target",
+   190→   190→      detail: "North recognized ₹0.41 Cr against ₹0.51 Cr target; coverage and field completion in the same region are also below plan.",
+   191→   191→    },
+   192→   192→  ],
+   193→   193→  definitions: {
+   194→   194→    booked: "Contract value signed in the period (sales basis).",
+   195→   195→    recognized: "Revenue recognised per accounting policy — the headline figure.",
+   196→   196→    collected: "Cash actually received against invoices in the period.",
+   197→   197→  },
+   198→   198→};
+   199→   199→
+   200→   200→// ============================================================
+   201→   201→// Sales — canonical numbers (bookings basis, distinct from
+   202→   202→// recognized revenue; both are labelled on every screen)
+   203→   203→// ============================================================
+   204→   204→
+   205→   205→export interface SalesStage {
+   206→   206→  stage: string;
+   207→   207→  count: number;
+   208→   208→  value: number;
+   209→   209→  weighted: number;
+   210→   210→}
+   211→   211→
+   212→   212→export interface Opportunity {
+   213→   213→  id: string;
+   214→   214→  name: string;
+   215→   215→  account: string;
+   216→   216→  owner: string;
+   217→   217→  region: string;
+   218→   218→  value: number;
+   219→   219→  stage: string;
+   220→   220→  closeDate: string;
+   221→   221→  probability: number;
+   222→   222→  risk?: string;
+   223→   223→  slippedFrom?: string;
+   224→   224→}
+   225→   225→
+   226→   226→export interface SalesRegion {
+   227→   227→  region: string;
+   228→   228→  head: string;
+   229→   229→  bookings: number;
+   230→   230→  quota: number;
+   231→   231→  pipeline: number;
+   232→   232→  coverage: number;
+   233→   233→  winRate: number;
+   234→   234→}
+   235→   235→
+   236→   236→export interface SalesData {
+   237→   237→  freshness: Freshness;
+   238→   238→  quarter: { bookingsToDate: number; target: number };
+   239→   239→  pipeline: { value: number; weighted: number; coverage: number; coverageTarget: number };
+   240→   240→  forecast: { commit: number; bestCase: number; modelForecast: number; confidencePct: number; target: number };
+   241→   241→  metrics: { winRate: number; winRateTarget: number; avgDeal: number; cycleDays: number; cycleTarget: number; leadConversionPct: number };
+   242→   242→  funnel: SalesStage[];
+   243→   243→  topOpportunities: Opportunity[];
+   244→   244→  atRisk: Opportunity[];
+   245→   245→  regions: SalesRegion[];
+   246→   246→}
+   247→   247→
+   248→   248→export const SALES: SalesData = {
+   249→   249→  freshness: DOMAIN_FRESHNESS.sales,
+   250→   250→  quarter: { bookingsToDate: 2.41, target: 5.35 },
+   251→   251→  pipeline: { value: 9.8, weighted: 5.6, coverage: 1.8, coverageTarget: 2.0 },
+   252→   252→  forecast: { commit: 4.7, bestCase: 5.6, modelForecast: 5.12, confidencePct: 72, target: 5.35 },
+   253→   253→  metrics: { winRate: 31, winRateTarget: 35, avgDeal: 0.184, cycleDays: 42, cycleTarget: 38, leadConversionPct: 3.8 },
+   254→   254→  funnel: [
+   255→   255→    { stage: "Discovery", count: 68, value: 4.1, weighted: 1.72 },
+   256→   256→    { stage: "Proposal", count: 34, value: 2.65, weighted: 1.48 },
+   257→   257→    { stage: "Negotiation", count: 19, value: 2.12, weighted: 1.49 },
+   258→   258→    { stage: "Contracting", count: 8, value: 0.93, weighted: 0.91 },
+   259→   259→  ],
+   260→   260→  topOpportunities: [
+   261→   261→    { id: "opp-acme", name: "Platform expansion — Phase 2", account: "Acme Manufacturing", owner: "Pankaj Sharma", region: "West", value: 0.84, stage: "Negotiation", closeDate: "15 Dec 2026", probability: 75 },
+   262→   262→    { id: "opp-zenith", name: "Renewal + automation add-on", account: "Zenith Industries", owner: "Meera Iyer", region: "South", value: 0.62, stage: "Contracting", closeDate: "8 Dec 2026", probability: 85 },
+   263→   263→    { id: "opp-orbit", name: "Digital services suite", account: "Orbit Retail", owner: "Vikram Singh", region: "North", value: 0.48, stage: "Proposal", closeDate: "22 Dec 2026", probability: 55 },
+   264→   264→    { id: "opp-halcyon", name: "Managed services contract", account: "Halcyon Logistics", owner: "Rohit Verma", region: "West", value: 0.35, stage: "Proposal", closeDate: "18 Dec 2026", probability: 50 },
+   265→   265→    { id: "opp-indus", name: "Compliance module pilot", account: "Indus Bank", owner: "Arvind Swamy", region: "North", value: 0.29, stage: "Discovery", closeDate: "28 Feb 2027", probability: 25 },
+   266→   266→  ],
+   267→   267→  atRisk: [
+   268→   268→    {
+   269→   269→      id: "opp-meridian", name: "Enterprise platform rollout", account: "Meridian Trend", owner: "Vikram Singh", region: "North",
+   270→   270→      value: 0.52, stage: "Negotiation", closeDate: "18 Dec 2026", probability: 45,
+   271→   271→      risk: "Stalled at Negotiation for 21 days — legal review of data-processing terms.", slippedFrom: "October 2026",
+   272→   272→    },
+   273→   273→    {
+   274→   274→      id: "opp-nrc", name: "Full-suite rollout", account: "National Retail Co", owner: "Pankaj Sharma", region: "West",
+   275→   275→      value: 0.34, stage: "Contracting", closeDate: "21 Dec 2026", probability: 55,
+   276→   276→      risk: "Procurement board meets 17 Dec — signing risk if agenda slips again.", slippedFrom: "October 2026",
+   277→   277→    },
+   278→   278→    {
+   279→   279→      id: "opp-spire", name: "Pilot conversion — Phase 1", account: "Spire Health", owner: "Rohit Verma", region: "West",
+   280→   280→      value: 0.18, stage: "Proposal", closeDate: "30 Dec 2026", probability: 30,
+   281→   281→      risk: "Executive sponsor changed on 4 Nov — re-engagement plan in progress.",
+   282→   282→    },
+   283→   283→  ],
+   284→   284→  regions: [
+   285→   285→    { region: "West", head: "Meera Iyer", bookings: 0.86, quota: 1.9, pipeline: 3.1, coverage: 1.6, winRate: 34 },
+   286→   286→    { region: "South", head: "Meera Iyer", bookings: 0.72, quota: 1.5, pipeline: 2.7, coverage: 1.8, winRate: 33 },
+   287→   287→    { region: "North", head: "Vikram Singh", bookings: 0.51, quota: 1.2, pipeline: 2.4, coverage: 2.0, winRate: 28 },
+   288→   288→    { region: "East", head: "Pankaj Sharma", bookings: 0.32, quota: 0.75, pipeline: 1.6, coverage: 2.1, winRate: 29 },
+   289→   289→  ],
+   290→   290→};
+   291→   291→
+   292→   292→// ============================================================
+   293→   293→// Finance — canonical numbers
+   294→   294→// ============================================================
+   295→   295→
+   296→   296→export interface FinanceData {
+   297→   297→  freshness: Freshness;
+   298→   298→  cash: { position: number; floor: number; runwayMonths: number; trend: { month: string; value: number }[] };
+   299→   299→  receivables: { total: number; overdue: number; dsoDays: number; dsoDeltaDays: number; overdueAccounts: { account: string; amount: number; days: number }[] };
+   300→   300→  payables: { total: number; dueThisWeek: number };
+   301→   301→  margins: { gross: number; grossTarget: number; net: number };
+   302→   302→  expenses: { month: string; actual: number; budget: number }[];
+   303→   303→  opex: { actual: number; budget: number; variancePct: number };
+   304→   304→  budgetVariance: { department: string; budget: number; actual: number; variancePct: number }[];
+   305→   305→  risk: { label: string; detail: string; level: "High" | "Medium" | "Low" }[];
+   306→   306→}
+   307→   307→
+   308→   308→export const FINANCE: FinanceData = {
+   309→   309→  freshness: DOMAIN_FRESHNESS.finance,
+   310→   310→  cash: {
+   311→   311→    position: 6.84,
+   312→   312→    floor: 5.0,
+   313→   313→    runwayMonths: 14,
+   314→   314→    trend: [
+   315→   315→      { month: "Jun", value: 7.42 },
+   316→   316→      { month: "Jul", value: 7.28 },
+   317→   317→      { month: "Aug", value: 7.05 },
+   318→   318→      { month: "Sep", value: 7.31 },
+   319→   319→      { month: "Oct", value: 6.97 },
+   320→   320→      { month: "Nov", value: 6.84 },
+   321→   321→    ],
+   322→   322→  },
+   323→   323→  receivables: {
+   324→   324→    total: 3.62,
+   325→   325→    overdue: 0.94,
+   326→   326→    dsoDays: 58,
+   327→   327→    dsoDeltaDays: 6,
+   328→   328→    overdueAccounts: [
+   329→   329→      { account: "Meridian Trend", amount: 0.31, days: 68 },
+   330→   330→      { account: "Orbit Retail", amount: 0.22, days: 41 },
+   331→   331→      { account: "Spire Health", amount: 0.16, days: 35 },
+   332→   332→      { account: "6 other accounts", amount: 0.25, days: 32 },
+   333→   333→    ],
+   334→   334→  },
+   335→   335→  payables: { total: 1.87, dueThisWeek: 0.42 },
+   336→   336→  margins: { gross: 38.2, grossTarget: 40, net: 14.6 },
+   337→   337→  expenses: [
+   338→   338→    { month: "May", actual: 1.08, budget: 1.05 },
+   339→   339→    { month: "Jun", actual: 1.11, budget: 1.08 },
+   340→   340→    { month: "Jul", actual: 1.14, budget: 1.1 },
+   341→   341→    { month: "Aug", actual: 1.16, budget: 1.12 },
+   342→   342→    { month: "Sep", actual: 1.18, budget: 1.14 },
+   343→   343→    { month: "Oct", actual: 1.21, budget: 1.16 },
+   344→   344→    { month: "Nov", actual: 0.52, budget: 0.54 },
+   345→   345→  ],
+   346→   346→  opex: { actual: 1.21, budget: 1.16, variancePct: 4.3 },
+   347→   347→  budgetVariance: [
+   348→   348→    { department: "Sales", budget: 1.8, actual: 1.86, variancePct: 3.3 },
+   349→   349→    { department: "Service", budget: 0.9, actual: 0.94, variancePct: 4.4 },
+   350→   350→    { department: "Marketing", budget: 0.42, actual: 0.38, variancePct: -9.5 },
+   351→   351→    { department: "IT & Technology", budget: 0.5, actual: 0.52, variancePct: 4.0 },
+   352→   352→    { department: "Operations", budget: 0.63, actual: 0.61, variancePct: -3.2 },
+   353→   353→    { department: "Inventory", budget: 0.15, actual: 0.14, variancePct: -6.7 },
+   354→   354→    { department: "HR & People", budget: 0.32, actual: 0.33, variancePct: 3.1 },
+   355→   355→    { department: "Finance", budget: 0.28, actual: 0.29, variancePct: 3.6 },
+   356→   356→  ],
+   357→   357→  risk: [
+   358→   358→    { label: "Overdue receivables concentration", detail: "₹0.94 Cr overdue — Meridian Trend alone is ₹0.31 Cr at 68 days, the same account with a pending renewal deal.", level: "High" },
+   359→   359→    { label: "Gross margin below target", detail: "38.2% vs 40% target — discount exceptions under executive review are the main pressure.", level: "Medium" },
+   360→   360→    { label: "Marketing spend behind plan", detail: "−9.5% budget variance may under-feed Q4 pipeline if it persists.", level: "Medium" },
+   361→   361→  ],
+   362→   362→};
+   363→   363→
+   364→   364→// ============================================================
+   365→   365→// People — aggregated only (spec: no individual sensitive HR data
+   366→   366→// at executive level; drill-down stops at department level)
+   367→   367→// ============================================================
+   368→   368→
+   369→   369→export interface PeopleData {
+   370→   370→  freshness: Freshness;
+   371→   371→  headcount: { total: number; aprTotal: number; netAdded: number; employeesOnRoll: number };
+   372→   372→  trend: { month: string; headcount: number; hires: number; exits: number }[];
+   373→   373→  attrition: { annualizedPct: number; targetPct: number; byDept: { department: string; pct: number; exitsQtd: number }[] };
+   374→   374→  hiring: { openPositions: number; offersInFlight: number; avgTimeToFillDays: number; timeToFillTarget: number; funnel: { stage: string; count: number }[] };
+   375→   375→  attendancePct: number;
+   376→   376→  distribution: { department: string; count: number }[];
+   377→   377→  insights: { title: string; detail: string; level: "High" | "Medium" | "Low" }[];
+   378→   378→}
+   379→   379→
+   380→   380→export const PEOPLE: PeopleData = {
+   381→   381→  freshness: DOMAIN_FRESHNESS.people,
+   382→   382→  headcount: { total: 1245, aprTotal: 1198, netAdded: 47, employeesOnRoll: 1245 },
+   383→   383→  trend: [
+   384→   384→    { month: "Apr", headcount: 1198, hires: 14, exits: 6 },
+   385→   385→    { month: "May", headcount: 1206, hires: 12, exits: 4 },
+   386→   386→    { month: "Jun", headcount: 1212, hires: 13, exits: 5 },
+   387→   387→    { month: "Jul", headcount: 1219, hires: 15, exits: 6 },
+   388→   388→    { month: "Aug", headcount: 1228, hires: 15, exits: 7 },
+   389→   389→    { month: "Sep", headcount: 1233, hires: 11, exits: 8 },
+   390→   390→    { month: "Oct", headcount: 1240, hires: 14, exits: 9 },
+   391→   391→    { month: "Nov", headcount: 1245, hires: 12, exits: 8 },
+   392→   392→  ],
+   393→   393→  attrition: {
+   394→   394→    annualizedPct: 12.4,
+   395→   395→    targetPct: 10,
+   396→   396→    byDept: [
+   397→   397→      { department: "Service", pct: 16.8, exitsQtd: 9 },
+   398→   398→      { department: "Sales", pct: 13.1, exitsQtd: 7 },
+   399→   399→      { department: "Operations", pct: 11.9, exitsQtd: 4 },
+   400→   400→      { department: "Inventory", pct: 10.2, exitsQtd: 2 },
+   401→   401→      { department: "IT & Technology", pct: 9.6, exitsQtd: 2 },
+   402→   402→      { department: "Finance", pct: 8.9, exitsQtd: 1 },
+   403→   403→      { department: "Marketing", pct: 8.4, exitsQtd: 1 },
+   404→   404→      { department: "HR & People", pct: 7.2, exitsQtd: 1 },
+   405→   405→    ],
+   406→   406→  },
+   407→   407→  hiring: {
+   408→   408→    openPositions: 23,
+   409→   409→    offersInFlight: 6,
+   410→   410→    avgTimeToFillDays: 34,
+   411→   411→    timeToFillTarget: 30,
+   412→   412→    funnel: [
+   413→   413→      { stage: "Applied", count: 486 },
+   414→   414→      { stage: "Screened", count: 158 },
+   415→   415→      { stage: "Interviewed", count: 64 },
+   416→   416→      { stage: "Offered", count: 11 },
+   417→   417→      { stage: "Joined", count: 9 },
+   418→   418→    ],
+   419→   419→  },
+   420→   420→  attendancePct: 94.2,
+   421→   421→  distribution: [
+   422→   422→    { department: "Sales", count: 243 },
+   423→   423→    { department: "Delivery", count: 212 },
+   424→   424→    { department: "Service", count: 186 },
+   425→   425→    { department: "Operations", count: 142 },
+   426→   426→    { department: "IT & Technology", count: 96 },
+   427→   427→    { department: "Finance", count: 87 },
+   428→   428→    { department: "Inventory", count: 74 },
+   429→   429→    { department: "Marketing", count: 68 },
+   430→   430→    { department: "Support", count: 76 },
+   431→   431→    { department: "HR & People", count: 52 },
+   432→   432→    { department: "Executive", count: 9 },
+   433→   433→  ],
+   434→   434→  insights: [
+   435→   435→    { title: "Service attrition is the outlier", detail: "16.8% annualized vs 12.4% company — 9 exits this quarter including two senior engineers on notice period. A retention review with the HR Head is recommended.", level: "High" },
+   436→   436→    { title: "Exits are trending up while hiring is flat", detail: "Exits rose from 5 (Jun) to 9 (Oct) while monthly hires held at 11–15. Net growth is narrowing.", level: "Medium" },
+   437→   437→    { title: "Hiring is slower than target", detail: "Time-to-fill is 34 days against a 30-day target; 23 open positions with 6 offers in flight.", level: "Medium" },
+   438→   438→  ],
+   439→   439→};
+   440→   440→
+   441→   441→// ============================================================
+   442→   442→// Marketing — figures as of 31 Oct (source sync delayed; spec §7)
+   443→   443→// ============================================================
+   444→   444→
+   445→   445→export interface MarketingData {
+   446→   446→  freshness: Freshness;
+   447→   447→  qtd: { leads: number; mql: number; sql: number; sourcedPipeline: number; spend: number; cpl: number; contributionPct: number; contributionTarget: number };
+   448→   448→  trend: { month: string; leads: number; mql: number; final: boolean }[];
+   449→   449→  channels: { channel: string; leads: number; mqls: number; cpl: number; sourcedPipeline: number }[];
+   450→   450→  campaigns: { name: string; status: "Active" | "Completed"; leads: number; pipeline: number; note: string }[];
+   451→   451→  insights: string[];
+   452→   452→}
+   453→   453→
+   454→   454→export const MARKETING: MarketingData = {
+   455→   455→  freshness: DOMAIN_FRESHNESS.marketing,
+   456→   456→  qtd: {
+   457→   457→    leads: 1840,
+   458→   458→    mql: 612,
+   459→   459→    sql: 214,
+   460→   460→    sourcedPipeline: 1.62,
+   461→   461→    spend: 0.384,
+   462→   462→    cpl: 2087,
+   463→   463→    contributionPct: 24,
+   464→   464→    contributionTarget: 30,
+   465→   465→  },
+   466→   466→  trend: [
+   467→   467→    { month: "Sep", leads: 640, mql: 212, final: true },
+   468→   468→    { month: "Oct", leads: 586, mql: 188, final: true },
+   469→   469→    { month: "Nov", leads: 0, mql: 0, final: false },
+   470→   470→  ],
+   471→   471→  channels: [
+   472→   472→    { channel: "Organic search", leads: 612, mqls: 238, cpl: 410, sourcedPipeline: 0.52 },
+   473→   473→    { channel: "Paid media", leads: 421, mqls: 146, cpl: 1820, sourcedPipeline: 0.38 },
+   474→   474→    { channel: "Events", leads: 388, mqls: 112, cpl: 3120, sourcedPipeline: 0.41 },
+   475→   475→    { channel: "Referral", leads: 253, mqls: 81, cpl: 640, sourcedPipeline: 0.19 },
+   476→   476→    { channel: "Outbound", leads: 166, mqls: 35, cpl: 2410, sourcedPipeline: 0.12 },
+   477→   477→  ],
+   478→   478→  campaigns: [
+   479→   479→    { name: "Manufacturing Digital Week", status: "Completed", leads: 214, pipeline: 0.44, note: "Best performer — 31 SQLs, feeding the Acme expansion deal." },
+   480→   480→    { name: "Q3 Enterprise Push", status: "Active", leads: 178, pipeline: 0.39, note: "On plan; concentrates on West-region accounts." },
+   481→   481→    { name: "Festive Retail Promo", status: "Active", leads: 96, pipeline: 0.11, note: "Underperforming — CPL 38% above plan; review scheduled 20 Nov." },
+   482→   482→  ],
+   483→   483→  insights: [
+   484→   484→    "Events deliver the highest pipeline per lead despite the highest CPL — enterprise deals concentrate there.",
+   485→   485→    "Organic search is the volume engine at ₹410 per lead — one-fifth of paid CPL.",
+   486→   486→    "November data is pending the source sync; do not read the flat trend as a demand drop.",
+   487→   487→  ],
+   488→   488→};
+   489→   489→
+   490→   490→// ============================================================
+   491→   491→// Service — canonical numbers
+   492→   492→// ============================================================
+   493→   493→
+   494→   494→export interface ServiceData {
+   495→   495→  freshness: Freshness;
+   496→   496→  tickets: { open: number; openCritical: number; resolved30d: number; backlogTrend: { week: string; open: number }[] };
+   497→   497→  sla: { compliancePct: number; targetPct: number; breachedCritical: number };
+   498→   498→  times: { firstResponseMin: number; responseTargetMin: number; resolutionHours: number };
+   499→   499→  csat: { score: number; responses: number };
+   500→   500→  criticalAccounts: { account: string; accountValue: number; issue: string; hoursOpen: number; engineer: string; slaBreached: boolean }[];
+   501→   501→  engineers: { name: string; resolved30d: number; csat: number; slaPct: number }[];
+   502→   502→}
+   503→   503→
+   504→   504→export const SERVICE: ServiceData = {
+   505→   505→  freshness: DOMAIN_FRESHNESS.service,
+   506→   506→  tickets: {
+   507→   507→    open: 214,
+   508→   508→    openCritical: 9,
+   509→   509→    resolved30d: 486,
+   510→   510→    backlogTrend: [
+   511→   511→      { week: "W40", open: 262 },
+   512→   512→      { week: "W42", open: 248 },
+   513→   513→      { week: "W44", open: 236 },
+   514→   514→      { week: "W46", open: 229 },
+   515→   515→      { week: "W48", open: 214 },
+   516→   516→    ],
+   517→   517→  },
+   518→   518→  sla: { compliancePct: 92.4, targetPct: 95, breachedCritical: 3 },
+   519→   519→  times: { firstResponseMin: 38, responseTargetMin: 30, resolutionHours: 6.2 },
+   520→   520→  csat: { score: 4.42, responses: 1240 },
+   521→   521→  criticalAccounts: [
+   522→   522→    { account: "Meridian Trend", accountValue: 0.52, issue: "Integration sync failures after their ERP update", hoursOpen: 31, engineer: "Ramesh Pillai", slaBreached: true },
+   523→   523→    { account: "Zenith Industries", accountValue: 0.62, issue: "Data migration rollback during add-on rollout", hoursOpen: 18, engineer: "Prakash Rao", slaBreached: true },
+   524→   524→    { account: "Orbit Retail", accountValue: 0.48, issue: "Checkout API latency in evening peak", hoursOpen: 12, engineer: "Deepa Krishnan", slaBreached: false },
+   525→   525→  ],
+   526→   526→  engineers: [
+   527→   527→    { name: "Ramesh Pillai", resolved30d: 62, csat: 4.6, slaPct: 96 },
+   528→   528→    { name: "Prakash Rao", resolved30d: 55, csat: 4.5, slaPct: 94 },
+   529→   529→    { name: "Deepa Krishnan", resolved30d: 51, csat: 4.4, slaPct: 93 },
+   530→   530→    { name: "Imran Sheikh", resolved30d: 47, csat: 4.3, slaPct: 91 },
+   531→   531→    { name: "Latha Menon", resolved30d: 44, csat: 4.7, slaPct: 95 },
+   532→   532→  ],
+   533→   533→};
+   534→   534→
+   535→   535→// ============================================================
+   536→   536→// Inventory — canonical numbers
+   537→   537→// ============================================================
+   538→   538→
+   539→   539→export interface InventoryData {
+   540→   540→  freshness: Freshness;
+   541→   541→  valueCr: number;
+   542→   542→  skus: number;
+   543→   543→  health: { lowStock: number; overstock: number; stockouts: number };
+   544→   544→  movement: { month: string; inbound: number; outbound: number }[];
+   545→   545→  dispatch: { onTimePct: number; onTimeTarget: number; blocked: number; blockedReason: string };
+   546→   546→  returnsCr: number;
+   547→   547→  damagedCr: number;
+   548→   548→  warehouses: { name: string; location: string; utilizationPct: number; valueCr: number }[];
+   549→   549→  stockoutItems: { sku: string; name: string; blockedDispatches: number; eta: string }[];
+   550→   550→  purchasePipeline: { openPOs: number; awaitingGoods: number; valueCr: number };
+   551→   551→}
+   552→   552→
+   553→   553→export const INVENTORY: InventoryData = {
+   554→   554→  freshness: DOMAIN_FRESHNESS.inventory,
+   555→   555→  valueCr: 4.28,
+   556→   556→  skus: 1860,
+   557→   557→  health: { lowStock: 34, overstock: 22, stockouts: 3 },
+   558→   558→  movement: [
+   559→   559→    { month: "Jun", inbound: 1.02, outbound: 1.18 },
+   560→   560→    { month: "Jul", inbound: 1.14, outbound: 1.31 },
+   561→   561→    { month: "Aug", inbound: 1.09, outbound: 1.27 },
+   562→   562→    { month: "Sep", inbound: 1.21, outbound: 1.38 },
+   563→   563→    { month: "Oct", inbound: 0.96, outbound: 1.22 },
+   564→   564→  ],
+   565→   565→  dispatch: { onTimePct: 93.1, onTimeTarget: 97, blocked: 12, blockedReason: "12 dispatches are waiting on 3 zero-stock SKUs (see exceptions)." },
+   566→   566→  returnsCr: 0.086,
+   567→   567→  damagedCr: 0.031,
+   568→   568→  warehouses: [
+   569→   569→    { name: "Mumbai DC", location: "Mumbai", utilizationPct: 88, valueCr: 1.72 },
+   570→   570→    { name: "Bengaluru DC", location: "Bengaluru", utilizationPct: 71, valueCr: 1.14 },
+   571→   571→    { name: "Delhi NCR DC", location: "Delhi NCR", utilizationPct: 64, valueCr: 0.89 },
+   572→   572→    { name: "Pune DC", location: "Pune", utilizationPct: 93, valueCr: 0.53 },
+   573→   573→  ],
+   574→   574→  stockoutItems: [
+   575→   575→    { sku: "NT-4G-X2", name: "4G Router X2", blockedDispatches: 12, eta: "18 Nov 2026" },
+   576→   576→    { sku: "NT-EG-G3", name: "Edge Gateway G3", blockedDispatches: 5, eta: "22 Nov 2026" },
+   577→   577→    { sku: "IOT-SH-S7", name: "Sensor Hub S7", blockedDispatches: 2, eta: "16 Nov 2026" },
+   578→   578→  ],
+   579→   579→  purchasePipeline: { openPOs: 38, awaitingGoods: 14, valueCr: 1.06 },
+   580→   580→};
+   581→   581→
+   582→   582→// ============================================================
+   583→   583→// Field Operations — canonical numbers
+   584→   584→// ============================================================
+   585→   585→
+   586→   586→export interface FieldData {
+   587→   587→  freshness: Freshness;
+   588→   588→  engineers: { active: number; total: number };
+   589→   589→  visits: { scheduledWeek: number; completed: number; delayed: number; completionPct: number; targetPct: number };
+   590→   590→  jobs: { unresolved: number; criticalUnresolved: number; avgResolutionDays: number };
+   591→   591→  regions: { region: string; engineers: number; visits: number; completed: number; delayed: number; completionPct: number }[];
+   592→   592→  travelTrend: { week: string; visits: number }[];
+   593→   593→  exceptions: { title: string; detail: string }[];
+   594→   594→}
+   595→   595→
+   596→   596→export const FIELD: FieldData = {
+   597→   597→  freshness: DOMAIN_FRESHNESS.field,
+   598→   598→  engineers: { active: 46, total: 52 },
+   599→   599→  visits: { scheduledWeek: 128, completed: 96, delayed: 11, completionPct: 75, targetPct: 90 },
+   600→   600→  jobs: { unresolved: 27, criticalUnresolved: 4, avgResolutionDays: 3.8 },
+   601→   601→  regions: [
+   602→   602→    { region: "West", engineers: 14, visits: 38, completed: 33, delayed: 2, completionPct: 87 },
+   603→   603→    { region: "South", engineers: 12, visits: 34, completed: 27, delayed: 3, completionPct: 79 },
+   604→   604→    { region: "North", engineers: 11, visits: 31, completed: 18, delayed: 5, completionPct: 58 },
+   605→   605→    { region: "East", engineers: 9, visits: 25, completed: 18, delayed: 1, completionPct: 72 },
+   606→   606→  ],
+   607→   607→  travelTrend: [
+   608→   608→    { week: "W43", visits: 96 },
+   609→   609→    { week: "W44", visits: 104 },
+   610→   610→    { week: "W45", visits: 112 },
+   611→   611→    { week: "W46", visits: 118 },
+   612→   612→    { week: "W47", visits: 121 },
+   613→   613→    { week: "W48", visits: 128 },
+   614→   614→  ],
+   615→   615→  exceptions: [
+   616→   616→    { title: "North region completion at 58%", detail: "Two engineers on unplanned leave; 5 visits rescheduled this week. Regional staffing review is recommended." },
+   617→   617→    { title: "4 critical unresolved jobs in South", detail: "Includes the Zenith Industries migration rollback — the same account as an executive approval on pricing." },
+   618→   618→  ],
+   619→   619→};
+   620→   620→
+   621→   621→// ============================================================
+   622→   622→// Executive Alerts (68) — high-signal only (spec §12)
+   623→   623→// ============================================================
+   624→   624→
+   625→   625→export type AlertSeverity = "Info" | "Attention" | "High" | "Critical";
+   626→   626→export type AlertState = "New" | "Assigned" | "Investigating" | "Dismissed" | "Resolved";
+   627→   627→
+   628→   628→export interface ExecAlert {
+   629→   629→  id: string;
+   630→   630→  title: string;
+   631→   631→  domain: DomainId;
+   632→   632→  domainLabel: string;
+   633→   633→  severity: AlertSeverity;
+   634→   634→  whatHappened: string;
+   635→   635→  whenText: string;
+   636→   636→  whyItMatters: string;
+   637→   637→  affected: string;
+   638→   638→  recommended: string;
+   639→   639→  drillScreen: ScreenId;
+   640→   640→  drillParams?: ScreenParams;
+   641→   641→  state: AlertState;
+   642→   642→  assignee?: string;
+   643→   643→  raisedAt: number;
+   644→   644→  dismissedReason?: string;
+   645→   645→}
+   646→   646→
+   647→   647→const at = (day: number, h: number, m: number) =>
+   648→   648→  Date.parse(`2026-11-${String(13 + day).padStart(2, "0")}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00+05:30`);
+   649→   649→
+   650→   650→export const EXEC_ALERTS: ExecAlert[] = [
+   651→   651→  {
+   652→   652→    id: "alr-01",
+   653→   653→    title: "October revenue missed target — first miss in six months",
+   654→   654→    domain: "revenue",
+   655→   655→    domainLabel: "Revenue",
+   656→   656→    severity: "Critical",
+   657→   657→    whatHappened: "October closed at ₹1.68 Cr against the ₹1.75 Cr target (−4%), breaking a six-month beating streak. Two enterprise deals worth ₹0.86 Cr slipped into December.",
+   658→   658→    whenText: "Raised 2 Nov, 08:15 IST",
+   659→   659→    whyItMatters: "The Q3 forecast has moved to ₹5.12 Cr against the ₹5.35 Cr target. If the slipped deals slip again, Q3 closes ~7% light.",
+   660→   660→    affected: "Q3 revenue forecast · West & North regions",
+   661→   661→    recommended: "Review the December recovery plan with the Sales Head — both slipped deals are tracked in Sales Command Center.",
+   662→   662→    drillScreen: "revenue-snapshot",
+   663→   663→    state: "New",
+   664→   664→    raisedAt: at(-11, 8, 15),
+   665→   665→  },
+   666→   666→  {
+   667→   667→    id: "alr-02",
+   668→   668→    title: "Overdue receivables crossed ₹90L — Meridian Trend at 68 days",
+   669→   669→    domain: "finance",
+   670→   670→    domainLabel: "Finance",
+   671→   671→    severity: "High",
+   672→   672→    whatHappened: "Overdue receivables reached ₹0.94 Cr. Meridian Trend alone holds ₹0.31 Cr past 68 days while its renewal deal is still in negotiation.",
+   673→   673→    whenText: "Raised 10 Nov, 09:00 IST",
+   674→   674→    whyItMatters: "Cash position is ₹6.84 Cr and DSO has risen 6 days. Collecting before the renewal signing materially strengthens the negotiating position.",
+   675→   675→    affected: "Cash position · DSO · Meridian Trend renewal",
+   676→   676→    recommended: "Join the Finance–Sales collection review scheduled before month-end.",
+   677→   677→    drillScreen: "finance-snapshot",
+   678→   678→    state: "Assigned",
+   679→   679→    assignee: "Kavita Joshi",
+   680→   680→    raisedAt: at(-3, 9, 0),
+   681→   681→  },
+   682→   682→  {
+   683→   683→    id: "alr-03",
+   684→   684→    title: "3 high-value customers have critical tickets breaching SLA",
+   685→   685→    domain: "service",
+   686→   686→    domainLabel: "Service",
+   687→   687→    severity: "High",
+   688→   688→    whatHappened: "Meridian Trend (31 h), Zenith Industries (18 h) and Orbit Retail (12 h) have unresolved critical issues. Combined account value: ₹1.62 Cr.",
+   689→   689→    whenText: "Raised 12 Nov, 16:40 IST",
+   690→   690→    whyItMatters: "All three accounts sit inside active renewals or expansion deals. Service failures during commercial negotiations carry renewal risk.",
+   691→   691→    affected: "Renewals & expansion pipeline · CSAT",
+   692→   692→    recommended: "Join the Meridian Trend escalation call today; ask the Service Manager for a joint recovery plan.",
+   693→   693→    drillScreen: "service-overview",
+   694→   694→    state: "New",
+   695→   695→    raisedAt: at(-1, 16, 40),
+   696→   696→  },
+   697→   697→  {
+   698→   698→    id: "alr-04",
+   699→   699→    title: "Q3 forecast confidence dropped to 72%",
+   700→   700→    domain: "sales",
+   701→   701→    domainLabel: "Sales",
+   702→   702→    severity: "High",
+   703→   703→    whatHappened: "Forecast model confidence fell from 84% to 72% week-over-week. West-region pipeline coverage is 1.6x against the 2.0x standard.",
+   704→   704→    whenText: "Raised 12 Nov, 07:20 IST",
+   705→   705→    whyItMatters: "At 72% confidence the realistic Q3 range widens to ₹4.7–5.6 Cr — the difference between hitting and missing the ₹5.35 Cr target.",
+   706→   706→    affected: "Q3 sales forecast · West region pipeline",
+   707→   707→    recommended: "Review the West pipeline and the two slipped enterprise deals in Sales Command Center.",
+   708→   708→    drillScreen: "sales-command",
+   709→   709→    state: "Investigating",
+   710→   710→    raisedAt: at(-1, 7, 20),
+   711→   711→  },
+   712→   712→  {
+   713→   713→    id: "alr-05",
+   714→   714→    title: "3 SKUs at zero stock — 12 dispatches blocked",
+   715→   715→    domain: "inventory",
+   716→   716→    domainLabel: "Inventory",
+   717→   717→    severity: "Attention",
+   718→   718→    whatHappened: "4G Router X2, Edge Gateway G3 and Sensor Hub S7 are at zero stock, blocking 12 customer dispatches. POs are in transit.",
+   719→   719→    whenText: "Raised 11 Nov, 11:05 IST",
+   720→   720→    whyItMatters: "Dispatch on-time is 93.1% against a 97% target. Two of the blocked orders belong to accounts with active renewal conversations.",
+   721→   721→    affected: "12 dispatches · Pune & Mumbai DCs",
+   722→   722→    recommended: "Expedite the 4G Router X2 purchase order (ETA 18 Nov) and check partial-shipment options with the two affected accounts.",
+   723→   723→    drillScreen: "inventory-overview",
+   724→   724→    state: "New",
+   725→   725→    raisedAt: at(-2, 11, 5),
+   726→   726→  },
+   727→   727→  {
+   728→   728→    id: "alr-06",
+   729→   729→    title: "Service attrition at 16.8% — 5.2 pts above company average",
+   730→   730→    domain: "people",
+   731→   731→    domainLabel: "People",
+   732→   732→    severity: "Attention",
+   733→   733→    whatHappened: "Service lost 9 people this quarter (16.8% annualized) including two senior engineers now serving notice periods.",
+   734→   734→    whenText: "Raised 6 Nov, 14:30 IST",
+   735→   735→    whyItMatters: "Losing senior engineers while SLA is already below target compounds delivery risk on the same accounts that are renewing.",
+   736→   736→    affected: "Service delivery capacity · senior coverage",
+   737→   737→    recommended: "Run the retention review with the HR Head; include the two notice-period engineers in a stay conversation.",
+   738→   738→    drillScreen: "people-overview",
+   739→   739→    state: "Assigned",
+   740→   740→    assignee: "Neha Patel",
+   741→   741→    raisedAt: at(-7, 14, 30),
+   742→   742→  },
+   743→   743→  {
+   744→   744→    id: "alr-07",
+   745→   745→    title: "Two executive decisions pending beyond SLA",
+   746→   746→    domain: "finance",
+   747→   747→    domainLabel: "Approvals",
+   748→   748→    severity: "High",
+   749→   749→    whatHappened: "The cloud infrastructure renewal (₹1.24 Cr) and the Zenith pricing exception have waited past their 3-day SLA. The pricing exception is now blocking a Contracting-stage deal.",
+   750→   750→    whenText: "Raised 13 Nov, 08:00 IST",
+   751→   751→    whyItMatters: "The Zenith exception gates a ₹0.62 Cr Contracting-stage deal; every waiting day compresses the December close.",
+   752→   752→    affected: "Zenith renewal · cloud infrastructure contract",
+   753→   753→    recommended: "Decide both in Executive Approvals today — the pricing exception needs step-up verification.",
+   754→   754→    drillScreen: "executive-approvals",
+   755→   755→    state: "New",
+   756→   756→    raisedAt: at(0, 8, 0),
+   757→   757→  },
+   758→   758→  {
+   759→   759→    id: "alr-08",
+   760→   760→    title: "North region field completion at 58% this week",
+   761→   761→    domain: "field",
+   762→   762→    domainLabel: "Field Ops",
+   763→   763→    severity: "Info",
+   764→   764→    whatHappened: "North completed 18 of 31 scheduled visits (58%) against a 90% standard — two engineers on unplanned leave.",
+   765→   765→    whenText: "Raised 13 Nov, 07:30 IST",
+   766→   766→    whyItMatters: "Field visits in North feed both service recovery and the Meridian Trend re-engagement.",
+   767→   767→    affected: "North region service coverage",
+   768→   768→    recommended: "Ask the Operations Head for the regional staffing plan and a recovery schedule for the rescheduled visits.",
+   769→   769→    drillScreen: "field-operations",
+   770→   770→    state: "New",
+   771→   771→    raisedAt: at(0, 7, 30),
+   772→   772→  },
+   773→   773→];
+   774→   774→
+   775→   775→// ============================================================
+   776→   776→// Executive Approvals (69) — decisions that require executive
+   777→   777→// authority per the Approval Matrix (screen 09). Never
+   778→   778→// frontend-only: decisions are validated server-side.
+   779→   779→// ============================================================
+   780→   780→
+   781→   781→export type ExecApprovalKind =
+   782→   782→  | "Contract renewal"
+   783→   783→  | "Exception pricing"
+   784→   784→  | "Strategic hiring"
+   785→   785→  | "Capital purchase"
+   786→   786→  | "Elevated access"
+   787→   787→  | "Major expense";
+   788→   788→
+   789→   789→export interface ExecApproval {
+   790→   790→  id: string;
+   791→   791→  kind: ExecApprovalKind;
+   792→   792→  title: string;
+   793→   793→  requesterId: string;
+   794→   794→  department: string;
+   795→   795→  /** one-time value, INR crores */
+   796→   796→  amount?: number;
+   797→   797→  /** annualised cost, INR crores */
+   798→   798→  annualCost?: number;
+   799→   799→  submitted: number;
+   800→   800→  priority: "High" | "Medium" | "Low";
+   801→   801→  state: "Pending" | "Approved" | "Rejected" | "Changes requested";
+   802→   802→  stage: string;
+   803→   803→  risk: { level: "High" | "Medium" | "Low"; detail: string };
+   804→   804→  stepUpRequired?: boolean;
+   805→   805→  detail: string;
+   806→   806→  rule: string;
+   807→   807→  sla: string;
+   808→   808→  history: { at: number; actor: string; event: string }[];
+   809→   809→  decidedAt?: number;
+   810→   810→  decidedBy?: string;
+   811→   811→  decisionNote?: string;
+   812→   812→}
+   813→   813→
+   814→   814→export const EXEC_APPROVALS: ExecApproval[] = [
+   815→   815→  {
+   816→   816→    id: "eap-01",
+   817→   817→    kind: "Contract renewal",
+   818→   818→    title: "Cloud infrastructure annual renewal — multi-year term",
+   819→   819→    requesterId: "arjun",
+   820→   820→    department: "IT & Technology",
+   821→   821→    amount: 1.24,
+   822→   822→    submitted: at(-4, 10, 12),
+   823→   823→    priority: "High",
+   824→   824→    state: "Pending",
+   825→   825→    stage: "Executive review (final stage)",
+   826→   826→    risk: { level: "High", detail: "3-year lock-in with 180-day exit notice. Committing before the Q4 cash review reduces flexibility." },
+   827→   827→    stepUpRequired: true,
+   828→   828→    detail: "Renewal of primary cloud infrastructure with a 12% committed-use discount, moving from annual to 3-year term. Usage grew 31% YoY; the committed tier matches the FY28 capacity plan.",
+   829→   829→    rule: "Contract · ≥ ₹1 Cr → Chief Executive Officer",
+   830→   830→    sla: "3 working days · waiting 4 days",
+   831→   831→    history: [
+   832→   832→      { at: at(-4, 10, 12), actor: "Arjun Nair", event: "Submitted with FY28 capacity plan" },
+   833→   833→      { at: at(-4, 11, 2), actor: "System", event: "Routed via Approval Matrix → CEO (final stage)" },
+   834→   834→      { at: at(-3, 9, 40), actor: "Finance", event: "Budget check cleared — FY27 capex line has headroom" },
+   835→   835→    ],
+   836→   836→  },
+   837→   837→  {
+   838→   838→    id: "eap-02",
+   839→   839→    kind: "Exception pricing",
+   840→   840→    title: "Zenith Industries renewal — 22% discount exception",
+   841→   841→    requesterId: "meera",
+   842→   842→    department: "Sales",
+   843→   843→    amount: 0.62,
+   844→   844→    submitted: at(-2, 15, 45),
+   845→   845→    priority: "High",
+   846→   846→    state: "Pending",
+   847→   847→    stage: "Executive review",
+   848→   848→    risk: { level: "High", detail: "Reduces contract margin by 6.2 points. Gross margin is already 1.8 pts below target; comparable exceptions must not cascade." },
+   849→   849→    stepUpRequired: true,
+   850→   850→    detail: "Zenith (₹0.62 Cr annual value) asks for 22% against the standard 12% renewal discount, citing a competitor offer. The account has a critical SLA-breaching ticket open; the Service recovery plan is attached.",
+   851→   851→    rule: "Pricing exception > 20% → Chief Executive Officer",
+   852→   852→    sla: "2 working days · waiting 2 days",
+   853→   853→    history: [
+   854→   854→      { at: at(-2, 15, 45), actor: "Meera Iyer", event: "Submitted with competitor-offer evidence" },
+   855→   855→      { at: at(-2, 16, 10), actor: "System", event: "Routed via Approval Matrix → CEO" },
+   856→   856→      { at: at(-1, 10, 5), actor: "Finance", event: "Margin impact quantified — −6.2 pts on contract" },
+   857→   857→    ],
+   858→   858→  },
+   859→   859→  {
+   860→   860→    id: "eap-03",
+   861→   861→    kind: "Strategic hiring",
+   862→   862→    title: "VP Engineering requisition — platform organization",
+   863→   863→    requesterId: "arjun",
+   864→   864→    department: "IT & Technology",
+   865→   865→    annualCost: 0.92,
+   866→   866→    submitted: at(-5, 9, 30),
+   867→   867→    priority: "Medium",
+   868→   868→    state: "Pending",
+   869→   869→    stage: "Executive review",
+   870→   870→    risk: { level: "Medium", detail: "Adds ₹0.92 Cr annual fixed cost. Headcount plan assumed backfill first; this creates a new leadership layer." },
+   871→   871→    detail: "New VP Engineering to own the platform roadmap across Enterprise Solutions and Digital Services. Backfill-free requisition with internal-candidate assessment attached.",
+   872→   872→    rule: "New leadership role → Chief Executive Officer",
+   873→   873→    sla: "5 working days · waiting 5 days",
+   874→   874→    history: [
+   875→   875→      { at: at(-5, 9, 30), actor: "Arjun Nair", event: "Submitted with role charter" },
+   876→   876→      { at: at(-5, 9, 58), actor: "System", event: "Routed via Approval Matrix → CEO" },
+   877→   877→    ],
+   878→   878→  },
+   879→   879→  {
+   880→   880→    id: "eap-04",
+   881→   881→    kind: "Capital purchase",
+   882→   882→    title: "Warehouse automation — Pune DC sorting line",
+   883→   883→    requesterId: "karan",
+   884→   884→    department: "Inventory",
+   885→   885→    amount: 0.68,
+   886→   886→    submitted: at(-6, 12, 20),
+   887→   887→    priority: "Medium",
+   888→   888→    state: "Pending",
+   889→   889→    stage: "Executive review",
+   890→   890→    risk: { level: "Medium", detail: "Pune DC is at 93% utilization, but the payback case assumes the FY28 volume plan holding." },
+   891→   891→    detail: "Automated sorting line for Pune DC to lift dispatch on-time from 93.1% toward the 97% standard. Payback 2.6 years at planned volumes; vendor benchmark attached.",
+   892→   892→    rule: "Capex · ≥ ₹50 L → Chief Executive Officer",
+   893→   893→    sla: "5 working days · waiting 6 days",
+   894→   894→    history: [
+   895→   895→      { at: at(-6, 12, 20), actor: "Karan Mehta", event: "Submitted with vendor benchmark and payback model" },
+   896→   896→      { at: at(-6, 12, 55), actor: "System", event: "Routed via Approval Matrix → CEO" },
+   897→   897→    ],
+   898→   898→  },
+   899→   899→  {
+   900→   900→    id: "eap-05",
+   901→   901→    kind: "Elevated access",
+   902→   902→    title: "Production DB elevated access — Finance data migration window",
+   903→   903→    requesterId: "tanvi",
+   904→   904→    department: "Finance",
+   905→   905→    submitted: at(-2, 11, 15),
+   906→   906→    priority: "High",
+   907→   907→    state: "Pending",
+   908→   908→    stage: "Final approval (Security cleared)",
+   909→   909→    risk: { level: "High", detail: "Grants write access to production financial data. Time-boxed and audited, but the blast radius includes the general ledger." },
+   910→   910→    stepUpRequired: true,
+   911→   911→    detail: "Time-boxed elevated access (72 h) for the FY27 ledger migration on 21 Nov. Security review passed (Phase 3 controls); executive sign-off is the final gate. All access is session-audited.",
+   912→   912→    rule: "Privileged access → Security + Chief Executive Officer",
+   913→   913→    sla: "1 working day · waiting 2 days",
+   914→   914→    history: [
+   915→   915→      { at: at(-2, 11, 15), actor: "Tanvi Shah", event: "Submitted with migration runbook" },
+   916→   916→      { at: at(-2, 11, 40), actor: "System", event: "Routed via Approval Matrix → Security + CEO" },
+   917→   917→      { at: at(-1, 17, 25), actor: "Security", event: "Cleared — compensating controls verified (audit ref recorded)" },
+   918→   918→    ],
+   919→   919→  },
+   920→   920→  {
+   921→   921→    id: "eap-06",
+   922→   922→    kind: "Major expense",
+   923→   923→    title: "Q3 leadership offsite — 3-day planning session",
+   924→   924→    requesterId: "neha",
+   925→   925→    department: "HR & People",
+   926→   926→    amount: 0.184,
+   927→   927→    submitted: at(-1, 14, 5),
+   928→   928→    priority: "Low",
+   929→   929→    state: "Pending",
+   930→   930→    stage: "Executive review",
+   931→   931→    risk: { level: "Low", detail: "Within the FY27 people-cost plan; timing overlaps the Q4 forecast lockdown week." },
+   932→   932→    detail: "3-day leadership offsite (18 people) in early December for FY28 planning. Venue quotes from two vendors attached.",
+   933→   933→    rule: "Expense · ≥ ₹10 L → Chief Executive Officer",
+   934→   934→    sla: "5 working days · waiting 1 day",
+   935→   935→    history: [
+   936→   936→      { at: at(-1, 14, 5), actor: "Neha Patel", event: "Submitted with two venue quotes" },
+   937→   937→      { at: at(-1, 14, 22), actor: "System", event: "Routed via Approval Matrix → CEO" },
+   938→   938→    ],
+   939→   939→  },
+   940→   940→];
+   941→   941→
+   942→   942→// ============================================================
+   943→   943→// CEO AI Insights (70) — evidence-based; AI inherits the CEO's
+   944→   944→// authorization scope and never invents facts (spec §25).
+   945→   945→// ============================================================
+   946→   946→
+   947→   947→export type InsightCategory =
+   948→   948→  | "Revenue"
+   949→   949→  | "Sales"
+   950→   950→  | "Finance"
+   951→   951→  | "People"
+   952→   952→  | "Marketing"
+   953→   953→  | "Service"
+   954→   954→  | "Inventory"
+   955→   955→  | "Operations"
+   956→   956→  | "Risk"
+   957→   957→  | "Opportunities";
+   958→   958→
+   959→   959→export interface AiInsight {
+   960→   960→  id: string;
+   961→   961→  category: InsightCategory;
+   962→   962→  title: string;
+   963→   963→  observation: string;
+   964→   964→  evidence: { label: string; value: string }[];
+   965→   965→  interpretation: string;
+   966→   966→  impact: string;
+   967→   967→  recommendation: string;
+   968→   968→  confidence: "High" | "Medium" | "Low";
+   969→   969→  /** required when confidence is Low/Medium — say why (spec: communicate uncertainty) */
+   970→   970→  confidenceNote?: string;
+   971→   971→  affectedArea: string;
+   972→   972→  generatedAt: number;
+   973→   973→  dataAsOf: string;
+   974→   974→  drillScreen?: ScreenId;
+   975→   975→  drillParams?: ScreenParams;
+   976→   976→  followUps: { id: string; label: string }[];
+   977→   977→}
+   978→   978→
+   979→   979→export const AI_INSIGHTS: AiInsight[] = [
+   980→   980→  {
+   981→   981→    id: "ai-01",
+   982→   982→    category: "Revenue",
+   983→   983→    title: "Q3 lands ~₹0.23 Cr under target unless the two slipped deals sign in December",
+   984→   984→    observation: "October closed 4% under target and the Q3 model forecast is ₹5.12 Cr against the ₹5.35 Cr target.",
+   985→   985→    evidence: [
+   986→   986→      { label: "October actual vs target", value: "₹1.68 Cr vs ₹1.75 Cr (−4.0%)" },
+   987→   987→      { label: "Q3 forecast (model)", value: "₹5.12 Cr · confidence 72%" },
+   988→   988→      { label: "Slipped pipeline", value: "Meridian Trend ₹0.52 Cr + National Retail Co ₹0.34 Cr" },
+   989→   989→    ],
+   990→   990→    interpretation: "Both slipped deals are in late stages, so December recovery is plausible — but only if the Meridian legal review and the NRC procurement board hold their dates.",
+   991→   991→    impact: "A second slip moves the Q3 miss from ~4% to ~7% and pushes ~₹0.86 Cr into Q4.",
+   992→   992→    recommendation: "Hold a December recovery review on the two deals; tie the Zenith pricing decision (pending with you) to the renewal negotiation.",
+   993→   993→    confidence: "High",
+   994→   994→    affectedArea: "Revenue · Sales",
+   995→   995→    generatedAt: Date.parse("2026-11-13T06:12:00+05:30"),
+   996→   996→    dataAsOf: "13 Nov 2026, 09:16 IST (Sales + Finance sync)",
+   997→   997→    drillScreen: "revenue-snapshot",
+   998→   998→    followUps: [
+   999→   999→      { id: "fu-review", label: "Create December recovery review" },
+  1000→  1000→      { id: "fu-note", label: "Note for Sales Head" },
+  1001→  1001→    ],
+  1002→  1002→  },
+  1003→  1003→  {
+  1004→  1004→    id: "ai-02",
+  1005→  1005→    category: "Risk",
+  1006→  1006→    title: "Receivables risk concentrates in one account that is also in renewal",
+  1007→  1007→    observation: "₹0.94 Cr of receivables are overdue; Meridian Trend holds ₹0.31 Cr of it at 68 days while its renewal deal is stalled in Negotiation.",
+  1008→  1008→    evidence: [
+  1009→  1009→      { label: "Overdue receivables", value: "₹0.94 Cr · DSO 58 days (+6)" },
+  1010→  1010→      { label: "Meridian Trend overdue", value: "₹0.31 Cr · 68 days" },
+  1011→  1011→      { label: "Same account", value: "₹0.52 Cr deal at Negotiation, stalled 21 days" },
+  1012→  1012→    ],
+  1013→  1013→    interpretation: "Collection leverage and negotiation leverage are coupled: collecting before signing strengthens terms, but aggressive collection during a stalled renewal risks the relationship.",
+  1014→  1014→    impact: "Cash position (₹6.84 Cr) absorbs the delay, but every extra week adds ~₹0.05 Cr to the overdue balance.",
+  1015→  1015→    recommendation: "Sequence first: join the escalation call (Service), then support the collection conversation led by Finance.",
+  1016→  1016→    confidence: "High",
+  1017→  1017→    affectedArea: "Finance · Sales · Service",
+  1018→  1018→    generatedAt: Date.parse("2026-11-13T06:12:00+05:30"),
+  1019→  1019→    dataAsOf: "13 Nov 2026, 09:08 IST (Finance sync)",
+  1020→  1020→    drillScreen: "finance-snapshot",
+  1021→  1021→    followUps: [
+  1022→  1022→      { id: "fu-collection", label: "Create collection review task" },
+  1023→  1023→      { id: "fu-brief", label: "Request negotiation brief" },
+  1024→  1024→    ],
+  1025→  1025→  },
+  1026→  1026→  {
+  1027→  1027→    id: "ai-03",
+  1028→  1028→    category: "Service",
+  1029→  1029→    title: "SLA shortfall and attrition compound on the same renewal accounts",
+  1030→  1030→    observation: "SLA compliance is 92.4% vs the 95% target while Service attrition runs at 16.8%; the three critical-ticket accounts are exactly the accounts inside renewals.",
+  1031→  1031→    evidence: [
+  1032→  1032→      { label: "SLA compliance", value: "92.4% vs 95% target" },
+  1033→  1033→      { label: "Critical tickets", value: "3 accounts · ₹1.62 Cr combined value" },
+  1034→  1034→      { label: "Service attrition", value: "16.8% annualized · 2 senior engineers on notice" },
+  1035→  1035→    ],
+  1036→  1036→    interpretation: "This is a delivery-capacity problem, not a process problem: the same team carries the renewal accounts and has lost senior coverage.",
+  1037→  1037→    impact: "Renewal risk on ₹1.62 Cr of annual value if critical issues stay open into the negotiation window.",
+  1038→  1038→    recommendation: "Sequence the retention review (with HR) before the December renewals; approve backfill for the two notice-period engineers.",
+  1039→  1039→    confidence: "Medium",
+  1040→  1040→    confidenceNote: "Correlation is strong but causal attribution needs ticket-level analysis that sits outside executive scope.",
+  1041→  1041→    affectedArea: "Service · People",
+  1042→  1042→    generatedAt: Date.parse("2026-11-13T06:12:00+05:30"),
+  1043→  1043→    dataAsOf: "13 Nov 2026, 09:30 IST (Service sync)",
+  1044→  1044→    drillScreen: "service-overview",
+  1045→  1045→    followUps: [
+  1046→  1046→      { id: "fu-retention", label: "Schedule retention review" },
+  1047→  1047→    ],
+  1048→  1048→  },
+  1049→  1049→  {
+  1050→  1050→    id: "ai-04",
+  1051→  1051→    category: "Marketing",
+  1052→  1052→    title: "Marketing is under-spending against plan — watch Q4 pipeline feed",
+  1053→  1053→    observation: "Marketing spend is 9.5% under budget while pipeline contribution is 24% vs the 30% target.",
+  1054→  1054→    evidence: [
+  1055→  1055→      { label: "Budget variance", value: "₹0.38 Cr spent vs ₹0.42 Cr budget (−9.5%)" },
+  1056→  1056→      { label: "Pipeline contribution", value: "24% vs 30% target" },
+  1057→  1057→      { label: "Best channel", value: "Events — highest pipeline per lead despite ₹3,120 CPL" },
+  1058→  1058→    ],
+  1059→  1059→    interpretation: "Under-spending looks disciplined but is starving Q4 pipeline; the gap concentrates in demand-gen programs, not events.",
+  1060→  1060→    impact: "A sustained 10% under-spend could pull ~₹0.3–0.4 Cr of Q4 sourced pipeline.",
+  1061→  1061→    recommendation: "Ask the Marketing Head to reallocate the unspent budget to Q4 demand-gen before the budget freeze on 1 Dec.",
+  1062→  1062→    confidence: "Medium",
+  1063→  1063→    confidenceNote: "Marketing source sync is delayed — figures are final as of 31 Oct; November may change the picture.",
+  1064→  1064→    affectedArea: "Marketing · Q4 pipeline",
+  1065→  1065→    generatedAt: Date.parse("2026-11-13T06:12:00+05:30"),
+  1066→  1066→    dataAsOf: "31 Oct 2026 (source sync delayed since 04:00 IST)",
+  1067→  1067→    drillScreen: "marketing-overview",
+  1068→  1068→    followUps: [
+  1069→  1069→      { id: "fu-realloc", label: "Request reallocation plan" },
+  1070→  1070→    ],
+  1071→  1071→  },
+  1072→  1072→  {
+  1073→  1073→    id: "ai-05",
+  1074→  1074→    category: "People",
+  1075→  1075→    title: "Exit trend is rising while hiring holds flat",
+  1076→  1076→    observation: "Monthly exits rose from 5 (Jun) to 9 (Oct) while hires held at 11–15; net headcount growth is narrowing.",
+  1077→  1077→    evidence: [
+  1078→  1078→      { label: "Exits by month", value: "Jun 5 → Oct 9 (annualized 12.4% vs 10% target)" },
+  1079→  1079→      { label: "Hires by month", value: "11–15 per month, flat" },
+  1080→  1080→      { label: "Open positions", value: "23 · time-to-fill 34 days vs 30 target" },
+  1081→  1081→    ],
+  1082→  1082→    interpretation: "If the exit trend holds, Q4 net growth could be near zero even without a hiring freeze.",
+  1083→  1083→    impact: "Delivery capacity risk concentrated in Service (see the SLA insight).",
+  1084→  1084→    recommendation: "Ask HR for a leaver-reason review for the last 90 days and a hiring-plan correction.",
+  1085→  1085→    confidence: "Low",
+  1086→  1086→    confidenceNote: "Small-sample trend (4 months); treat directionally, not as a forecast.",
+  1087→  1087→    affectedArea: "People",
+  1088→  1088→    generatedAt: Date.parse("2026-11-13T06:12:00+05:30"),
+  1089→  1089→    dataAsOf: "13 Nov 2026, 08:40 IST (People sync)",
+  1090→  1090→    drillScreen: "people-overview",
+  1091→  1091→    followUps: [
+  1092→  1092→      { id: "fu-leaver", label: "Request leaver-reason review" },
+  1093→  1093→    ],
+  1094→  1094→  },
+  1095→  1095→  {
+  1096→  1096→    id: "ai-06",
+  1097→  1097→    category: "Operations",
+  1098→  1098→    title: "One SKU family is the single point of failure for dispatch",
+  1099→  1099→    observation: "Dispatch on-time is 93.1% vs the 97% standard, and all 12 blocked dispatches trace to 3 zero-stock SKUs led by 4G Router X2.",
+  1100→  1100→    evidence: [
+  1101→  1101→      { label: "Blocked dispatches", value: "12 · all on 3 SKUs" },
+  1102→  1102→      { label: "4G Router X2", value: "12 blocked · PO in transit, ETA 18 Nov" },
+  1103→  1103→      { label: "Dispatch on-time", value: "93.1% vs 97% target" },
+  1104→  1104→    ],
+  1105→  1105→    interpretation: "The dispatch miss is a procurement-timing problem, not a warehouse-throughput problem — though Pune DC at 93% utilization is the second-order constraint.",
+  1106→  1106→    impact: "Clearing the three SKUs recovers most of the on-time gap before month-end.",
+  1107→  1107→    recommendation: "Expedite the 4G Router X2 PO and consider partial shipment on the two renewal-linked orders.",
+  1108→  1108→    confidence: "High",
+  1109→  1109→    affectedArea: "Inventory · Dispatch",
+  1110→  1110→    generatedAt: Date.parse("2026-11-13T06:12:00+05:30"),
+  1111→  1111→    dataAsOf: "13 Nov 2026, 07:45 IST (Inventory sync)",
+  1112→  1112→    drillScreen: "inventory-overview",
+  1113→  1113→    followUps: [
+  1114→  1114→      { id: "fu-expedite", label: "Ask Inventory to expedite PO" },
+  1115→  1115→    ],
+  1116→  1116→  },
+  1117→  1117→];
+  1118→  1118→
+  1119→  1119→// ============================================================
+  1120→  1120→// KPI catalog (71) — every executive KPI carries its definition,
+  1121→  1121→// source, period and drill path (spec §8). Contributor numbers
+  1122→  1122→// come from the canonical domain blocks above.
+  1123→  1123→// ============================================================
+  1124→  1124→
+  1125→  1125→export type KpiUnit = "INR-cr" | "pct" | "x" | "count" | "hours" | "days" | "min";
+  1126→  1126→
+  1127→  1127→export interface KpiDrillLevel {
+  1128→  1128→  level: string;
+  1129→  1129→  entity: string;
+  1130→  1130→  note: string;
+  1131→  1131→  authorized: boolean;
+  1132→  1132→}
+  1133→  1133→
+  1134→  1134→export interface Kpi {
+  1135→  1135→  id: string;
+  1136→  1136→  name: string;
+  1137→  1137→  domain: DomainId;
+  1138→  1138→  domainLabel: string;
+  1139→  1139→  unit: KpiUnit;
+  1140→  1140→  definition: string;
+  1141→  1141→  calc: string;
+  1142→  1142→  source: string;
+  1143→  1143→  period: string;
+  1144→  1144→  kind: "Actual" | "Forecast" | "Target";
+  1145→  1145→  value: number;
+  1146→  1146→  target?: number;
+  1147→  1147→  variancePct?: number;
+  1148→  1148→  comparisonText: string;
+  1149→  1149→  trendPct: number;
+  1150→  1150→  direction: "up-good" | "down-good";
+  1151→  1151→  status: "On Track" | "Watch" | "At Risk";
+  1152→  1152→  primaryDriver: string;
+  1153→  1153→  contributors: { label: string; value: number; unit: KpiUnit }[];
+  1154→  1154→  drivers: { label: string; detail: string }[];
+  1155→  1155→  drill: KpiDrillLevel[];
+  1156→  1156→  trendSeries: { label: string; value: number; target?: number }[];
+  1157→  1157→  screen: ScreenId;
+  1158→  1158→}
+  1159→  1159→
+  1160→  1160→export const KPIS: Kpi[] = [
+  1161→  1161→  {
+  1162→  1162→    id: "kpi-revenue",
+  1163→  1163→    name: "Revenue (Recognized)",
+  1164→  1164→    domain: "revenue",
+  1165→  1165→    domainLabel: "Revenue",
+  1166→  1166→    unit: "INR-cr",
+  1167→  1167→    definition: "Revenue recognised per accounting policy in the current fiscal quarter, to date.",
+  1168→  1168→    calc: "Sum of recognised revenue lines for 1 Oct – 13 Nov 2026",
+  1169→  1169→    source: "Finance ledger · Revenue module",
+  1170→  1170→    period: "Q3 FY27 · to date",
+  1171→  1171→    kind: "Actual",
+  1172→  1172→    value: 2.3,
+  1173→  1173→    target: 2.53,
+  1174→  1174→    variancePct: -9.1,
+  1175→  1175→    comparisonText: "+5.5% vs same point in Q2",
+  1176→  1176→    trendPct: -13.4,
+  1177→  1177→    direction: "up-good",
+  1178→  1178→    status: "At Risk",
+  1179→  1179→    primaryDriver: "Two enterprise deals slipped from October to December (−₹0.86 Cr)",
+  1180→  1180→    contributors: [
+  1181→  1181→      { label: "Enterprise Solutions", value: 1.06, unit: "INR-cr" },
+  1182→  1182→      { label: "Digital Services", value: 0.72, unit: "INR-cr" },
+  1183→  1183→      { label: "Support & AMC", value: 0.52, unit: "INR-cr" },
+  1184→  1184→    ],
+  1185→  1185→    drivers: [
+  1186→  1186→      { label: "Slipped enterprise deals", detail: "Meridian Trend (₹0.52 Cr) and National Retail Co (₹0.34 Cr) moved from October to December." },
+  1187→  1187→      { label: "North region underdelivery", detail: "North recognized ₹0.41 Cr vs ₹0.51 Cr target." },
+  1188→  1188→    ],
+  1189→  1189→    drill: [
+  1190→  1190→      { level: "Company", entity: "Qubit One Pvt Ltd", note: "Recognized revenue, Q3 FY27 to date", authorized: true },
+  1191→  1191→      { level: "Business Unit", entity: "Enterprise Solutions · Digital Services · Support & AMC", note: "Target vs actual per unit", authorized: true },
+  1192→  1192→      { level: "Region", entity: "West · South · North · East", note: "Recognized vs regional target", authorized: true },
+  1193→  1193→      { level: "Account", entity: "Top 5 contributing accounts", note: "Acme, Zenith, Meridian Trend, Halcyon, Orbit", authorized: true },
+  1194→  1194→      { level: "Contract", entity: "Contract-level detail", note: "Requires Finance authorization beyond executive summary", authorized: false },
+  1195→  1195→      { level: "Invoice", entity: "Invoice-level detail", note: "Restricted — Finance ledger access only", authorized: false },
+  1196→  1196→    ],
+  1197→  1197→    trendSeries: [
+  1198→  1198→      { label: "Apr", value: 1.52, target: 1.5 },
+  1199→  1199→      { label: "May", value: 1.61, target: 1.55 },
+  1200→  1200→      { label: "Jun", value: 1.73, target: 1.6 },
+  1201→  1201→      { label: "Jul", value: 1.79, target: 1.65 },
+  1202→  1202→      { label: "Aug", value: 1.86, target: 1.7 },
+  1203→  1203→      { label: "Sep", value: 1.94, target: 1.75 },
+  1204→  1204→      { label: "Oct", value: 1.68, target: 1.75 },
+  1205→  1205→    ],
+  1206→  1206→    screen: "revenue-snapshot",
+  1207→  1207→  },
+  1208→  1208→  {
+  1209→  1209→    id: "kpi-pipeline",
+  1210→  1210→    name: "Pipeline Coverage",
+  1211→  1211→    domain: "sales",
+  1212→  1212→    domainLabel: "Sales",
+  1213→  1213→    unit: "x",
+  1214→  1214→    definition: "Open qualified pipeline value divided by the remaining-quarter bookings target.",
+  1215→  1215→    calc: "Pipeline ₹9.8 Cr ÷ remaining target ₹5.35 Cr (weighted ₹5.6 Cr)",
+  1216→  1216→    source: "Sales pipeline · opportunities with validated next steps",
+  1217→  1217→    period: "Q3 FY27 · current",
+  1218→  1218→    kind: "Actual",
+  1219→  1219→    value: 1.8,
+  1220→  1220→    target: 2.0,
+  1221→  1221→    variancePct: -10,
+  1222→  1222→    comparisonText: "1.9x at the same point in Q2",
+  1223→  1223→    trendPct: -5.3,
+  1224→  1224→    direction: "up-good",
+  1225→  1225→    status: "Watch",
+  1226→  1226→    primaryDriver: "West region coverage at 1.6x pulls the company average down",
+  1227→  1227→    contributors: [
+  1228→  1228→      { label: "West", value: 1.6, unit: "x" },
+  1229→  1229→      { label: "South", value: 1.8, unit: "x" },
+  1230→  1230→      { label: "North", value: 2.0, unit: "x" },
+  1231→  1231→      { label: "East", value: 2.1, unit: "x" },
+  1232→  1232→    ],
+  1233→  1233→    drivers: [
+  1234→  1234→      { label: "West coverage gap", detail: "1.6x vs 2.0x — the region carries the two slipped enterprise deals." },
+  1235→  1235→      { label: "Weighted quality", detail: "Weighted pipeline ₹5.6 Cr of ₹9.8 Cr gross — 57% weighting is in line with historical conversion." },
+  1236→  1236→    ],
+  1237→  1237→    drill: [
+  1238→  1238→      { level: "Company", entity: "Qubit One Pvt Ltd", note: "Coverage 1.8x vs 2.0x standard", authorized: true },
+  1239→  1239→      { level: "Region", entity: "West · South · North · East", note: "Coverage and win rate per region", authorized: true },
+  1240→  1240→      { level: "Team", entity: "Inside · Field · Channel teams", note: "Team-level roll-ups", authorized: true },
+  1241→  1241→      { level: "Opportunity", entity: "128 open opportunities", note: "Named opportunities with owners", authorized: true },
+  1242→  1242→      { level: "Contact", entity: "Buyer contacts", note: "Restricted — contact data is outside executive scope", authorized: false },
+  1243→  1243→    ],
+  1244→  1244→    trendSeries: [
+  1245→  1245→      { label: "W44", value: 1.9, target: 2.0 },
+  1246→  1246→      { label: "W45", value: 1.95, target: 2.0 },
+  1247→  1247→      { label: "W46", value: 1.87, target: 2.0 },
+  1248→  1248→      { label: "W47", value: 1.84, target: 2.0 },
+  1249→  1249→      { label: "W48", value: 1.8, target: 2.0 },
+  1250→  1250→    ],
+  1251→  1251→    screen: "sales-command",
+  1252→  1252→  },
+  1253→  1253→  {
+  1254→  1254→    id: "kpi-cash",
+  1255→  1255→    name: "Cash Position",
+  1256→  1256→    domain: "finance",
+  1257→  1257→    domainLabel: "Finance",
+  1258→  1258→    unit: "INR-cr",
+  1259→  1259→    definition: "Total cash and equivalents across all operating accounts, as of the last ledger close.",
+  1260→  1260→    calc: "Closing balance 13 Nov 2026 · runway = cash ÷ avg monthly net burn",
+  1261→  1261→    source: "Finance ledger · Treasury",
+  1262→  1262→    period: "As of 13 Nov 2026",
+  1263→  1263→    kind: "Actual",
+  1264→  1264→    value: 6.84,
+  1265→  1265→    target: 5.0,
+  1266→  1266→    comparisonText: "−₹0.13 Cr vs 31 Oct",
+  1267→  1267→    trendPct: -1.9,
+  1268→  1268→    direction: "up-good",
+  1269→  1269→    status: "On Track",
+  1270→  1270→    primaryDriver: "Collections timing — overdue receivables at ₹0.94 Cr",
+  1271→  1271→    contributors: [
+  1272→  1272→      { label: "Operating accounts", value: 5.11, unit: "INR-cr" },
+  1273→  1273→      { label: "Deposit laddering", value: 1.73, unit: "INR-cr" },
+  1274→  1274→    ],
+  1275→  1275→    drivers: [
+  1276→  1276→      { label: "Collections timing", detail: "₹0.94 Cr overdue receivables; Meridian Trend ₹0.31 Cr at 68 days." },
+  1277→  1277→      { label: "Runway comfortable", detail: "14 months of runway against the ₹5.0 Cr floor policy." },
+  1278→  1278→    ],
+  1279→  1279→    drill: [
+  1280→  1280→      { level: "Company", entity: "Qubit One Pvt Ltd", note: "₹6.84 Cr total, 14-month runway", authorized: true },
+  1281→  1281→      { level: "Account group", entity: "Operating · deposits", note: "Split across account groups", authorized: true },
+  1282→  1282→      { level: "Ledger account", entity: "Bank-level detail", note: "Requires Finance (Treasury) authorization", authorized: false },
+  1283→  1283→    ],
+  1284→  1284→    trendSeries: [
+  1285→  1285→      { label: "Jun", value: 7.42 },
+  1286→  1286→      { label: "Jul", value: 7.28 },
+  1287→  1287→      { label: "Aug", value: 7.05 },
+  1288→  1288→      { label: "Sep", value: 7.31 },
+  1289→  1289→      { label: "Oct", value: 6.97 },
+  1290→  1290→      { label: "Nov", value: 6.84 },
+  1291→  1291→    ],
+  1292→  1292→    screen: "finance-snapshot",
+  1293→  1293→  },
+  1294→  1294→  {
+  1295→  1295→    id: "kpi-sla",
+  1296→  1296→    name: "SLA Compliance",
+  1297→  1297→    domain: "service",
+  1298→  1298→    domainLabel: "Service",
+  1299→  1299→    unit: "pct",
+  1300→  1300→    definition: "Share of tickets resolved within the contractual SLA window over the last 30 days.",
+  1301→  1301→    calc: "Resolved-within-SLA ÷ resolved total, 14 Oct – 13 Nov",
+  1302→  1302→    source: "Service desk · SLA engine",
+  1303→  1303→    period: "Last 30 days",
+  1304→  1304→    kind: "Actual",
+  1305→  1305→    value: 92.4,
+  1306→  1306→    target: 95,
+  1307→  1307→    variancePct: -2.7,
+  1308→  1308→    comparisonText: "−1.1 pts vs previous 30 days",
+  1309→  1309→    trendPct: -1.1,
+  1310→  1310→    direction: "up-good",
+  1311→  1311→    status: "Watch",
+  1312→  1312→    primaryDriver: "Critical tickets on three renewal accounts breach SLA",
+  1313→  1313→    contributors: [
+  1314→  1314→      { label: "P1 critical", value: 86.2, unit: "pct" },
+  1315→  1315→      { label: "P2 high", value: 91.8, unit: "pct" },
+  1316→  1316→      { label: "P3 standard", value: 94.6, unit: "pct" },
+  1317→  1317→    ],
+  1318→  1318→    drivers: [
+  1319→  1319→      { label: "Renewal-account load", detail: "Meridian Trend, Zenith, Orbit carry long-running critical issues." },
+  1320→  1320→      { label: "Senior coverage gap", detail: "Two senior engineers on notice period compress escalation capacity." },
+  1321→  1321→    ],
+  1322→  1322→    drill: [
+  1323→  1323→      { level: "Company", entity: "Qubit One Pvt Ltd", note: "92.4% last 30 days", authorized: true },
+  1324→  1324→      { level: "Priority", entity: "P1 · P2 · P3", note: "Compliance per priority class", authorized: true },
+  1325→  1325→      { level: "Account", entity: "Critical accounts", note: "Named accounts with open criticals", authorized: true },
+  1326→  1326→      { level: "Ticket", entity: "Ticket-level detail", note: "Requires Service Manager authorization", authorized: false },
+  1327→  1327→    ],
+  1328→  1328→    trendSeries: [
+  1329→  1329→      { label: "W44", value: 93.8, target: 95 },
+  1330→  1330→      { label: "W45", value: 93.1, target: 95 },
+  1331→  1331→      { label: "W46", value: 92.9, target: 95 },
+  1332→  1332→      { label: "W47", value: 92.6, target: 95 },
+  1333→  1333→      { label: "W48", value: 92.4, target: 95 },
+  1334→  1334→    ],
+  1335→  1335→    screen: "service-overview",
+  1336→  1336→  },
+  1337→  1337→  {
+  1338→  1338→    id: "kpi-attrition",
+  1339→  1339→    name: "Annualized Attrition",
+  1340→  1340→    domain: "people",
+  1341→  1341→    domainLabel: "People",
+  1342→  1342→    unit: "pct",
+  1343→  1343→    definition: "Rolling 12-month exits as a share of average headcount, company-wide.",
+  1344→  1344→    calc: "Exits (rolling 12 m) ÷ average headcount × 100",
+  1345→  1345→    source: "HR core · employee lifecycle (screen 06)",
+  1346→  1346→    period: "Rolling 12 months",
+  1347→  1347→    kind: "Actual",
+  1348→  1348→    value: 12.4,
+  1349→  1349→    target: 10,
+  1350→  1350→    variancePct: 24,
+  1351→  1351→    comparisonText: "+1.8 pts vs previous quarter",
+  1352→  1352→    trendPct: 17,
+  1353→  1353→    direction: "down-good",
+  1354→  1354→    status: "At Risk",
+  1355→  1355→    primaryDriver: "Service department at 16.8% — 9 exits this quarter",
+  1356→  1356→    contributors: [
+  1357→  1357→      { label: "Service", value: 16.8, unit: "pct" },
+  1358→  1358→      { label: "Sales", value: 13.1, unit: "pct" },
+  1359→  1359→      { label: "Operations", value: 11.9, unit: "pct" },
+  1360→  1360→      { label: "Other departments", value: 8.6, unit: "pct" },
+  1361→  1361→    ],
+  1362→  1362→    drivers: [
+  1363→  1363→      { label: "Service concentration", detail: "9 Service exits this quarter including two senior engineers." },
+  1364→  1364→      { label: "Exit trend rising", detail: "Monthly exits 5 → 9 between June and October." },
+  1365→  1365→    ],
+  1366→  1366→    drill: [
+  1367→  1367→      { level: "Company", entity: "Qubit One Pvt Ltd", note: "12.4% annualized", authorized: true },
+  1368→  1368→      { level: "Department", entity: "All departments", note: "Attrition by department (aggregated)", authorized: true },
+  1369→  1369→      { level: "Individual leaver", entity: "Leaver records", note: "Restricted — individual HR data stays in HR systems", authorized: false },
+  1370→  1370→    ],
+  1371→  1371→    trendSeries: [
+  1372→  1372→      { label: "Q1", value: 10.2, target: 10 },
+  1373→  1373→      { label: "Q2", value: 10.6, target: 10 },
+  1374→  1374→      { label: "Jul", value: 11.2, target: 10 },
+  1375→  1375→      { label: "Aug", value: 11.8, target: 10 },
+  1376→  1376→      { label: "Sep", value: 12.1, target: 10 },
+  1377→  1377→      { label: "Oct", value: 12.4, target: 10 },
+  1378→  1378→    ],
+  1379→  1379→    screen: "people-overview",
+  1380→  1380→  },
+  1381→  1381→  {
+  1382→  1382→    id: "kpi-mkt",
+  1383→  1383→    name: "Marketing Pipeline Contribution",
+  1384→  1384→    domain: "marketing",
+  1385→  1385→    domainLabel: "Marketing",
+  1386→  1386→    unit: "pct",
+  1387→  1387→    definition: "Share of qualified pipeline sourced by marketing programs in the quarter.",
+  1388→  1388→    calc: "Marketing-sourced pipeline ₹1.62 Cr ÷ total qualified pipeline created in Q3",
+  1389→  1389→    source: "Marketing automation · attribution model v3",
+  1390→  1390→    period: "Q3 FY27 · to 31 Oct",
+  1391→  1391→    kind: "Actual",
+  1392→  1392→    value: 24,
+  1393→  1393→    target: 30,
+  1394→  1394→    variancePct: -20,
+  1395→  1395→    comparisonText: "26% at the same point in Q2",
+  1396→  1396→    trendPct: -7.7,
+  1397→  1397→    direction: "up-good",
+  1398→  1398→    status: "Watch",
+  1399→  1399→    primaryDriver: "Demand-gen programs under-spent (−9.5% budget variance)",
+  1400→  1400→    contributors: [
+  1401→  1401→      { label: "Organic search", value: 0.52, unit: "INR-cr" },
+  1402→  1402→      { label: "Events", value: 0.41, unit: "INR-cr" },
+  1403→  1403→      { label: "Paid media", value: 0.38, unit: "INR-cr" },
+  1404→  1404→      { label: "Referral + outbound", value: 0.31, unit: "INR-cr" },
+  1405→  1405→    ],
+  1406→  1406→    drivers: [
+  1407→  1407→      { label: "Demand-gen under-spend", detail: "−9.5% budget variance starves Q4 pipeline feed." },
+  1408→  1408→      { label: "Source sync delayed", detail: "November figures pending — read trend against 31 Oct baseline." },
+  1409→  1409→    ],
+  1410→  1410→    drill: [
+  1411→  1411→      { level: "Company", entity: "Qubit One Pvt Ltd", note: "24% contribution, ₹1.62 Cr sourced", authorized: true },
+  1412→  1412→      { level: "Channel", entity: "5 channels", note: "Leads, MQLs, CPL, pipeline per channel", authorized: true },
+  1413→  1413→      { level: "Campaign", entity: "Named campaigns", note: "Campaign performance roll-up", authorized: true },
+  1414→  1414→      { level: "Lead", entity: "Lead-level detail", note: "Restricted — lead records sit in the Marketing system", authorized: false },
+  1415→  1415→    ],
+  1416→  1416→    trendSeries: [
+  1417→  1417→      { label: "Jul", value: 27, target: 30 },
+  1418→  1418→      { label: "Aug", value: 26, target: 30 },
+  1419→  1419→      { label: "Sep", value: 25, target: 30 },
+  1420→  1420→      { label: "Oct", value: 24, target: 30 },
+  1421→  1421→    ],
+  1422→  1422→    screen: "marketing-overview",
+  1423→  1423→  },
+  1424→  1424→  {
+  1425→  1425→    id: "kpi-dispatch",
+  1426→  1426→    name: "Dispatch On-Time",
+  1427→  1427→    domain: "inventory",
+  1428→  1428→    domainLabel: "Inventory",
+  1429→  1429→    unit: "pct",
+  1430→  1430→    definition: "Dispatches shipped within the promised window over the last 30 days.",
+  1431→  1431→    calc: "On-time dispatches ÷ total dispatches, 14 Oct – 13 Nov",
+  1432→  1432→    source: "Inventory · dispatch engine",
+  1433→  1433→    period: "Last 30 days",
+  1434→  1434→    kind: "Actual",
+  1435→  1435→    value: 93.1,
+  1436→  1436→    target: 97,
+  1437→  1437→    variancePct: -4,
+  1438→  1438→    comparisonText: "−0.8 pts vs previous 30 days",
+  1439→  1439→    trendPct: -0.9,
+  1440→  1440→    direction: "up-good",
+  1441→  1441→    status: "Watch",
+  1442→  1442→    primaryDriver: "All blocked dispatches trace to 3 zero-stock SKUs",
+  1443→  1443→    contributors: [
+  1444→  1444→      { label: "Mumbai DC", value: 94.2, unit: "pct" },
+  1445→  1445→      { label: "Bengaluru DC", value: 94.0, unit: "pct" },
+  1446→  1446→      { label: "Delhi NCR DC", value: 93.5, unit: "pct" },
+  1447→  1447→      { label: "Pune DC", value: 90.1, unit: "pct" },
+  1448→  1448→    ],
+  1449→  1449→    drivers: [
+  1450→  1450→      { label: "Stockout concentration", detail: "12 blocked dispatches on 4G Router X2, Edge Gateway G3, Sensor Hub S7." },
+  1451→  1451→      { label: "Pune utilization", detail: "93% utilization slows pick-pack at the most affected DC." },
+  1452→  1452→    ],
+  1453→  1453→    drill: [
+  1454→  1454→      { level: "Company", entity: "Qubit One Pvt Ltd", note: "93.1% last 30 days", authorized: true },
+  1455→  1455→      { level: "Warehouse", entity: "4 DCs", note: "On-time per distribution center", authorized: true },
+  1456→  1456→      { level: "SKU", entity: "Blocked SKUs", note: "Named SKUs with ETAs", authorized: true },
+  1457→  1457→      { level: "Order", entity: "Order-level detail", note: "Requires Inventory Manager authorization", authorized: false },
+  1458→  1458→    ],
+  1459→  1459→    trendSeries: [
+  1460→  1460→      { label: "W44", value: 94.6, target: 97 },
+  1461→  1461→      { label: "W45", value: 94.1, target: 97 },
+  1462→  1462→      { label: "W46", value: 93.8, target: 97 },
+  1463→  1463→      { label: "W47", value: 93.4, target: 97 },
+  1464→  1464→      { label: "W48", value: 93.1, target: 97 },
+  1465→  1465→    ],
+  1466→  1466→    screen: "inventory-overview",
+  1467→  1467→  },
+  1468→  1468→  {
+  1469→  1469→    id: "kpi-field",
+  1470→  1470→    name: "Field Visit Completion",
+  1471→  1471→    domain: "field",
+  1472→  1472→    domainLabel: "Field Ops",
+  1473→  1473→    unit: "pct",
+  1474→  1474→    definition: "Completed field visits as a share of scheduled visits this week.",
+  1475→  1475→    calc: "Completed 96 ÷ scheduled 128 visits (week W48)",
+  1476→  1476→    source: "Field operations · visit engine",
+  1477→  1477→    period: "Current week (W48)",
+  1478→  1478→    kind: "Actual",
+  1479→  1479→    value: 75,
+  1480→  1480→    target: 90,
+  1481→  1481→    variancePct: -16.7,
+  1482→  1482→    comparisonText: "84% in the previous week",
+  1483→  1483→    trendPct: -10.7,
+  1484→  1484→    direction: "up-good",
+  1485→  1485→    status: "At Risk",
+  1486→  1486→    primaryDriver: "North region at 58% — two engineers on unplanned leave",
+  1487→  1487→    contributors: [
+  1488→  1488→      { label: "West", value: 87, unit: "pct" },
+  1489→  1489→      { label: "South", value: 79, unit: "pct" },
+  1490→  1490→      { label: "East", value: 72, unit: "pct" },
+  1491→  1491→      { label: "North", value: 58, unit: "pct" },
+  1492→  1492→    ],
+  1493→  1493→    drivers: [
+  1494→  1494→      { label: "North staffing gap", detail: "Two engineers on unplanned leave; 5 visits rescheduled." },
+  1495→  1495→      { label: "Critical job load", detail: "4 critical unresolved jobs pull senior engineers off scheduled visits." },
+  1496→  1496→    ],
+  1497→  1497→    drill: [
+  1498→  1498→      { level: "Company", entity: "Qubit One Pvt Ltd", note: "75% this week vs 90% standard", authorized: true },
+  1499→  1499→      { level: "Region", entity: "West · South · North · East", note: "Completion and delays per region", authorized: true },
+  1500→  1500→      { level: "Engineer", entity: "46 active engineers", note: "Visit counts per engineer", authorized: true },
+  1501→  1501→      { level: "Visit", entity: "Visit-level detail", note: "Customer-identifying detail is restricted at executive level", authorized: false },
+  1502→  1502→    ],
+  1503→  1503→    trendSeries: [
+  1504→  1504→      { label: "W44", value: 84, target: 90 },
+  1505→  1505→      { label: "W45", value: 86, target: 90 },
+  1506→  1506→      { label: "W46", value: 83, target: 90 },
+  1507→  1507→      { label: "W47", value: 84, target: 90 },
+  1508→  1508→      { label: "W48", value: 75, target: 90 },
+  1509→  1509→    ],
+  1510→  1510→    screen: "field-operations",
+  1511→  1511→  },
+  1512→  1512→];
+  1513→  1513→
+  1514→  1514→// ============================================================
+  1515→  1515→// Executive Reports (72) — reuse the analytics/reporting notion;
+  1516→  1516→// generation and export are audited server-side (spec §20).
+  1517→  1517→// ============================================================
+  1518→  1518→
+  1519→  1519→export type ReportStatus = "Ready" | "Generating" | "Failed" | "Scheduled";
+  1520→  1520→
+  1521→  1521→export interface ExecReport {
+  1522→  1522→  id: string;
+  1523→  1523→  title: string;
+  1524→  1524→  category: string;
+  1525→  1525→  period: string;
+  1526→  1526→  ownerId: string;
+  1527→  1527→  lastGenerated?: number;
+  1528→  1528→  status: ReportStatus;
+  1529→  1529→  schedule: string;
+  1530→  1530→  format: "PDF" | "XLSX" | "PDF + XLSX";
+  1531→  1531→  recipients: string[];
+  1532→  1532→  description: string;
+  1533→  1533→  /** optional note about source data quality (e.g. delayed source) */
+  1534→  1534→  dataNote?: string;
+  1535→  1535→}
+  1536→  1536→
+  1537→  1537→export const EXEC_REPORTS: ExecReport[] = [
+  1538→  1538→  {
+  1539→  1539→    id: "rpt-exec-pack",
+  1540→  1540→    title: "Monthly Executive Pack — Company Performance",
+  1541→  1541→    category: "Company Performance",
+  1542→  1542→    period: "October 2026",
+  1543→  1543→    ownerId: "sagar",
+  1544→  1544→    lastGenerated: Date.parse("2026-11-13T06:30:00+05:30"),
+  1545→  1545→    status: "Ready",
+  1546→  1546→    schedule: "Monthly · 1st working day 06:30",
+  1547→  1547→    format: "PDF + XLSX",
+  1548→  1548→    recipients: ["Board pack", "Sagar Singh", "Priya Sharma"],
+  1549→  1549→    description: "The consolidated monthly view: revenue, pipeline, cash, service, people and operations with variance commentary.",
+  1550→  1550→  },
+  1551→  1551→  {
+  1552→  1552→    id: "rpt-revenue-detail",
+  1553→  1553→    title: "Revenue Detail — Recognized vs Booked vs Collected",
+  1554→  1554→    category: "Revenue",
+  1555→  1555→    period: "Q3 FY27 · to date",
+  1556→  1556→    ownerId: "priya",
+  1557→  1557→    lastGenerated: Date.parse("2026-11-12T18:15:00+05:30"),
+  1558→  1558→    status: "Ready",
+  1559→  1559→    schedule: "Monthly · 13th 18:00",
+  1560→  1560→    format: "XLSX",
+  1561→  1561→    recipients: ["Sagar Singh", "Priya Sharma", "Kavita Joshi"],
+  1562→  1562→    description: "Ledger-grade revenue detail with the three accounting definitions reconciled per business unit and region.",
+  1563→  1563→  },
+  1564→  1564→  {
+  1565→  1565→    id: "rpt-sales-forecast",
+  1566→  1566→    title: "Sales Forecast & Pipeline Confidence",
+  1567→  1567→    category: "Sales",
+  1568→  1568→    period: "Week W48",
+  1569→  1569→    ownerId: "rahul",
+  1570→  1570→    lastGenerated: Date.parse("2026-11-12T07:00:00+05:30"),
+  1571→  1571→    status: "Ready",
+  1572→  1572→    schedule: "Weekly · Thursday 07:00",
+  1573→  1573→    format: "PDF",
+  1574→  1574→    recipients: ["Sagar Singh", "Rahul Mehta", "Regional heads"],
+  1575→  1575→    description: "Commit / best-case / model forecast with confidence drivers and the at-risk opportunity list.",
+  1576→  1576→  },
+  1577→  1577→  {
+  1578→  1578→    id: "rpt-budget-variance",
+  1579→  1579→    title: "Finance Budget Variance — Departments",
+  1580→  1580→    category: "Finance",
+  1581→  1581→    period: "October 2026",
+  1582→  1582→    ownerId: "priya",
+  1583→  1583→    lastGenerated: Date.parse("2026-11-05T09:00:00+05:30"),
+  1584→  1584→    status: "Ready",
+  1585→  1585→    schedule: "Monthly · 5th 09:00",
+  1586→  1586→    format: "PDF + XLSX",
+  1587→  1587→    recipients: ["Sagar Singh", "Priya Sharma", "Department heads"],
+  1588→  1588→    description: "Actual vs budget by department with variance commentary and the overdue receivables appendix.",
+  1589→  1589→  },
+  1590→  1590→  {
+  1591→  1591→    id: "rpt-people",
+  1592→  1592→    title: "People — Headcount, Hiring & Attrition",
+  1593→  1593→    category: "People",
+  1594→  1594→    period: "October 2026",
+  1595→  1595→    ownerId: "neha",
+  1596→  1596→    status: "Scheduled",
+  1597→  1597→    schedule: "Monthly · 1 Dec 08:00",
+  1598→  1598→    format: "PDF",
+  1599→  1599→    recipients: ["Sagar Singh", "Neha Patel"],
+  1600→  1600→    description: "Aggregated workforce view: headcount trend, hiring funnel, attrition by department. No individual-level data.",
+  1601→  1601→  },
+  1602→  1602→  {
+  1603→  1603→    id: "rpt-marketing-roi",
+  1604→  1604→    title: "Marketing Channel ROI & Pipeline Contribution",
+  1605→  1605→    category: "Marketing",
+  1606→  1606→    period: "Q3 FY27 · to 31 Oct",
+  1607→  1607→    ownerId: "amit",
+  1608→  1608→    lastGenerated: Date.parse("2026-11-03T16:45:00+05:30"),
+  1609→  1609→    status: "Ready",
+  1610→  1610→    schedule: "Monthly · 3rd 16:00",
+  1611→  1611→    format: "PDF + XLSX",
+  1612→  1612→    recipients: ["Sagar Singh", "Amit Verma"],
+  1613→  1613→    description: "Channel-level CPL, MQL quality and sourced pipeline with campaign commentary.",
+  1614→  1614→    dataNote: "Source sync delayed since 04:00 IST — reflects data through 31 Oct.",
+  1615→  1615→  },
+  1616→  1616→  {
+  1617→  1617→    id: "rpt-service-sla",
+  1618→  1618→    title: "Service SLA & CSAT Review",
+  1619→  1619→    category: "Service",
+  1620→  1620→    period: "Week W48",
+  1621→  1621→    ownerId: "vikramj",
+  1622→  1622→    lastGenerated: Date.parse("2026-11-11T08:30:00+05:30"),
+  1623→  1623→    status: "Ready",
+  1624→  1624→    schedule: "Weekly · Wednesday 08:30",
+  1625→  1625→    format: "PDF",
+  1626→  1626→    recipients: ["Sagar Singh", "Vikram Joshi", "Service leads"],
+  1627→  1627→    description: "SLA compliance by priority, backlog trend, CSAT and the critical-account escalation list.",
+  1628→  1628→  },
+  1629→  1629→  {
+  1630→  1630→    id: "rpt-inventory-valuation",
+  1631→  1631→    title: "Inventory Valuation & Stock Health",
+  1632→  1632→    category: "Inventory",
+  1633→  1633→    period: "1 Nov 2026",
+  1634→  1634→    ownerId: "karan",
+  1635→  1635→    lastGenerated: Date.parse("2026-11-02T10:00:00+05:30"),
+  1636→  1636→    status: "Ready",
+  1637→  1637→    schedule: "Monthly · 2nd 10:00",
+  1638→  1638→    format: "XLSX",
+  1639→  1639→    recipients: ["Sagar Singh", "Karan Mehta", "Priya Sharma"],
+  1640→  1640→    description: "Warehouse-level valuation, low-stock and overstock exceptions, purchase pipeline status.",
+  1641→  1641→  },
+  1642→  1642→  {
+  1643→  1643→    id: "rpt-field",
+  1644→  1644→    title: "Field Operations Summary",
+  1645→  1645→    category: "Operations",
+  1646→  1646→    period: "Week W47",
+  1647→  1647→    ownerId: "sanjay",
+  1648→  1648→    lastGenerated: Date.parse("2026-11-10T17:30:00+05:30"),
+  1649→  1649→    status: "Ready",
+  1650→  1650→    schedule: "Weekly · Tuesday 17:30",
+  1651→  1651→    format: "PDF",
+  1652→  1652→    recipients: ["Sagar Singh", "Sanjay Gupta", "Regional leads"],
+  1653→  1653→    description: "Visit completion by region, delayed-visit reasons, unresolved jobs and travel trends.",
+  1654→  1654→  },
+  1655→  1655→  {
+  1656→  1656→    id: "rpt-risk",
+  1657→  1657→    title: "Risk & Exceptions — Executive Digest",
+  1658→  1658→    category: "Risk",
+  1659→  1659→    period: "October 2026",
+  1660→  1660→    ownerId: "priya",
+  1661→  1661→    lastGenerated: Date.parse("2026-11-13T05:45:00+05:30"),
+  1662→  1662→    status: "Failed",
+  1663→  1663→    schedule: "Monthly · 13th 05:45",
+  1664→  1664→    format: "PDF",
+  1665→  1665→    recipients: ["Sagar Singh", "Priya Sharma"],
+  1666→  1666→    description: "Consolidated exceptions: revenue variance, receivables, SLA breaches, stockouts and pending decisions.",
+  1667→  1667→    dataNote: "Last run failed while merging the Finance ledger extract — regenerate after the 09:00 sync.",
+  1668→  1668→  },
+  1669→  1669→];
+  1670→  1670→
+  1671→  1671→// ============================================================
+  1672→  1672→// Domain summaries — the CEO Overview (59) domain band.
+  1673→  1673→// ============================================================
+  1674→  1674→
+  1675→  1675→export interface DomainSummary {
+  1676→  1676→  id: DomainId;
+  1677→  1677→  name: string;
+  1678→  1678→  screen: ScreenId;
+  1679→  1679→  health: "On Track" | "Watch" | "At Risk";
+  1680→  1680→  headline: string;
+  1681→  1681→  sub: string;
+  1682→  1682→  freshness: Freshness;
+  1683→  1683→  /** count of high-signal alerts raised against this domain */
+  1684→  1684→  attention: number;
+  1685→  1685→}
+  1686→  1686→
+  1687→  1687→export const DOMAIN_SUMMARIES: DomainSummary[] = [
+  1688→  1688→  {
+  1689→  1689→    id: "revenue",
+  1690→  1690→    name: "Revenue",
+  1691→  1691→    screen: "revenue-snapshot",
+  1692→  1692→    health: "At Risk",
+  1693→  1693→    headline: "₹2.30 Cr of ₹5.35 Cr target",
+  1694→  1694→    sub: "October missed by 4% — forecast ₹5.12 Cr",
+  1695→  1695→    freshness: DOMAIN_FRESHNESS.revenue,
+  1696→  1696→    attention: 1,
+  1697→  1697→  },
+  1698→  1698→  {
+  1699→  1699→    id: "sales",
+  1700→  1700→    name: "Sales",
+  1701→  1701→    screen: "sales-command",
+  1702→  1702→    health: "Watch",
+  1703→  1703→    headline: "Pipeline ₹9.8 Cr · coverage 1.8x",
+  1704→  1704→    sub: "Forecast confidence 72%",
+  1705→  1705→    freshness: DOMAIN_FRESHNESS.sales,
+  1706→  1706→    attention: 1,
+  1707→  1707→  },
+  1708→  1708→  {
+  1709→  1709→    id: "finance",
+  1710→  1710→    name: "Finance",
+  1711→  1711→    screen: "finance-snapshot",
+  1712→  1712→    health: "Watch",
+  1713→  1713→    headline: "Cash ₹6.84 Cr · 14-month runway",
+  1714→  1714→    sub: "Overdue receivables ₹0.94 Cr",
+  1715→  1715→    freshness: DOMAIN_FRESHNESS.finance,
+  1716→  1716→    attention: 2,
+  1717→  1717→  },
+  1718→  1718→  {
+  1719→  1719→    id: "people",
+  1720→  1720→    name: "People",
+  1721→  1721→    screen: "people-overview",
+  1722→  1722→    health: "Watch",
+  1723→  1723→    headline: "1,245 people · +47 net YTD",
+  1724→  1724→    sub: "Attrition 12.4% vs 10% target",
+  1725→  1725→    freshness: DOMAIN_FRESHNESS.people,
+  1726→  1726→    attention: 1,
+  1727→  1727→  },
+  1728→  1728→  {
+  1729→  1729→    id: "marketing",
+  1730→  1730→    name: "Marketing",
+  1731→  1731→    screen: "marketing-overview",
+  1732→  1732→    health: "Watch",
+  1733→  1733→    headline: "₹1.62 Cr sourced pipeline",
+  1734→  1734→    sub: "Contribution 24% vs 30% target",
+  1735→  1735→    freshness: DOMAIN_FRESHNESS.marketing,
+  1736→  1736→    attention: 0,
+  1737→  1737→  },
+  1738→  1738→  {
+  1739→  1739→    id: "service",
+  1740→  1740→    name: "Service",
+  1741→  1741→    screen: "service-overview",
+  1742→  1742→    health: "Watch",
+  1743→  1743→    headline: "SLA 92.4% vs 95% target",
+  1744→  1744→    sub: "3 critical tickets on renewal accounts",
+  1745→  1745→    freshness: DOMAIN_FRESHNESS.service,
+  1746→  1746→    attention: 1,
+  1747→  1747→  },
+  1748→  1748→  {
+  1749→  1749→    id: "inventory",
+  1750→  1750→    name: "Inventory",
+  1751→  1751→    screen: "inventory-overview",
+  1752→  1752→    health: "Watch",
+  1753→  1753→    headline: "₹4.28 Cr stock · 3 stockouts",
+  1754→  1754→    sub: "12 dispatches blocked",
+  1755→  1755→    freshness: DOMAIN_FRESHNESS.inventory,
+  1756→  1756→    attention: 1,
+  1757→  1757→  },
+  1758→  1758→  {
+  1759→  1759→    id: "field",
+  1760→  1760→    name: "Field Ops",
+  1761→  1761→    screen: "field-operations",
+  1762→  1762→    health: "At Risk",
+  1763→  1763→    headline: "75% visit completion this week",
+  1764→  1764→    sub: "North region at 58%",
+  1765→  1765→    freshness: DOMAIN_FRESHNESS.field,
+  1766→  1766→    attention: 1,
+  1767→  1767→  },
+  1768→  1768→];
+  1769→  1769→
+  1770→  1770→// ============================================================
+  1771→  1771→// Server payload contract — /api/executive (?section=…)
+  1772→  1772→// ============================================================
+  1773→  1773→
+  1774→  1774→export type ExecutiveSection =
+  1775→  1775→  | "overview"
+  1776→  1776→  | "revenue"
+  1777→  1777→  | "sales"
+  1778→  1778→  | "finance"
+  1779→  1779→  | "people"
+  1780→  1780→  | "marketing"
+  1781→  1781→  | "service"
+  1782→  1782→  | "inventory"
+  1783→  1783→  | "field"
+  1784→  1784→  | "alerts"
+  1785→  1785→  | "approvals"
+  1786→  1786→  | "insights"
+  1787→  1787→  | "kpis"
+  1788→  1788→  | "reports";
+  1789→  1789→
+  1790→  1790→export interface ExecutiveOverviewPayload {
+  1791→  1791→  period: typeof EXEC_PERIOD;
+  1792→  1792→  domains: DomainSummary[];
+  1793→  1793→  kpis: Kpi[];
+  1794→  1794→  alerts: ExecAlert[];
+  1795→  1795→  approvals: ExecApproval[];
+  1796→  1796→  insights: AiInsight[];
+  1797→  1797→}
+  1798→  1798→
+  1799→  1799→export interface ExecutiveSnapshot {
+  1800→  1800→  ok: true;
+  1801→  1801→  asOf: number;
+  1802→  1802→  asOfLabel: string;
+  1803→  1803→  period: typeof EXEC_PERIOD;
+  1804→  1804→  section: ExecutiveSection | "all";
+  1805→  1805→  data: unknown; // narrowed per-section by the caller
+  1806→  1806→}
+  1807→  1807→
+  1808→  1808→export const sectionFor = (s: string | null): ExecutiveSection | "all" => {
+  1809→  1809→  const valid: ExecutiveSection[] = ["overview", "revenue", "sales", "finance", "people", "marketing", "service", "inventory", "field", "alerts", "approvals", "insights", "kpis", "reports"];
+  1810→  1810→  return valid.includes(s as ExecutiveSection) ? (s as ExecutiveSection) : "all";
+  1811→  1811→};
+  1812→  1812→

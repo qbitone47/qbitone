@@ -60,6 +60,20 @@ import { MailInboxScreen } from "./screens/mail-inbox";
 import { ComposeMailScreen } from "./screens/compose-mail";
 import { SentMailScreen } from "./screens/sent-mail";
 import { MailSearchScreen } from "./screens/mail-search";
+import { CeoOverviewScreen } from "./screens/ceo-overview";
+import { RevenueSnapshotScreen } from "./screens/revenue-snapshot";
+import { SalesCommandScreen } from "./screens/sales-command";
+import { FinanceSnapshotScreen } from "./screens/finance-snapshot";
+import { PeopleOverviewScreen } from "./screens/people-overview";
+import { MarketingOverviewScreen } from "./screens/marketing-overview";
+import { ServiceOverviewScreen } from "./screens/service-overview";
+import { InventoryOverviewScreen } from "./screens/inventory-overview";
+import { FieldOperationsScreen } from "./screens/field-operations";
+import { ExecutiveAlertsScreen } from "./screens/executive-alerts";
+import { ExecutiveApprovalsScreen } from "./screens/executive-approvals";
+import { CeoAiInsightsScreen } from "./screens/ceo-ai-insights";
+import { KpiDrilldownScreen } from "./screens/kpi-drilldown";
+import { ExecutiveReportsScreen } from "./screens/executive-reports";
 
 export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "org-structure": OrganizationStructureScreen,
@@ -120,4 +134,18 @@ export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "compose-mail": ComposeMailScreen,
   "sent-mail": SentMailScreen,
   "mail-search": MailSearchScreen,
+  "ceo-overview": CeoOverviewScreen,
+  "revenue-snapshot": RevenueSnapshotScreen,
+  "sales-command": SalesCommandScreen,
+  "finance-snapshot": FinanceSnapshotScreen,
+  "people-overview": PeopleOverviewScreen,
+  "marketing-overview": MarketingOverviewScreen,
+  "service-overview": ServiceOverviewScreen,
+  "inventory-overview": InventoryOverviewScreen,
+  "field-operations": FieldOperationsScreen,
+  "executive-alerts": ExecutiveAlertsScreen,
+  "executive-approvals": ExecutiveApprovalsScreen,
+  "ceo-ai-insights": CeoAiInsightsScreen,
+  "kpi-drilldown": KpiDrilldownScreen,
+  "executive-reports": ExecutiveReportsScreen,
 };

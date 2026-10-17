@@ -49,6 +49,7 @@ const MODULE_LABELS: Record<ScreenModule, string> = {
   workspace: "Workspace",
   people: "People",
   mail: "Mail",
+  executive: "CEO Command Center",
 };
 
 export function TopBar({

@@ -5,6 +5,7 @@ import {
   BarChart3,
   Building2,
   ChevronRight,
+  Crown,
   FolderClosed,
   House,
   LayoutList,
@@ -38,6 +39,7 @@ export interface SidebarModule {
 }
 
 export const SIDEBAR_MODULES: SidebarModule[] = [
+  { id: "executive", label: "CEO Command Center", icon: Crown, section: "Workspace", expandableModule: "executive" },
   { id: "home", label: "Home", icon: House, section: "Workspace", screen: "employee-home" },
   { id: "workspace", label: "Workspace", icon: LayoutList, section: "Workspace", expandableModule: "workspace" },
   { id: "enterprise", label: "Enterprise", icon: Building2, section: "Workspace", expandableModule: "enterprise" },
@@ -59,6 +61,7 @@ export const SIDEBAR_MODULES: SidebarModule[] = [
 ];
 
 export const MODULE_PHASE: Record<string, string> = {
+  executive: "Phase 5 — CEO Command Center",
   workspace: "Phase 4 — Core Employee Workspace",
   people: "Phase 4 — People & Organization",
   mail: "Phase 4 — Company Mail",
@@ -103,8 +106,8 @@ export function SidebarContent({
   onNavigate?: () => void;
 }) {
   const { screen, navigate } = useQubitNav();
-  // Workspace starts expanded (Phase 4 home); others start collapsed.
-  const [open, setOpen] = React.useState<Record<string, boolean>>({ workspace: true, enterprise: false, people: false, mail: false, "design-system": false, security: false });
+  // Executive module starts expanded (Phase 5); workspace starts collapsed.
+  const [open, setOpen] = React.useState<Record<string, boolean>>({ executive: true, workspace: false, enterprise: false, people: false, mail: false, "design-system": false, security: false });
 
   const sections = React.useMemo(() => {
     const map = new Map<string, SidebarModule[]>();
@@ -280,13 +283,13 @@ export function SidebarContent({
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[12.5px] font-semibold leading-tight text-slate-900">Qubit One Pvt Ltd</span>
               <span className="block truncate text-[10.5px] leading-tight text-slate-400">
-                Phase 4 · Employee Workspace
+                Phase 5 · CEO Command Center
               </span>
             </span>
             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-hidden />
           </div>
         ) : (
-          <div className="flex justify-center py-0.5" title="Qubit One Pvt Ltd — Phase 4 · Employee Workspace">
+          <div className="flex justify-center py-0.5" title="Qubit One Pvt Ltd — Phase 5 · CEO Command Center">
             <QubitMark className="h-7 w-7 rounded-lg text-[13px]" />
           </div>
         )}
