@@ -1,14 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { CalendarDays, FolderOpen, Package, Sparkles, TrendingUp, Users, Video, Wallet, Wrench, House, Megaphone, Settings2, UserRound } from "lucide-react";
+import { CalendarDays, FolderOpen, LayoutList, Mail, Package, Sparkles, TrendingUp, Users, Video, Wallet, Wrench, House, Megaphone, Settings2, UserRound } from "lucide-react";
 import { PageHeader } from "../page-header";
 import { EmptyState, SectionCard } from "../primitives";
 import { MODULE_PHASE } from "./sidebar";
 
 const MODULE_ICONS: Record<string, React.ElementType> = {
   home: House,
+  workspace: LayoutList,
   people: UserRound,
+  mail: Mail,
   sales: TrendingUp,
   finance: Wallet,
   hr: Users,

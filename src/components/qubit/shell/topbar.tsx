@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronRight,
   CircleHelp,
+  House,
   LifeBuoy,
   LogOut,
   Menu,
@@ -34,12 +35,21 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { screenMeta } from "@/lib/qubit/screens";
+import { screenMeta, type ScreenModule } from "@/lib/qubit/screens";
 import { shellNotifications } from "@/lib/qubit/data";
 import { Avatar } from "../primitives";
 import { useQubitNav } from "../nav-context";
 import { useRole, VIEW_AS_ROLES, type ViewAsRole } from "../role-context";
 import { QubitMark } from "./sidebar";
+
+const MODULE_LABELS: Record<ScreenModule, string> = {
+  enterprise: "Enterprise",
+  "design-system": "Design System",
+  security: "Security",
+  workspace: "Workspace",
+  people: "People",
+  mail: "Mail",
+};
 
 export function TopBar({
   onOpenMobileNav,
@@ -50,7 +60,7 @@ export function TopBar({
   onOpenPalette: () => void;
   onPreviewModuleCleared?: () => void;
 }) {
-  const { screen, canBack, canForward, back, forward } = useQubitNav();
+  const { screen, navigate, canBack, canForward, back, forward } = useQubitNav();
   const { role, setRole, isAdmin } = useRole();
   const { toast } = useToast();
   const meta = screenMeta(screen);
@@ -115,7 +125,7 @@ export function TopBar({
               onClick={onPreviewModuleCleared}
               className="hidden rounded px-1 py-0.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 min-[480px]:block"
             >
-              {meta.module === "design-system" ? "Design System" : meta.module === "security" ? "Security" : "Enterprise"}
+              {MODULE_LABELS[meta.module] ?? "Enterprise"}
             </button>
             <ChevronRight className="hidden h-3.5 w-3.5 text-slate-300 min-[480px]:block" aria-hidden />
             <span aria-current="page" className="truncate px-1 py-0.5 font-medium text-slate-800">
@@ -179,7 +189,13 @@ export function TopBar({
               ))}
             </ul>
             <div className="border-t px-4 py-2">
-              <p className="text-center text-[11px] text-muted-foreground">Full notification center arrives in a later phase</p>
+              <button
+                type="button"
+                onClick={() => navigate("my-notifications")}
+                className="block w-full text-center text-[11px] font-medium text-navy-600 transition-colors hover:text-navy-800"
+              >
+                Open notification center →
+              </button>
             </div>
           </PopoverContent>
         </Popover>
@@ -279,13 +295,19 @@ export function TopBar({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="gap-2"
-              onClick={() => toast({ title: "My profile", description: "Opens in the People module (Phase 2)." })}
+              onClick={() => navigate("my-profile")}
             >
               <UserRound className="h-4 w-4 text-slate-400" /> My profile
             </DropdownMenuItem>
             <DropdownMenuItem
+              className="gap-2"
+              onClick={() => navigate("employee-home")}
+            >
+              <House className="h-4 w-4 text-slate-400" /> Employee Home
+            </DropdownMenuItem>
+            <DropdownMenuItem
               className="gap-2 text-red-600 focus:text-red-700"
-              onClick={() => toast({ title: "Sign out", description: "Session ended (demo). Reload to sign back in." })}
+              onClick={() => navigate("login")}
             >
               <LogOut className="h-4 w-4" /> Sign out
             </DropdownMenuItem>

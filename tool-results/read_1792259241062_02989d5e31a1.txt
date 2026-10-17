@@ -1,0 +1,1648 @@
+     1→     1→     1→You are continuing the existing Qubit One Enterprise Operating System project.
+     2→     2→     2→
+     3→     3→     3→IMPORTANT:
+     4→     4→     4→This is NOT a new product.
+     5→     5→     5→Do NOT restart the architecture.
+     6→     6→     6→Do NOT redesign Qubit One from scratch.
+     7→     7→     7→Do NOT create a separate employee application.
+     8→     8→     8→
+     9→     9→     9→You are implementing ONLY PHASE 4 — CORE EMPLOYEE WORKSPACE.
+    10→    10→    10→
+    11→    11→    11→This phase contains EXACTLY 18 screens:
+    12→    12→    12→
+    13→    13→    13→41. Employee Home
+    14→    14→    14→42. My Profile
+    15→    15→    15→43. My Tasks
+    16→    16→    16→44. My Calendar
+    17→    17→    17→45. My Meetings
+    18→    18→    18→46. My Approvals
+    19→    19→    19→47. My Documents
+    20→    20→    20→48. My Notifications
+    21→    21→    21→49. My Activity
+    22→    22→    22→50. Company Directory
+    23→    23→    23→51. Organization Chart
+    24→    24→    24→52. Employee 360
+    25→    25→    25→53. Digital ID Card
+    26→    26→    26→54. Digital Visiting Card
+    27→    27→    27→55. Company Mail Inbox
+    28→    28→    28→56. Compose Mail
+    29→    29→    29→57. Sent Mail
+    30→    30→    30→58. Mail Search
+    31→    31→    31→
+    32→    32→    32→The existing Qubit One architecture, navigation, design system, authentication, security, RBAC, permission model, enterprise structure, AI architecture and previous phases already exist.
+    33→    33→    33→
+    34→    34→    34→Preserve them.
+    35→    35→    35→
+    36→    36→    36→Do not duplicate existing functionality.
+    37→    37→    37→
+    38→    38→    38→==================================================
+    39→    39→    39→1. VISUAL SOURCE OF TRUTH
+    40→    40→    40→==================================================
+    41→    41→    41→
+    42→    42→    42→The attached image is the CURRENT APPROVED QUBIT ONE UI.
+    43→    43→    43→
+    44→    44→    44→STRICTLY FOLLOW THIS IMAGE.
+    45→    45→    45→
+    46→    46→    46→The attached Qubit One Organization Structure screen is the visual and UX source of truth.
+    47→    47→    47→
+    48→    48→    48→Every Phase 4 screen must feel like it belongs to the exact same product.
+    49→    49→    49→
+    50→    50→    50→Match:
+    51→    51→    51→
+    52→    52→    52→- left sidebar
+    53→    53→    53→- dark navy navigation
+    54→    54→    54→- light workspace
+    55→    55→    55→- top application bar
+    56→    56→    56→- breadcrumbs
+    57→    57→    57→- global search
+    58→    58→    58→- notification/help/profile area
+    59→    59→    59→- page headers
+    60→    60→    60→- typography
+    61→    61→    61→- spacing
+    62→    62→    62→- cards
+    63→    63→    63→- borders
+    64→    64→    64→- shadows
+    65→    65→    65→- buttons
+    66→    66→    66→- inputs
+    67→    67→    67→- tables
+    68→    68→    68→- badges
+    69→    69→    69→- icons
+    70→    70→    70→- filters
+    71→    71→    71→- page density
+    72→    72→    72→- responsive behavior
+    73→    73→    73→
+    74→    74→    74→The design can be more polished than the reference where appropriate, but it must remain visually consistent.
+    75→    75→    75→
+    76→    76→    76→Do NOT introduce:
+    77→    77→    77→
+    78→    78→    78→- neon
+    79→    79→    79→- cyberpunk
+    80→    80→    80→- gaming UI
+    81→    81→    81→- excessive gradients
+    82→    82→    82→- excessive glassmorphism
+    83→    83→    83→- glowing elements
+    84→    84→    84→- oversized illustrations
+    85→    85→    85→- random bright colors
+    86→    86→    86→- excessive animations
+    87→    87→    87→- excessive cards
+    88→    88→    88→- decorative clutter
+    89→    89→    89→- marketing-style employee dashboards
+    90→    90→    90→
+    91→    91→    91→Target quality:
+    92→    92→    92→
+    93→    93→    93→- Apple-level visual discipline
+    94→    94→    94→- Microsoft enterprise usability
+    95→    95→    95→- Google-level clarity
+    96→    96→    96→- Salesforce / Workday / ServiceNow enterprise workflow maturity
+    97→    97→    97→- FAANG-quality internal enterprise software
+    98→    98→    98→
+    99→    99→    99→Do not copy those products.
+   100→   100→   100→Use them only as conceptual references for enterprise usability.
+   101→   101→   101→
+   102→   102→   102→==================================================
+   103→   103→   103→2. PURPOSE OF PHASE 4
+   104→   104→   104→==================================================
+   105→   105→   105→
+   106→   106→   106→Phase 4 is the employee's primary daily workspace.
+   107→   107→   107→
+   108→   108→   108→It should answer:
+   109→   109→   109→
+   110→   110→   110→"What do I need to know?"
+   111→   111→   111→"What do I need to do?"
+   112→   112→   112→"What is waiting for me?"
+   113→   113→   113→"Who do I need to communicate with?"
+   114→   114→   114→"Where are my documents?"
+   115→   115→   115→"What meetings do I have?"
+   116→   116→   116→"What approvals need my attention?"
+   117→   117→   117→"What happened recently?"
+   118→   118→   118→
+   119→   119→   119→The employee should not need to navigate through multiple disconnected modules to perform normal daily work.
+   120→   120→   120→
+   121→   121→   121→The workspace must feel:
+   122→   122→   122→
+   123→   123→   123→- personal
+   124→   124→   124→- intelligent
+   125→   125→   125→- calm
+   126→   126→   126→- efficient
+   127→   127→   127→- connected
+   128→   128→   128→- role-aware
+   129→   129→   129→- enterprise-grade
+   130→   130→   130→
+   131→   131→   131→==================================================
+   132→   132→   132→3. CORE EMPLOYEE WORKFLOW
+   133→   133→   133→==================================================
+   134→   134→   134→
+   135→   135→   135→The experience should naturally connect:
+   136→   136→   136→
+   137→   137→   137→Employee
+   138→   138→   138→→ My Work
+   139→   139→   139→→ Tasks
+   140→   140→   140→→ Calendar
+   141→   141→   141→→ Meetings
+   142→   142→   142→→ Approvals
+   143→   143→   143→→ Documents
+   144→   144→   144→→ Notifications
+   145→   145→   145→→ Activity
+   146→   146→   146→→ People
+   147→   147→   147→→ Organization
+   148→   148→   148→→ Communication
+   149→   149→   149→
+   150→   150→   150→Do not treat these as isolated pages.
+   151→   151→   151→
+   152→   152→   152→For example:
+   153→   153→   153→
+   154→   154→   154→A meeting can create action items.
+   155→   155→   155→
+   156→   156→   156→An action item can become a task.
+   157→   157→   157→
+   158→   158→   158→A task can be linked to an employee, customer, project or workflow.
+   159→   159→   159→
+   160→   160→   160→An approval can appear in My Approvals and Notifications.
+   161→   161→   161→
+   162→   162→   162→A document can be linked to an employee or workflow.
+   163→   163→   163→
+   164→   164→   164→An employee profile can connect to department, manager, reporting structure, tasks, meetings and activity.
+   165→   165→   165→
+   166→   166→   166→Everything should use the existing Qubit One identity and authorization model.
+   167→   167→   167→
+   168→   168→   168→==================================================
+   169→   169→   169→4. EXACT SCREEN COUNT
+   170→   170→   170→==================================================
+   171→   171→   171→
+   172→   172→   172→Create EXACTLY 18 screens.
+   173→   173→   173→
+   174→   174→   174→41. Employee Home
+   175→   175→   175→42. My Profile
+   176→   176→   176→43. My Tasks
+   177→   177→   177→44. My Calendar
+   178→   178→   178→45. My Meetings
+   179→   179→   179→46. My Approvals
+   180→   180→   180→47. My Documents
+   181→   181→   181→48. My Notifications
+   182→   182→   182→49. My Activity
+   183→   183→   183→50. Company Directory
+   184→   184→   184→51. Organization Chart
+   185→   185→   185→52. Employee 360
+   186→   186→   186→53. Digital ID Card
+   187→   187→   187→54. Digital Visiting Card
+   188→   188→   188→55. Company Mail Inbox
+   189→   189→   189→56. Compose Mail
+   190→   190→   190→57. Sent Mail
+   191→   191→   191→58. Mail Search
+   192→   192→   192→
+   193→   193→   193→DO NOT:
+   194→   194→   194→
+   195→   195→   195→- add extra core screens
+   196→   196→   196→- remove screens
+   197→   197→   197→- rename screens
+   198→   198→   198→- duplicate screens
+   199→   199→   199→- merge screens
+   200→   200→   200→- skip screens
+   201→   201→   201→
+   202→   202→   202→Final validation must show:
+   203→   203→   203→
+   204→   204→   204→18/18 complete.
+   205→   205→   205→
+   206→   206→   206→==================================================
+   207→   207→   207→SCREEN 41 — EMPLOYEE HOME
+   208→   208→   208→==================================================
+   209→   209→   209→
+   210→   210→   210→Create:
+   211→   211→   211→
+   212→   212→   212→41. Employee Home
+   213→   213→   213→
+   214→   214→   214→This is the default employee workspace.
+   215→   215→   215→
+   216→   216→   216→It should be personalized according to:
+   217→   217→   217→
+   218→   218→   218→- employee
+   219→   219→   219→- role
+   220→   220→   220→- department
+   221→   221→   221→- permissions
+   222→   222→   222→- responsibilities
+   223→   223→   223→- current work
+   224→   224→   224→- upcoming events
+   225→   225→   225→
+   226→   226→   226→The page should prioritize information instead of displaying everything.
+   227→   227→   227→
+   228→   228→   228→Recommended information hierarchy:
+   229→   229→   229→
+   230→   230→   230→1. Good morning / contextual welcome
+   231→   231→   231→2. Today's priorities
+   232→   232→   232→3. My Tasks
+   233→   233→   233→4. Upcoming meetings
+   234→   234→   234→5. Pending approvals
+   235→   235→   235→6. Important notifications
+   236→   236→   236→7. Recent activity
+   237→   237→   237→8. Quick actions
+   238→   238→   238→
+   239→   239→   239→Possible quick actions:
+   240→   240→   240→
+   241→   241→   241→- Create Task
+   242→   242→   242→- Schedule Meeting
+   243→   243→   243→- Request Leave
+   244→   244→   244→- Submit Expense
+   245→   245→   245→- Upload Document
+   246→   246→   246→- Request Access
+   247→   247→   247→- Send Mail
+   248→   248→   248→
+   249→   249→   249→Only show actions the user is authorized to perform.
+   250→   250→   250→
+   251→   251→   251→Do not turn Employee Home into a giant dashboard.
+   252→   252→   252→
+   253→   253→   253→Use progressive disclosure.
+   254→   254→   254→
+   255→   255→   255→The most important information should be visible immediately.
+   256→   256→   256→
+   257→   257→   257→==================================================
+   258→   258→   258→SCREEN 42 — MY PROFILE
+   259→   259→   259→==================================================
+   260→   260→   260→
+   261→   261→   261→Create:
+   262→   262→   262→
+   263→   263→   263→42. My Profile
+   264→   264→   264→
+   265→   265→   265→This is the employee's personal enterprise identity page.
+   266→   266→   266→
+   267→   267→   267→Display appropriate information:
+   268→   268→   268→
+   269→   269→   269→- profile photo
+   270→   270→   270→- full name
+   271→   271→   271→- employee ID
+   272→   272→   272→- job title
+   273→   273→   273→- department
+   274→   274→   274→- manager
+   275→   275→   275→- location
+   276→   276→   276→- work email
+   277→   277→   277→- work phone
+   278→   278→   278→- joining date
+   279→   279→   279→- employment status
+   280→   280→   280→- skills
+   281→   281→   281→- professional information
+   282→   282→   282→- reporting information
+   283→   283→   283→
+   284→   284→   284→Organize information into logical sections.
+   285→   285→   285→
+   286→   286→   286→Possible sections:
+   287→   287→   287→
+   288→   288→   288→Overview
+   289→   289→   289→Contact
+   290→   290→   290→Employment
+   291→   291→   291→Organization
+   292→   292→   292→Skills
+   293→   293→   293→Documents
+   294→   294→   294→Preferences
+   295→   295→   295→
+   296→   296→   296→Allow editing only for fields the employee is authorized to modify.
+   297→   297→   297→
+   298→   298→   298→Company-controlled fields must not appear freely editable.
+   299→   299→   299→
+   300→   300→   300→For example:
+   301→   301→   301→
+   302→   302→   302→- employee ID
+   303→   303→   303→- department
+   304→   304→   304→- manager
+   305→   305→   305→- designation
+   306→   306→   306→- employment status
+   307→   307→   307→
+   308→   308→   308→should normally be controlled by authorized HR/admin workflows.
+   309→   309→   309→
+   310→   310→   310→Connect the profile to:
+   311→   311→   311→
+   312→   312→   312→- Organization Chart
+   313→   313→   313→- Employee 360
+   314→   314→   314→- Company Directory
+   315→   315→   315→- Digital ID Card
+   316→   316→   316→- Digital Visiting Card
+   317→   317→   317→- My Activity
+   318→   318→   318→
+   319→   319→   319→==================================================
+   320→   320→   320→SCREEN 43 — MY TASKS
+   321→   321→   321→==================================================
+   322→   322→   322→
+   323→   323→   323→Create:
+   324→   324→   324→
+   325→   325→   325→43. My Tasks
+   326→   326→   326→
+   327→   327→   327→This is the employee's task workspace.
+   328→   328→   328→
+   329→   329→   329→Show:
+   330→   330→   330→
+   331→   331→   331→- assigned tasks
+   332→   332→   332→- due dates
+   333→   333→   333→- priority
+   334→   334→   334→- status
+   335→   335→   335→- source
+   336→   336→   336→- owner
+   337→   337→   337→- related entity
+   338→   338→   338→- project/workflow context
+   339→   339→   339→- overdue indicator
+   340→   340→   340→
+   341→   341→   341→Statuses may include:
+   342→   342→   342→
+   343→   343→   343→- Not Started
+   344→   344→   344→- In Progress
+   345→   345→   345→- Blocked
+   346→   346→   346→- Waiting
+   347→   347→   347→- Completed
+   348→   348→   348→- Cancelled
+   349→   349→   349→
+   350→   350→   350→Provide:
+   351→   351→   351→
+   352→   352→   352→- list view
+   353→   353→   353→- compact board/grouping where useful
+   354→   354→   354→- filters
+   355→   355→   355→- search
+   356→   356→   356→- sorting
+   357→   357→   357→- due-date filtering
+   358→   358→   358→- priority filtering
+   359→   359→   359→- status filtering
+   360→   360→   360→
+   361→   361→   361→Important:
+   362→   362→   362→
+   363→   363→   363→Do not create a completely separate project-management product here.
+   364→   364→   364→
+   365→   365→   365→Tasks must connect with the broader Qubit ecosystem.
+   366→   366→   366→
+   367→   367→   367→A task may originate from:
+   368→   368→   368→
+   369→   369→   369→- meeting action item
+   370→   370→   370→- workflow
+   371→   371→   371→- manager assignment
+   372→   372→   372→- sales activity
+   373→   373→   373→- service activity
+   374→   374→   374→- HR workflow
+   375→   375→   375→- automation
+   376→   376→   376→- AI recommendation
+   377→   377→   377→- approval process
+   378→   378→   378→
+   379→   379→   379→AI-generated tasks must be clearly identified and remain permission-aware.
+   380→   380→   380→
+   381→   381→   381→==================================================
+   382→   382→   382→SCREEN 44 — MY CALENDAR
+   383→   383→   383→==================================================
+   384→   384→   384→
+   385→   385→   385→Create:
+   386→   386→   386→
+   387→   387→   387→44. My Calendar
+   388→   388→   388→
+   389→   389→   389→This is the employee's unified calendar.
+   390→   390→   390→
+   391→   391→   391→Display:
+   392→   392→   392→
+   393→   393→   393→- meetings
+   394→   394→   394→- appointments
+   395→   395→   395→- tasks/deadlines where useful
+   396→   396→   396→- company events
+   397→   397→   397→- approved leave
+   398→   398→   398→- important work events
+   399→   399→   399→
+   400→   400→   400→Views:
+   401→   401→   401→
+   402→   402→   402→- Day
+   403→   403→   403→- Week
+   404→   404→   404→- Month
+   405→   405→   405→
+   406→   406→   406→Provide:
+   407→   407→   407→
+   408→   408→   408→- date navigation
+   409→   409→   409→- today
+   410→   410→   410→- search
+   411→   411→   411→- calendar filters
+   412→   412→   412→- event creation where authorized
+   413→   413→   413→- meeting creation
+   414→   414→   414→- availability information where appropriate
+   415→   415→   415→
+   416→   416→   416→Use clean enterprise calendar density.
+   417→   417→   417→
+   418→   418→   418→Avoid creating visually noisy calendar cells.
+   419→   419→   419→
+   420→   420→   420→Events should connect to:
+   421→   421→   421→
+   422→   422→   422→- Meetings
+   423→   423→   423→- Employees
+   424→   424→   424→- Tasks
+   425→   425→   425→- Rooms/resources
+   426→   426→   426→- workflows
+   427→   427→   427→
+   428→   428→   428→Respect calendar permissions and privacy.
+   429→   429→   429→
+   430→   430→   430→Do not expose private calendar details to unauthorized users.
+   431→   431→   431→
+   432→   432→   432→==================================================
+   433→   433→   433→SCREEN 45 — MY MEETINGS
+   434→   434→   434→==================================================
+   435→   435→   435→
+   436→   436→   436→Create:
+   437→   437→   437→
+   438→   438→   438→45. My Meetings
+   439→   439→   439→
+   440→   440→   440→This should provide a focused meeting workspace rather than duplicating the entire calendar.
+   441→   441→   441→
+   442→   442→   442→Display:
+   443→   443→   443→
+   444→   444→   444→- upcoming meetings
+   445→   445→   445→- today's meetings
+   446→   446→   446→- past meetings
+   447→   447→   447→- meeting title
+   448→   448→   448→- time
+   449→   449→   449→- participants
+   450→   450→   450→- organizer
+   451→   451→   451→- location / meeting link
+   452→   452→   452→- status
+   453→   453→   453→
+   454→   454→   454→Actions:
+   455→   455→   455→
+   456→   456→   456→- Join
+   457→   457→   457→- Open
+   458→   458→   458→- Reschedule
+   459→   459→   459→- Cancel where authorized
+   460→   460→   460→- View participants
+   461→   461→   461→- View notes
+   462→   462→   462→- View action items
+   463→   463→   463→
+   464→   464→   464→Meetings should connect to future collaboration functionality.
+   465→   465→   465→
+   466→   466→   466→Past meetings may connect to:
+   467→   467→   467→
+   468→   468→   468→- meeting notes
+   469→   469→   469→- AI meeting summary
+   470→   470→   470→- action items
+   471→   471→   471→- related tasks
+   472→   472→   472→
+   473→   473→   473→Do not invent Phase 14 functionality here; create integration points that will connect naturally later.
+   474→   474→   474→
+   475→   475→   475→==================================================
+   476→   476→   476→SCREEN 46 — MY APPROVALS
+   477→   477→   477→==================================================
+   478→   478→   478→
+   479→   479→   479→Create:
+   480→   480→   480→
+   481→   481→   481→46. My Approvals
+   482→   482→   482→
+   483→   483→   483→This screen must show approvals requiring the current user's action.
+   484→   484→   484→
+   485→   485→   485→Examples:
+   486→   486→   486→
+   487→   487→   487→- leave requests
+   488→   488→   488→- expenses
+   489→   489→   489→- purchase requests
+   490→   490→   490→- quotations
+   491→   491→   491→- discounts
+   492→   492→   492→- access requests
+   493→   493→   493→- employee workflows
+   494→   494→   494→- other authorized business approvals
+   495→   495→   495→
+   496→   496→   496→Display:
+   497→   497→   497→
+   498→   498→   498→- request type
+   499→   499→   499→- requester
+   500→   500→   500→- department
+   501→   501→   501→- amount/value where applicable
+   502→   502→   502→- submitted date
+   503→   503→   503→- age
+   504→   504→   504→- priority
+   505→   505→   505→- status
+   506→   506→   506→- required action
+   507→   507→   507→
+   508→   508→   508→Provide:
+   509→   509→   509→
+   510→   510→   510→- approve
+   511→   511→   511→- reject
+   512→   512→   512→- request changes
+   513→   513→   513→- view details
+   514→   514→   514→
+   515→   515→   515→Sensitive approvals may require:
+   516→   516→   516→
+   517→   517→   517→- confirmation
+   518→   518→   518→- reauthentication
+   519→   519→   519→- step-up authentication
+   520→   520→   520→
+   521→   521→   521→Every approval action must be:
+   522→   522→   522→
+   523→   523→   523→- permission checked
+   524→   524→   524→- auditable
+   525→   525→   525→- server-side validated
+   526→   526→   526→
+   527→   527→   527→Never allow frontend-only approval.
+   528→   528→   528→
+   529→   529→   529→Use existing Phase 1 Approval Matrix and Phase 3 security architecture.
+   530→   530→   530→
+   531→   531→   531→==================================================
+   532→   532→   532→SCREEN 47 — MY DOCUMENTS
+   533→   533→   533→==================================================
+   534→   534→   534→
+   535→   535→   535→Create:
+   536→   536→   536→
+   537→   537→   537→47. My Documents
+   538→   538→   538→
+   539→   539→   539→This is the employee's authorized document workspace.
+   540→   540→   540→
+   541→   541→   541→Display:
+   542→   542→   542→
+   543→   543→   543→- recent documents
+   544→   544→   544→- shared documents
+   545→   545→   545→- personal work documents
+   546→   546→   546→- HR documents where authorized
+   547→   547→   547→- company documents
+   548→   548→   548→- documents related to workflows
+   549→   549→   549→
+   550→   550→   550→Provide:
+   551→   551→   551→
+   552→   552→   552→- search
+   553→   553→   553→- filters
+   554→   554→   554→- file type
+   555→   555→   555→- owner
+   556→   556→   556→- date
+   557→   557→   557→- folder/category
+   558→   558→   558→- recent
+   559→   559→   559→- favorites where appropriate
+   560→   560→   560→
+   561→   561→   561→Actions:
+   562→   562→   562→
+   563→   563→   563→- Open
+   564→   564→   564→- Download
+   565→   565→   565→- Share
+   566→   566→   566→- Upload
+   567→   567→   567→- Rename where authorized
+   568→   568→   568→- Move where authorized
+   569→   569→   569→
+   570→   570→   570→Permission-sensitive documents must clearly communicate access.
+   571→   571→   571→
+   572→   572→   572→Do not expose confidential documents merely because the employee can search.
+   573→   573→   573→
+   574→   574→   574→Document access must be enforced server-side.
+   575→   575→   575→
+   576→   576→   576→Use secure file handling principles.
+   577→   577→   577→
+   578→   578→   578→==================================================
+   579→   579→   579→SCREEN 48 — MY NOTIFICATIONS
+   580→   580→   580→==================================================
+   581→   581→   581→
+   582→   582→   582→Create:
+   583→   583→   583→
+   584→   584→   584→48. My Notifications
+   585→   585→   585→
+   586→   586→   586→This is the user's personalized notification center.
+   587→   587→   587→
+   588→   588→   588→Notification categories may include:
+   589→   589→   589→
+   590→   590→   590→- tasks
+   591→   591→   591→- approvals
+   592→   592→   592→- meetings
+   593→   593→   593→- HR
+   594→   594→   594→- sales
+   595→   595→   595→- finance
+   596→   596→   596→- service
+   597→   597→   597→- system
+   598→   598→   598→- security
+   599→   599→   599→- collaboration
+   600→   600→   600→
+   601→   601→   601→Display:
+   602→   602→   602→
+   603→   603→   603→- unread/read
+   604→   604→   604→- timestamp
+   605→   605→   605→- category
+   606→   606→   606→- source
+   607→   607→   607→- action
+   608→   608→   608→- priority
+   609→   609→   609→
+   610→   610→   610→Provide:
+   611→   611→   611→
+   612→   612→   612→- mark as read
+   613→   613→   613→- mark all as read
+   614→   614→   614→- filter
+   615→   615→   615→- search
+   616→   616→   616→- notification preferences shortcut
+   617→   617→   617→- direct navigation to source object
+   618→   618→   618→
+   619→   619→   619→Notifications must deep-link to the relevant Qubit object.
+   620→   620→   620→
+   621→   621→   621→Examples:
+   622→   622→   622→
+   623→   623→   623→Approval notification → approval detail.
+   624→   624→   624→
+   625→   625→   625→Task notification → task.
+   626→   626→   626→
+   627→   627→   627→Meeting notification → meeting.
+   628→   628→   628→
+   629→   629→   629→Security notification → security event.
+   630→   630→   630→
+   631→   631→   631→Do not create duplicate notification systems.
+   632→   632→   632→
+   633→   633→   633→Use the existing Qubit notification architecture.
+   634→   634→   634→
+   635→   635→   635→==================================================
+   636→   636→   636→SCREEN 49 — MY ACTIVITY
+   637→   637→   637→==================================================
+   638→   638→   638→
+   639→   639→   639→Create:
+   640→   640→   640→
+   641→   641→   641→49. My Activity
+   642→   642→   642→
+   643→   643→   643→This is the employee's personal activity timeline.
+   644→   644→   644→
+   645→   645→   645→Show relevant activity such as:
+   646→   646→   646→
+   647→   647→   647→- tasks completed
+   648→   648→   648→- meetings attended
+   649→   649→   649→- documents uploaded
+   650→   650→   650→- approvals performed
+   651→   651→   651→- profile changes
+   652→   652→   652→- workflow actions
+   653→   653→   653→- comments
+   654→   654→   654→- communications
+   655→   655→   655→- security events where appropriate
+   656→   656→   656→
+   657→   657→   657→Do not expose security-sensitive information unnecessarily.
+   658→   658→   658→
+   659→   659→   659→Activity should be permission-aware.
+   660→   660→   660→
+   661→   661→   661→Use a clean chronological timeline.
+   662→   662→   662→
+   663→   663→   663→Support:
+   664→   664→   664→
+   665→   665→   665→- date filtering
+   666→   666→   666→- activity type
+   667→   667→   667→- search
+   668→   668→   668→- related object
+   669→   669→   669→- expandable details
+   670→   670→   670→
+   671→   671→   671→Important distinction:
+   672→   672→   672→
+   673→   673→   673→My Activity is the employee-facing activity view.
+   674→   674→   674→
+   675→   675→   675→The enterprise Audit Log from Phase 3 is the authoritative security/admin audit system.
+   676→   676→   676→
+   677→   677→   677→Do not merge the two.
+   678→   678→   678→
+   679→   679→   679→==================================================
+   680→   680→   680→SCREEN 50 — COMPANY DIRECTORY
+   681→   681→   681→==================================================
+   682→   682→   682→
+   683→   683→   683→Create:
+   684→   684→   684→
+   685→   685→   685→50. Company Directory
+   686→   686→   686→
+   687→   687→   687→This is the global employee discovery experience.
+   688→   688→   688→
+   689→   689→   689→Display:
+   690→   690→   690→
+   691→   691→   691→- employee photo
+   692→   692→   692→- name
+   693→   693→   693→- designation
+   694→   694→   694→- department
+   695→   695→   695→- location
+   696→   696→   696→- availability/status where appropriate
+   697→   697→   697→- work contact methods
+   698→   698→   698→
+   699→   699→   699→Search by:
+   700→   700→   700→
+   701→   701→   701→- name
+   702→   702→   702→- employee ID
+   703→   703→   703→- department
+   704→   704→   704→- designation
+   705→   705→   705→- skill
+   706→   706→   706→- location
+   707→   707→   707→- email
+   708→   708→   708→
+   709→   709→   709→Filters:
+   710→   710→   710→
+   711→   711→   711→- department
+   712→   712→   712→- role
+   713→   713→   713→- location
+   714→   714→   714→- employment status
+   715→   715→   715→- team
+   716→   716→   716→
+   717→   717→   717→Actions:
+   718→   718→   718→
+   719→   719→   719→- View Profile
+   720→   720→   720→- Message where supported
+   721→   721→   721→- Email
+   722→   722→   722→- Call where supported
+   723→   723→   723→- View Organization
+   724→   724→   724→- View reporting relationship
+   725→   725→   725→
+   726→   726→   726→Respect employee privacy and permissions.
+   727→   727→   727→
+   728→   728→   728→Do not expose sensitive HR information.
+   729→   729→   729→
+   730→   730→   730→==================================================
+   731→   731→   731→SCREEN 51 — ORGANIZATION CHART
+   732→   732→   732→==================================================
+   733→   733→   733→
+   734→   734→   734→Create:
+   735→   735→   735→
+   736→   736→   736→51. Organization Chart
+   737→   737→   737→
+   738→   738→   738→This should build upon Phase 1 Organization Structure and Reporting Lines.
+   739→   739→   739→
+   740→   740→   740→This is the employee-facing organizational view.
+   741→   741→   741→
+   742→   742→   742→Show:
+   743→   743→   743→
+   744→   744→   744→- company hierarchy
+   745→   745→   745→- departments
+   746→   746→   746→- managers
+   747→   747→   747→- teams
+   748→   748→   748→- reporting lines
+   749→   749→   749→- employee counts where appropriate
+   750→   750→   750→
+   751→   751→   751→Allow:
+   752→   752→   752→
+   753→   753→   753→- search employee
+   754→   754→   754→- search department
+   755→   755→   755→- expand/collapse
+   756→   756→   756→- navigate to profile
+   757→   757→   757→- navigate to manager
+   758→   758→   758→- navigate to team
+   759→   759→   759→
+   760→   760→   760→The visualization must remain readable at scale.
+   761→   761→   761→
+   762→   762→   762→Do NOT reproduce a giant uncontrolled tree.
+   763→   763→   763→
+   764→   764→   764→Use:
+   765→   765→   765→
+   766→   766→   766→- progressive expansion
+   767→   767→   767→- focused subtree
+   768→   768→   768→- search-driven navigation
+   769→   769→   769→- contextual detail
+   770→   770→   770→
+   771→   771→   771→Keep connectors subtle.
+   772→   772→   772→
+   773→   773→   773→The experience should feel like the same Qubit One organization system already established in Phase 1.
+   774→   774→   774→
+   775→   775→   775→==================================================
+   776→   776→   776→SCREEN 52 — EMPLOYEE 360
+   777→   777→   777→==================================================
+   778→   778→   778→
+   779→   779→   779→Create:
+   780→   780→   780→
+   781→   781→   781→52. Employee 360
+   782→   782→   782→
+   783→   783→   783→This is the connected employee overview.
+   784→   784→   784→
+   785→   785→   785→For an authorized viewer, bring together relevant employee context.
+   786→   786→   786→
+   787→   787→   787→Possible sections:
+   788→   788→   788→
+   789→   789→   789→- identity
+   790→   790→   790→- role
+   791→   791→   791→- department
+   792→   792→   792→- manager
+   793→   793→   793→- reporting
+   794→   794→   794→- employment timeline
+   795→   795→   795→- tasks
+   796→   796→   796→- meetings
+   797→   797→   797→- documents
+   798→   798→   798→- approvals
+   799→   799→   799→- activity
+   800→   800→   800→- performance-related information where authorized
+   801→   801→   801→- communication context where authorized
+   802→   802→   802→
+   803→   803→   803→IMPORTANT:
+   804→   804→   804→
+   805→   805→   805→Do not expose all employee data to everyone.
+   806→   806→   806→
+   807→   807→   807→Employee 360 must use strict role-based and attribute-based authorization.
+   808→   808→   808→
+   809→   809→   809→HR-sensitive information must remain restricted.
+   810→   810→   810→
+   811→   811→   811→Managers should see only information permitted for their scope.
+   812→   812→   812→
+   813→   813→   813→Employees should see their own information according to policy.
+   814→   814→   814→
+   815→   815→   815→Do not build a "super admin profile" UI accessible to everyone.
+   816→   816→   816→
+   817→   817→   817→==================================================
+   818→   818→   818→SCREEN 53 — DIGITAL ID CARD
+   819→   819→   819→==================================================
+   820→   820→   820→
+   821→   821→   821→Create:
+   822→   822→   822→
+   823→   823→   823→53. Digital ID Card
+   824→   824→   824→
+   825→   825→   825→Create a premium digital employee identification card.
+   826→   826→   826→
+   827→   827→   827→Display appropriate:
+   828→   828→   828→
+   829→   829→   829→- Qubit One branding
+   830→   830→   830→- employee photo
+   831→   831→   831→- employee name
+   832→   832→   832→- designation
+   833→   833→   833→- employee ID
+   834→   834→   834→- department
+   835→   835→   835→- company identity
+   836→   836→   836→- optional QR / verification mechanism where supported
+   837→   837→   837→
+   838→   838→   838→Keep it extremely clean.
+   839→   839→   839→
+   840→   840→   840→The card should work well on:
+   841→   841→   841→
+   842→   842→   842→- desktop
+   843→   843→   843→- mobile
+   844→   844→   844→
+   845→   845→   845→Provide actions such as:
+   846→   846→   846→
+   847→   847→   847→- View
+   848→   848→   848→- Present
+   849→   849→   849→- Download/share only where policy allows
+   850→   850→   850→
+   851→   851→   851→Any QR/verification capability must not expose sensitive information.
+   852→   852→   852→
+   853→   853→   853→Use secure verification design.
+   854→   854→   854→
+   855→   855→   855→Do not turn it into a decorative ID-card mockup.
+   856→   856→   856→
+   857→   857→   857→It must feel like a real enterprise identity credential.
+   858→   858→   858→
+   859→   859→   859→==================================================
+   860→   860→   860→SCREEN 54 — DIGITAL VISITING CARD
+   861→   861→   861→==================================================
+   862→   862→   862→
+   863→   863→   863→Create:
+   864→   864→   864→
+   865→   865→   865→54. Digital Visiting Card
+   866→   866→   866→
+   867→   867→   867→This is the employee's professional business card.
+   868→   868→   868→
+   869→   869→   869→Display:
+   870→   870→   870→
+   871→   871→   871→- name
+   872→   872→   872→- designation
+   873→   873→   873→- company
+   874→   874→   874→- work email
+   875→   875→   875→- work phone
+   876→   876→   876→- professional social/contact links where authorized
+   877→   877→   877→- company branding
+   878→   878→   878→- QR sharing option where appropriate
+   879→   879→   879→
+   880→   880→   880→Provide:
+   881→   881→   881→
+   882→   882→   882→- preview
+   883→   883→   883→- share
+   884→   884→   884→- QR
+   885→   885→   885→- copy contact
+   886→   886→   886→- download where allowed
+   887→   887→   887→
+   888→   888→   888→The visual design should be premium but restrained.
+   889→   889→   889→
+   890→   890→   890→It should feel like a Qubit One business utility, not a social-media profile.
+   891→   891→   891→
+   892→   892→   892→Use the existing employee profile as the source of truth.
+   893→   893→   893→
+   894→   894→   894→Do not duplicate employee information databases.
+   895→   895→   895→
+   896→   896→   896→==================================================
+   897→   897→   897→SCREEN 55 — COMPANY MAIL INBOX
+   898→   898→   898→==================================================
+   899→   899→   899→
+   900→   900→   900→Create:
+   901→   901→   901→
+   902→   902→   902→55. Company Mail Inbox
+   903→   903→   903→
+   904→   904→   904→This is the Qubit One enterprise mail workspace.
+   905→   905→   905→
+   906→   906→   906→It should feel like a professional business email interface while remaining native to Qubit One.
+   907→   907→   907→
+   908→   908→   908→Display:
+   909→   909→   909→
+   910→   910→   910→- inbox
+   911→   911→   911→- unread count
+   912→   912→   912→- sender
+   913→   913→   913→- subject
+   914→   914→   914→- timestamp
+   915→   915→   915→- attachments indicator
+   916→   916→   916→- priority
+   917→   917→   917→- labels/folders where supported
+   918→   918→   918→
+   919→   919→   919→Support:
+   920→   920→   920→
+   921→   921→   921→- search
+   922→   922→   922→- filters
+   923→   923→   923→- unread
+   924→   924→   924→- starred/important where configured
+   925→   925→   925→- attachments
+   926→   926→   926→- bulk actions where appropriate
+   927→   927→   927→
+   928→   928→   928→Use a high-density but highly readable enterprise layout.
+   929→   929→   929→
+   930→   930→   930→Do not create excessive visual decoration.
+   931→   931→   931→
+   932→   932→   932→Mail must respect:
+   933→   933→   933→
+   934→   934→   934→- organization policy
+   935→   935→   935→- user permissions
+   936→   936→   936→- security
+   937→   937→   937→- retention
+   938→   938→   938→- privacy
+   939→   939→   939→
+   940→   940→   940→Do not assume Qubit owns an independent email infrastructure if an external provider is integrated.
+   941→   941→   941→
+   942→   942→   942→The UI should be integration-ready.
+   943→   943→   943→
+   944→   944→   944→==================================================
+   945→   945→   945→SCREEN 56 — COMPOSE MAIL
+   946→   946→   946→==================================================
+   947→   947→   947→
+   948→   948→   948→Create:
+   949→   949→   949→
+   950→   950→   950→56. Compose Mail
+   951→   951→   951→
+   952→   952→   952→Create a professional enterprise email composer.
+   953→   953→   953→
+   954→   954→   954→Include:
+   955→   955→   955→
+   956→   956→   956→- To
+   957→   957→   957→- CC
+   958→   958→   958→- BCC where permitted
+   959→   959→   959→- subject
+   960→   960→   960→- rich text editor
+   961→   961→   961→- attachments
+   962→   962→   962→- signature
+   963→   963→   963→- send
+   964→   964→   964→- save draft
+   965→   965→   965→- discard
+   966→   966→   966→
+   967→   967→   967→Useful features:
+   968→   968→   968→
+   969→   969→   969→- employee/contact lookup
+   970→   970→   970→- recent recipients
+   971→   971→   971→- attachment validation
+   972→   972→   972→- file size/type validation
+   973→   973→   973→- autosave draft
+   974→   974→   974→- send status
+   975→   975→   975→
+   976→   976→   976→Provide clear states:
+   977→   977→   977→
+   978→   978→   978→- composing
+   979→   979→   979→- saving
+   980→   980→   980→- sending
+   981→   981→   981→- sent
+   982→   982→   982→- failed
+   983→   983→   983→- retry
+   984→   984→   984→
+   985→   985→   985→Prevent accidental loss of content.
+   986→   986→   986→
+   987→   987→   987→Sensitive attachments should respect document permissions and security policies.
+   988→   988→   988→
+   989→   989→   989→==================================================
+   990→   990→   990→SCREEN 57 — SENT MAIL
+   991→   991→   991→==================================================
+   992→   992→   992→
+   993→   993→   993→Create:
+   994→   994→   994→
+   995→   995→   995→57. Sent Mail
+   996→   996→   996→
+   997→   997→   997→Display sent messages in a clean enterprise list.
+   998→   998→   998→
+   999→   999→   999→Show:
+  1000→  1000→  1000→
+  1001→  1001→  1001→- recipient
+  1002→  1002→  1002→- subject
+  1003→  1003→  1003→- timestamp
+  1004→  1004→  1004→- attachments
+  1005→  1005→  1005→- status
+  1006→  1006→  1006→- conversation/thread context where supported
+  1007→  1007→  1007→
+  1008→  1008→  1008→Actions:
+  1009→  1009→  1009→
+  1010→  1010→  1010→- open
+  1011→  1011→  1011→- search
+  1012→  1012→  1012→- filter
+  1013→  1013→  1013→- resend/retry where applicable
+  1014→  1014→  1014→- view details
+  1015→  1015→  1015→
+  1016→  1016→  1016→Do not create unnecessary duplicate mail functionality.
+  1017→  1017→  1017→
+  1018→  1018→  1018→Reuse the same mail data model and components as Inbox and Compose.
+  1019→  1019→  1019→
+  1020→  1020→  1020→==================================================
+  1021→  1021→  1021→SCREEN 58 — MAIL SEARCH
+  1022→  1022→  1022→==================================================
+  1023→  1023→  1023→
+  1024→  1024→  1024→Create:
+  1025→  1025→  1025→
+  1026→  1026→  1026→58. Mail Search
+  1027→  1027→  1027→
+  1028→  1028→  1028→Create a powerful enterprise mail search experience.
+  1029→  1029→  1029→
+  1030→  1030→  1030→Search across authorized mail data.
+  1031→  1031→  1031→
+  1032→  1032→  1032→Support:
+  1033→  1033→  1033→
+  1034→  1034→  1034→- sender
+  1035→  1035→  1035→- recipient
+  1036→  1036→  1036→- subject
+  1037→  1037→  1037→- content
+  1038→  1038→  1038→- attachment name
+  1039→  1039→  1039→- date range
+  1040→  1040→  1040→- folder
+  1041→  1041→  1041→- unread/read
+  1042→  1042→  1042→- attachment
+  1043→  1043→  1043→- keywords
+  1044→  1044→  1044→
+  1045→  1045→  1045→Use progressive disclosure for advanced filters.
+  1046→  1046→  1046→
+  1047→  1047→  1047→Search results should be:
+  1048→  1048→  1048→
+  1049→  1049→  1049→- fast
+  1050→  1050→  1050→- readable
+  1051→  1051→  1051→- grouped where useful
+  1052→  1052→  1052→- clearly contextual
+  1053→  1053→  1053→
+  1054→  1054→  1054→Never expose unauthorized messages through search.
+  1055→  1055→  1055→
+  1056→  1056→  1056→IMPORTANT:
+  1057→  1057→  1057→
+  1058→  1058→  1058→Search authorization must be enforced server-side.
+  1059→  1059→  1059→
+  1060→  1060→  1060→The search index must not become an authorization bypass.
+  1061→  1061→  1061→
+  1062→  1062→  1062→==================================================
+  1063→  1063→  1063→5. GLOBAL EMPLOYEE UX
+  1064→  1064→  1064→==================================================
+  1065→  1065→  1065→
+  1066→  1066→  1066→Every screen must maintain:
+  1067→  1067→  1067→
+  1068→  1068→  1068→- consistent page header
+  1069→  1069→  1069→- consistent navigation
+  1070→  1070→  1070→- global search
+  1071→  1071→  1071→- profile/access controls
+  1072→  1072→  1072→- notification access
+  1073→  1073→  1073→- breadcrumb/context where appropriate
+  1074→  1074→  1074→
+  1075→  1075→  1075→Do not force the user to learn a different UI for each module.
+  1076→  1076→  1076→
+  1077→  1077→  1077→Qubit One should feel like one operating system.
+  1078→  1078→  1078→
+  1079→  1079→  1079→==================================================
+  1080→  1080→  1080→6. ROLE-AWARE EXPERIENCE
+  1081→  1081→  1081→==================================================
+  1082→  1082→  1082→
+  1083→  1083→  1083→The same workspace should adapt based on the user's role.
+  1084→  1084→  1084→
+  1085→  1085→  1085→Employee:
+  1086→  1086→  1086→
+  1087→  1087→  1087→- personal work
+  1088→  1088→  1088→- tasks
+  1089→  1089→  1089→- calendar
+  1090→  1090→  1090→- meetings
+  1091→  1091→  1091→- approvals
+  1092→  1092→  1092→- documents
+  1093→  1093→  1093→- communication
+  1094→  1094→  1094→
+  1095→  1095→  1095→Manager:
+  1096→  1096→  1096→
+  1097→  1097→  1097→- additional team context where authorized
+  1098→  1098→  1098→- team approvals
+  1099→  1099→  1099→- employee relationships
+  1100→  1100→  1100→
+  1101→  1101→  1101→HR:
+  1102→  1102→  1102→
+  1103→  1103→  1103→- appropriate employee data and HR workflows
+  1104→  1104→  1104→
+  1105→  1105→  1105→Executive:
+  1106→  1106→  1106→
+  1107→  1107→  1107→- appropriate organizational visibility
+  1108→  1108→  1108→
+  1109→  1109→  1109→Sales/Finance/Service/etc.:
+  1110→  1110→  1110→
+  1111→  1111→  1111→- contextual links into their business workflows
+  1112→  1112→  1112→
+  1113→  1113→  1113→Do not hard-code role assumptions into the frontend.
+  1114→  1114→  1114→
+  1115→  1115→  1115→Permissions must come from the centralized authorization model.
+  1116→  1116→  1116→
+  1117→  1117→  1117→==================================================
+  1118→  1118→  1118→7. AI INTEGRATION
+  1119→  1119→  1119→==================================================
+  1120→  1120→  1120→
+  1121→  1121→  1121→AI is part of the Qubit ecosystem but must not clutter the employee workspace.
+  1122→  1122→  1122→
+  1123→  1123→  1123→Use AI where it creates genuine utility.
+  1124→  1124→  1124→
+  1125→  1125→  1125→Possible contextual AI capabilities:
+  1126→  1126→  1126→
+  1127→  1127→  1127→- summarize my day
+  1128→  1128→  1128→- prioritize my tasks
+  1129→  1129→  1129→- summarize unread notifications
+  1130→  1130→  1130→- prepare meeting brief
+  1131→  1131→  1131→- summarize a meeting
+  1132→  1132→  1132→- draft an email
+  1133→  1133→  1133→- find an authorized document
+  1134→  1134→  1134→- explain an approval
+  1135→  1135→  1135→- summarize employee information I am authorized to see
+  1136→  1136→  1136→
+  1137→  1137→  1137→AI should appear through subtle contextual entry points.
+  1138→  1138→  1138→
+  1139→  1139→  1139→Do NOT add a giant chatbot panel to every screen.
+  1140→  1140→  1140→
+  1141→  1141→  1141→Do NOT make AI decorative.
+  1142→  1142→  1142→
+  1143→  1143→  1143→AI must:
+  1144→  1144→  1144→
+  1145→  1145→  1145→- respect permissions
+  1146→  1146→  1146→- respect employee scope
+  1147→  1147→  1147→- respect document access
+  1148→  1148→  1148→- respect data sensitivity
+  1149→  1149→  1149→- create audit trails for consequential actions
+  1150→  1150→  1150→- require confirmation for business-critical actions
+  1151→  1151→  1151→
+  1152→  1152→  1152→==================================================
+  1153→  1153→  1153→8. SECURITY & PRIVACY
+  1154→  1154→  1154→==================================================
+  1155→  1155→  1155→
+  1156→  1156→  1156→Reuse Phase 3 authentication and security architecture.
+  1157→  1157→  1157→
+  1158→  1158→  1158→Sensitive employee information must be protected.
+  1159→  1159→  1159→
+  1160→  1160→  1160→Examples:
+  1161→  1161→  1161→
+  1162→  1162→  1162→- HR information
+  1163→  1163→  1163→- compensation
+  1164→  1164→  1164→- personal contact details
+  1165→  1165→  1165→- documents
+  1166→  1166→  1166→- security activity
+  1167→  1167→  1167→- private communications
+  1168→  1168→  1168→
+  1169→  1169→  1169→Backend must enforce authorization independently of the UI.
+  1170→  1170→  1170→
+  1171→  1171→  1171→Never trust:
+  1172→  1172→  1172→
+  1173→  1173→  1173→- hidden buttons
+  1174→  1174→  1174→- frontend route protection alone
+  1175→  1175→  1175→- client-side role checks
+  1176→  1176→  1176→
+  1177→  1177→  1177→Every API/action must validate authorization server-side.
+  1178→  1178→  1178→
+  1179→  1179→  1179→==================================================
+  1180→  1180→  1180→9. NOTIFICATIONS
+  1181→  1181→  1181→==================================================
+  1182→  1182→  1182→
+  1183→  1183→  1183→All notifications should originate from the centralized Qubit notification system.
+  1184→  1184→  1184→
+  1185→  1185→  1185→Do not create independent notification logic inside each screen.
+  1186→  1186→  1186→
+  1187→  1187→  1187→Notification preferences and delivery rules must connect to the existing Notification Rules architecture.
+  1188→  1188→  1188→
+  1189→  1189→  1189→Support appropriate channels where configured:
+  1190→  1190→  1190→
+  1191→  1191→  1191→- in-app
+  1192→  1192→  1192→- email
+  1193→  1193→  1193→- push
+  1194→  1194→  1194→- other approved enterprise channels
+  1195→  1195→  1195→
+  1196→  1196→  1196→Do not assume every channel is enabled.
+  1197→  1197→  1197→
+  1198→  1198→  1198→==================================================
+  1199→  1199→  1199→10. DATA INTEGRITY
+  1200→  1200→  1200→==================================================
+  1201→  1201→  1201→
+  1202→  1202→  1202→Employee data must have a clear source of truth.
+  1203→  1203→  1203→
+  1204→  1204→  1204→Do not duplicate:
+  1205→  1205→  1205→
+  1206→  1206→  1206→- employee identity
+  1207→  1207→  1207→- departments
+  1208→  1208→  1208→- roles
+  1209→  1209→  1209→- reporting lines
+  1210→  1210→  1210→- contact details
+  1211→  1211→  1211→
+  1212→  1212→  1212→Instead, connect the workspace to existing enterprise entities.
+  1213→  1213→  1213→
+  1214→  1214→  1214→Important relationships:
+  1215→  1215→  1215→
+  1216→  1216→  1216→Employee
+  1217→  1217→  1217→→ Department
+  1218→  1218→  1218→→ Role
+  1219→  1219→  1219→→ Manager
+  1220→  1220→  1220→→ Permissions
+  1221→  1221→  1221→→ Tasks
+  1222→  1222→  1222→→ Meetings
+  1223→  1223→  1223→→ Documents
+  1224→  1224→  1224→→ Approvals
+  1225→  1225→  1225→→ Activity
+  1226→  1226→  1226→→ Communications
+  1227→  1227→  1227→
+  1228→  1228→  1228→Maintain referential integrity.
+  1229→  1229→  1229→
+  1230→  1230→  1230→Use server-side validation.
+  1231→  1231→  1231→
+  1232→  1232→  1232→Handle:
+  1233→  1233→  1233→
+  1234→  1234→  1234→- concurrent updates
+  1235→  1235→  1235→- stale data
+  1236→  1236→  1236→- deleted/deactivated employees
+  1237→  1237→  1237→- permission changes
+  1238→  1238→  1238→- terminated accounts
+  1239→  1239→  1239→- duplicate submissions
+  1240→  1240→  1240→
+  1241→  1241→  1241→==================================================
+  1242→  1242→  1242→11. RESPONSIVE DESIGN
+  1243→  1243→  1243→==================================================
+  1244→  1244→  1244→
+  1245→  1245→  1245→Desktop is the primary enterprise experience.
+  1246→  1246→  1246→
+  1247→  1247→  1247→Tablet must remain usable.
+  1248→  1248→  1248→
+  1249→  1249→  1249→Mobile must feel like a real mobile application.
+  1250→  1250→  1250→
+  1251→  1251→  1251→Do NOT simply shrink desktop layouts.
+  1252→  1252→  1252→
+  1253→  1253→  1253→On mobile:
+  1254→  1254→  1254→
+  1255→  1255→  1255→- simplify dense tables
+  1256→  1256→  1256→- convert lists into readable cards/list rows where useful
+  1257→  1257→  1257→- use bottom sheets/drawers where appropriate
+  1258→  1258→  1258→- preserve critical actions
+  1259→  1259→  1259→- maintain touch-friendly controls
+  1260→  1260→  1260→- keep navigation consistent
+  1261→  1261→  1261→- prioritize today's work
+  1262→  1262→  1262→
+  1263→  1263→  1263→Especially optimize:
+  1264→  1264→  1264→
+  1265→  1265→  1265→- Employee Home
+  1266→  1266→  1266→- My Tasks
+  1267→  1267→  1267→- My Calendar
+  1268→  1268→  1268→- My Meetings
+  1269→  1269→  1269→- My Approvals
+  1270→  1270→  1270→- Notifications
+  1271→  1271→  1271→- Digital ID
+  1272→  1272→  1272→- Mail
+  1273→  1273→  1273→
+  1274→  1274→  1274→==================================================
+  1275→  1275→  1275→12. ACCESSIBILITY
+  1276→  1276→  1276→==================================================
+  1277→  1277→  1277→
+  1278→  1278→  1278→Implement enterprise-grade accessibility.
+  1279→  1279→  1279→
+  1280→  1280→  1280→Include:
+  1281→  1281→  1281→
+  1282→  1282→  1282→- semantic HTML
+  1283→  1283→  1283→- keyboard navigation
+  1284→  1284→  1284→- visible focus
+  1285→  1285→  1285→- accessible labels
+  1286→  1286→  1286→- correct heading hierarchy
+  1287→  1287→  1287→- screen-reader support
+  1288→  1288→  1288→- sufficient contrast
+  1289→  1289→  1289→- accessible forms
+  1290→  1290→  1290→- accessible tables
+  1291→  1291→  1291→- accessible dialogs
+  1292→  1292→  1292→- accessible notifications
+  1293→  1293→  1293→- non-color-only statuses
+  1294→  1294→  1294→- logical tab order
+  1295→  1295→  1295→
+  1296→  1296→  1296→==================================================
+  1297→  1297→  1297→13. PERFORMANCE
+  1298→  1298→  1298→==================================================
+  1299→  1299→  1299→
+  1300→  1300→  1300→Employee Workspace will be heavily used.
+  1301→  1301→  1301→
+  1302→  1302→  1302→Optimize for frequent daily interaction.
+  1303→  1303→  1303→
+  1304→  1304→  1304→Avoid:
+  1305→  1305→  1305→
+  1306→  1306→  1306→- unnecessary API calls
+  1307→  1307→  1307→- huge client bundles
+  1308→  1308→  1308→- excessive polling
+  1309→  1309→  1309→- rendering hundreds of records at once
+  1310→  1310→  1310→- unnecessary animations
+  1311→  1311→  1311→
+  1312→  1312→  1312→Use:
+  1313→  1313→  1313→
+  1314→  1314→  1314→- pagination
+  1315→  1315→  1315→- virtualization where appropriate
+  1316→  1316→  1316→- debounced search
+  1317→  1317→  1317→- efficient data fetching
+  1318→  1318→  1318→- caching where safe
+  1319→  1319→  1319→- lazy loading
+  1320→  1320→  1320→- optimized queries
+  1321→  1321→  1321→
+  1322→  1322→  1322→Mail search, directory and activity can grow to very large datasets.
+  1323→  1323→  1323→
+  1324→  1324→  1324→Design for enterprise scale from the beginning.
+  1325→  1325→  1325→
+  1326→  1326→  1326→==================================================
+  1327→  1327→  1327→14. FAILURE STATES
+  1328→  1328→  1328→==================================================
+  1329→  1329→  1329→
+  1330→  1330→  1330→Every important workflow must handle:
+  1331→  1331→  1331→
+  1332→  1332→  1332→- loading
+  1333→  1333→  1333→- empty
+  1334→  1334→  1334→- error
+  1335→  1335→  1335→- permission denied
+  1336→  1336→  1336→- no results
+  1337→  1337→  1337→- offline/network failure
+  1338→  1338→  1338→- stale data
+  1339→  1339→  1339→- session expiration
+  1340→  1340→  1340→- service unavailable
+  1341→  1341→  1341→- duplicate submission
+  1342→  1342→  1342→- timeout
+  1343→  1343→  1343→
+  1344→  1344→  1344→Examples:
+  1345→  1345→  1345→
+  1346→  1346→  1346→If sending mail fails:
+  1347→  1347→  1347→
+  1348→  1348→  1348→DO NOT display "Mail sent."
+  1349→  1349→  1349→
+  1350→  1350→  1350→Clearly show:
+  1351→  1351→  1351→
+  1352→  1352→  1352→"Message could not be sent."
+  1353→  1353→  1353→
+  1354→  1354→  1354→Provide safe retry behavior.
+  1355→  1355→  1355→
+  1356→  1356→  1356→If approval fails:
+  1357→  1357→  1357→
+  1358→  1358→  1358→Do not make it appear approved.
+  1359→  1359→  1359→
+  1360→  1360→  1360→If document access fails:
+  1361→  1361→  1361→
+  1362→  1362→  1362→Do not reveal metadata the user is not authorized to see.
+  1363→  1363→  1363→
+  1364→  1364→  1364→==================================================
+  1365→  1365→  1365→15. DESIGN SYSTEM CONTINUITY
+  1366→  1366→  1366→==================================================
+  1367→  1367→  1367→
+  1368→  1368→  1368→Reuse Phase 2 design system.
+  1369→  1369→  1369→
+  1370→  1370→  1370→Do not create separate:
+  1371→  1371→  1371→
+  1372→  1372→  1372→- button styles
+  1373→  1373→  1373→- input styles
+  1374→  1374→  1374→- card styles
+  1375→  1375→  1375→- table styles
+  1376→  1376→  1376→- typography
+  1377→  1377→  1377→- badge systems
+  1378→  1378→  1378→- notification systems
+  1379→  1379→  1379→- modal systems
+  1380→  1380→  1380→
+  1381→  1381→  1381→If a new pattern is genuinely necessary:
+  1382→  1382→  1382→
+  1383→  1383→  1383→Add it as a reusable Qubit design-system component.
+  1384→  1384→  1384→
+  1385→  1385→  1385→Do not create one-off components that will become technical debt.
+  1386→  1386→  1386→
+  1387→  1387→  1387→==================================================
+  1388→  1388→  1388→16. ARCHITECTURAL CONTINUITY
+  1389→  1389→  1389→==================================================
+  1390→  1390→  1390→
+  1391→  1391→  1391→Do NOT create a parallel employee database.
+  1392→  1392→  1392→
+  1393→  1393→  1393→Do NOT create a separate authentication system.
+  1394→  1394→  1394→
+  1395→  1395→  1395→Do NOT create a separate permission system.
+  1396→  1396→  1396→
+  1397→  1397→  1397→Do NOT create a separate notification system.
+  1398→  1398→  1398→
+  1399→  1399→  1399→Do NOT create a separate organization hierarchy.
+  1400→  1400→  1400→
+  1401→  1401→  1401→Do NOT create a separate mail identity system.
+  1402→  1402→  1402→
+  1403→  1403→  1403→Connect this phase to existing Qubit architecture.
+  1404→  1404→  1404→
+  1405→  1405→  1405→Existing capabilities must be reused and extended.
+  1406→  1406→  1406→
+  1407→  1407→  1407→If a previous implementation is insufficient:
+  1408→  1408→  1408→
+  1409→  1409→  1409→IMPROVE it rather than duplicating it.
+  1410→  1410→  1410→
+  1411→  1411→  1411→==================================================
+  1412→  1412→  1412→17. VISUAL DENSITY
+  1413→  1413→  1413→==================================================
+  1414→  1414→  1414→
+  1415→  1415→  1415→This is an enterprise operating system.
+  1416→  1416→  1416→
+  1417→  1417→  1417→Do not make every screen look like a dashboard.
+  1418→  1418→  1418→
+  1419→  1419→  1419→Use different information densities based on the task.
+  1420→  1420→  1420→
+  1421→  1421→  1421→For example:
+  1422→  1422→  1422→
+  1423→  1423→  1423→Employee Home:
+  1424→  1424→  1424→moderate density.
+  1425→  1425→  1425→
+  1426→  1426→  1426→My Tasks:
+  1427→  1427→  1427→higher information density.
+  1428→  1428→  1428→
+  1429→  1429→  1429→Calendar:
+  1430→  1430→  1430→structured density.
+  1431→  1431→  1431→
+  1432→  1432→  1432→Mail:
+  1433→  1433→  1433→high information density.
+  1434→  1434→  1434→
+  1435→  1435→  1435→Profile:
+  1436→  1436→  1436→lower density with clear sections.
+  1437→  1437→  1437→
+  1438→  1438→  1438→ID Card:
+  1439→  1439→  1439→minimal density.
+  1440→  1440→  1440→
+  1441→  1441→  1441→Employee 360:
+  1442→  1442→  1442→structured information hierarchy.
+  1443→  1443→  1443→
+  1444→  1444→  1444→This variation should still feel like one product.
+  1445→  1445→  1445→
+  1446→  1446→  1446→==================================================
+  1447→  1447→  1447→18. REALISTIC ENTERPRISE DATA
+  1448→  1448→  1448→==================================================
+  1449→  1449→  1449→
+  1450→  1450→  1450→Use believable sample data.
+  1451→  1451→  1451→
+  1452→  1452→  1452→Examples:
+  1453→  1453→  1453→
+  1454→  1454→  1454→Employees:
+  1455→  1455→  1455→
+  1456→  1456→  1456→- names
+  1457→  1457→  1457→- designations
+  1458→  1458→  1458→- departments
+  1459→  1459→  1459→- managers
+  1460→  1460→  1460→- locations
+  1461→  1461→  1461→
+  1462→  1462→  1462→Tasks:
+  1463→  1463→  1463→
+  1464→  1464→  1464→- realistic work titles
+  1465→  1465→  1465→- priorities
+  1466→  1466→  1466→- deadlines
+  1467→  1467→  1467→- statuses
+  1468→  1468→  1468→
+  1469→  1469→  1469→Meetings:
+  1470→  1470→  1470→
+  1471→  1471→  1471→- realistic business meetings
+  1472→  1472→  1472→- participants
+  1473→  1473→  1473→- schedules
+  1474→  1474→  1474→
+  1475→  1475→  1475→Approvals:
+  1476→  1476→  1476→
+  1477→  1477→  1477→- realistic request types
+  1478→  1478→  1478→- amounts
+  1479→  1479→  1479→- approvers
+  1480→  1480→  1480→
+  1481→  1481→  1481→Documents:
+  1482→  1482→  1482→
+  1483→  1483→  1483→- realistic business documents
+  1484→  1484→  1484→- policies
+  1485→  1485→  1485→- reports
+  1486→  1486→  1486→- contracts
+  1487→  1487→  1487→- employee documents where authorized
+  1488→  1488→  1488→
+  1489→  1489→  1489→Mail:
+  1490→  1490→  1490→
+  1491→  1491→  1491→- realistic internal business communication
+  1492→  1492→  1492→
+  1493→  1493→  1493→Do not use:
+  1494→  1494→  1494→
+  1495→  1495→  1495→- lorem ipsum
+  1496→  1496→  1496→- meaningless random strings
+  1497→  1497→  1497→- placeholder UI
+  1498→  1498→  1498→- obviously fake enterprise data
+  1499→  1499→  1499→
+  1500→  1500→  1500→==================================================
+  1501→  1501→  1501→19. IMPORTANT SECURITY DISTINCTION
+  1502→  1502→  1502→==================================================
+  1503→  1503→  1503→
+  1504→  1504→  1504→My Activity ≠ Audit Log.
+  1505→  1505→  1505→
+  1506→  1506→  1506→My Notifications ≠ Security Alerts.
+  1507→  1507→  1507→
+  1508→  1508→  1508→My Profile ≠ Employee 360.
+  1509→  1509→  1509→
+  1510→  1510→  1510→Company Directory ≠ HR Directory.
+  1511→  1511→  1511→
+  1512→  1512→  1512→My Documents ≠ unrestricted document storage.
+  1513→  1513→  1513→
+  1514→  1514→  1514→My Approvals ≠ approval configuration.
+  1515→  1515→  1515→
+  1516→  1516→  1516→Keep these boundaries clear.
+  1517→  1517→  1517→
+  1518→  1518→  1518→Use integrations between them rather than duplicating responsibilities.
+  1519→  1519→  1519→
+  1520→  1520→  1520→==================================================
+  1521→  1521→  1521→20. IMPLEMENTATION EXPECTATION
+  1522→  1522→  1522→==================================================
+  1523→  1523→  1523→
+  1524→  1524→  1524→The implementation must be developer-grade.
+  1525→  1525→  1525→
+  1526→  1526→  1526→Use:
+  1527→  1527→  1527→
+  1528→  1528→  1528→- modular React components
+  1529→  1529→  1529→- reusable components
+  1530→  1530→  1530→- feature/domain boundaries
+  1531→  1531→  1531→- typed data models
+  1532→  1532→  1532→- proper loading/error states
+  1533→  1533→  1533→- proper API boundaries
+  1534→  1534→  1534→- server-side authorization
+  1535→  1535→  1535→- maintainable code
+  1536→  1536→  1536→- testable components
+  1537→  1537→  1537→
+  1538→  1538→  1538→Do NOT create:
+  1539→  1539→  1539→
+  1540→  1540→  1540→- one giant HTML file
+  1541→  1541→  1541→- one giant React component
+  1542→  1542→  1542→- duplicated page-specific components
+  1543→  1543→  1543→- fake API success
+  1544→  1544→  1544→- hard-coded business permissions
+  1545→  1545→  1545→- security logic only in frontend
+  1546→  1546→  1546→- random mock architecture
+  1547→  1547→  1547→
+  1548→  1548→  1548→==================================================
+  1549→  1549→  1549→21. FINAL PHASE VALIDATION
+  1550→  1550→  1550→==================================================
+  1551→  1551→  1551→
+  1552→  1552→  1552→Before declaring Phase 4 complete, verify:
+  1553→  1553→  1553→
+  1554→  1554→  1554→[ ] 41 Employee Home
+  1555→  1555→  1555→[ ] 42 My Profile
+  1556→  1556→  1556→[ ] 43 My Tasks
+  1557→  1557→  1557→[ ] 44 My Calendar
+  1558→  1558→  1558→[ ] 45 My Meetings
+  1559→  1559→  1559→[ ] 46 My Approvals
+  1560→  1560→  1560→[ ] 47 My Documents
+  1561→  1561→  1561→[ ] 48 My Notifications
+  1562→  1562→  1562→[ ] 49 My Activity
+  1563→  1563→  1563→[ ] 50 Company Directory
+  1564→  1564→  1564→[ ] 51 Organization Chart
+  1565→  1565→  1565→[ ] 52 Employee 360
+  1566→  1566→  1566→[ ] 53 Digital ID Card
+  1567→  1567→  1567→[ ] 54 Digital Visiting Card
+  1568→  1568→  1568→[ ] 55 Company Mail Inbox
+  1569→  1569→  1569→[ ] 56 Compose Mail
+  1570→  1570→  1570→[ ] 57 Sent Mail
+  1571→  1571→  1571→[ ] 58 Mail Search
+  1572→  1572→  1572→
+  1573→  1573→  1573→TOTAL:
+  1574→  1574→  1574→
+  1575→  1575→  1575→18 / 18 screens.
+  1576→  1576→  1576→
+  1577→  1577→  1577→Then verify:
+  1578→  1578→  1578→
+  1579→  1579→  1579→[ ] No skipped screen
+  1580→  1580→  1580→[ ] No duplicate screen
+  1581→  1581→  1581→[ ] No renamed screen
+  1582→  1582→  1582→[ ] Existing Qubit navigation preserved
+  1583→  1583→  1583→[ ] Existing design system reused
+  1584→  1584→  1584→[ ] Phase 3 authentication/security reused
+  1585→  1585→  1585→[ ] Existing RBAC reused
+  1586→  1586→  1586→[ ] Existing organization structure reused
+  1587→  1587→  1587→[ ] Existing employee identity reused
+  1588→  1588→  1588→[ ] Existing notification architecture reused
+  1589→  1589→  1589→[ ] Existing approval architecture reused
+  1590→  1590→  1590→[ ] Existing audit/security architecture preserved
+  1591→  1591→  1591→[ ] AI remains permission-aware
+  1592→  1592→  1592→[ ] No unauthorized employee data exposure
+  1593→  1593→  1593→[ ] No frontend-only authorization
+  1594→  1594→  1594→[ ] Responsive behavior implemented
+  1595→  1595→  1595→[ ] Accessibility implemented
+  1596→  1596→  1596→[ ] Loading states implemented
+  1597→  1597→  1597→[ ] Empty states implemented
+  1598→  1598→  1598→[ ] Error states implemented
+  1599→  1599→  1599→[ ] Permission states implemented
+  1600→  1600→  1600→[ ] Network failure states implemented
+  1601→  1601→  1601→[ ] Realistic enterprise data used
+  1602→  1602→  1602→[ ] No unnecessary UI clutter
+  1603→  1603→  1603→[ ] No separate competing design system
+  1604→  1604→  1604→[ ] No duplicate databases/entities
+  1605→  1605→  1605→[ ] No fake production success
+  1606→  1606→  1606→
+  1607→  1607→  1607→==================================================
+  1608→  1608→  1608→22. MOST IMPORTANT INSTRUCTION
+  1609→  1609→  1609→==================================================
+  1610→  1610→  1610→
+  1611→  1611→  1611→DO NOT build 18 isolated pages.
+  1612→  1612→  1612→
+  1613→  1613→  1613→Build one connected:
+  1614→  1614→  1614→
+  1615→  1615→  1615→QUBIT ONE EMPLOYEE WORKSPACE.
+  1616→  1616→  1616→
+  1617→  1617→  1617→The employee should feel that:
+  1618→  1618→  1618→
+  1619→  1619→  1619→Employee Home
+  1620→  1620→  1620→→ Tasks
+  1621→  1621→  1621→→ Calendar
+  1622→  1622→  1622→→ Meetings
+  1623→  1623→  1623→→ Approvals
+  1624→  1624→  1624→→ Documents
+  1625→  1625→  1625→→ Notifications
+  1626→  1626→  1626→→ Activity
+  1627→  1627→  1627→→ People
+  1628→  1628→  1628→→ Organization
+  1629→  1629→  1629→→ Identity
+  1630→  1630→  1630→→ Mail
+  1631→  1631→  1631→
+  1632→  1632→  1632→are all parts of the SAME enterprise operating system.
+  1633→  1633→  1633→
+  1634→  1634→  1634→The attached Qubit One UI reference is the visual source of truth.
+  1635→  1635→  1635→
+  1636→  1636→  1636→STRICTLY FOLLOW IT.
+  1637→  1637→  1637→
+  1638→  1638→  1638→Improve polish where appropriate.
+  1639→  1639→  1639→
+  1640→  1640→  1640→Do not introduce unrelated visual concepts.
+  1641→  1641→  1641→
+  1642→  1642→  1642→Do not restart architecture.
+  1643→  1643→  1643→
+  1644→  1644→  1644→Do not duplicate previous functionality.
+  1645→  1645→  1645→
+  1646→  1646→  1646→Do not ask what to build next.
+  1647→  1647→  1647→
+  1648→  1648→  1648→Complete PHASE 4 — SCREENS 41–58.

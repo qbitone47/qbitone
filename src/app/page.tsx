@@ -5,7 +5,7 @@ import { RoleProvider } from "@/components/qubit/role-context";
 export default function Home() {
   return (
     <RoleProvider>
-      <QubitNavProvider initialScreen="org-structure">
+      <QubitNavProvider initialScreen="employee-home">
         <AppShell />
       </QubitNavProvider>
     </RoleProvider>

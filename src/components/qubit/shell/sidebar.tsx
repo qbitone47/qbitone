@@ -7,6 +7,8 @@ import {
   ChevronRight,
   FolderClosed,
   House,
+  LayoutList,
+  Mail,
   Megaphone,
   Package,
   Palette,
@@ -36,15 +38,17 @@ export interface SidebarModule {
 }
 
 export const SIDEBAR_MODULES: SidebarModule[] = [
-  { id: "home", label: "Home", icon: House, section: "Workspace" },
+  { id: "home", label: "Home", icon: House, section: "Workspace", screen: "employee-home" },
+  { id: "workspace", label: "Workspace", icon: LayoutList, section: "Workspace", expandableModule: "workspace" },
   { id: "enterprise", label: "Enterprise", icon: Building2, section: "Workspace", expandableModule: "enterprise" },
-  { id: "people", label: "People", icon: UserRound, section: "Workspace" },
+  { id: "people", label: "People", icon: UserRound, section: "Workspace", expandableModule: "people" },
   { id: "sales", label: "Sales", icon: TrendingUp, section: "Business" },
   { id: "finance", label: "Finance", icon: Wallet, section: "Business" },
   { id: "hr", label: "HR & People", icon: Users, section: "Business" },
   { id: "inventory", label: "Inventory", icon: Package, section: "Business" },
   { id: "marketing", label: "Marketing", icon: Megaphone, section: "Business" },
   { id: "service", label: "Service", icon: Wrench, section: "Business" },
+  { id: "mail", label: "Mail", icon: Mail, section: "Communication", expandableModule: "mail" },
   { id: "meetings", label: "Meetings", icon: Video, section: "Intelligence" },
   { id: "ai", label: "AI", icon: Sparkles, section: "Intelligence" },
   { id: "analytics", label: "Analytics", icon: BarChart3, section: "Intelligence" },
@@ -55,9 +59,10 @@ export const SIDEBAR_MODULES: SidebarModule[] = [
 ];
 
 export const MODULE_PHASE: Record<string, string> = {
-  home: "Phase 2 — Core Employee Workspace",
-  people: "Phase 2 — People Directory",
-  sales: "Phase 4 — Sales Operations",
+  workspace: "Phase 4 — Core Employee Workspace",
+  people: "Phase 4 — People & Organization",
+  mail: "Phase 4 — Company Mail",
+  sales: "Phase 5 — Sales Operations",
   finance: "Phase 6 — Finance",
   hr: "Phase 7 — HR & People",
   inventory: "Phase 8 — Inventory",
@@ -98,8 +103,8 @@ export function SidebarContent({
   onNavigate?: () => void;
 }) {
   const { screen, navigate } = useQubitNav();
-  // Enterprise starts expanded (Phase 1 home); Design System and Security start collapsed.
-  const [open, setOpen] = React.useState<Record<string, boolean>>({ enterprise: true, "design-system": false, security: false });
+  // Workspace starts expanded (Phase 4 home); others start collapsed.
+  const [open, setOpen] = React.useState<Record<string, boolean>>({ workspace: true, enterprise: false, people: false, mail: false, "design-system": false, security: false });
 
   const sections = React.useMemo(() => {
     const map = new Map<string, SidebarModule[]>();
@@ -275,13 +280,13 @@ export function SidebarContent({
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[12.5px] font-semibold leading-tight text-slate-900">Qubit One Pvt Ltd</span>
               <span className="block truncate text-[10.5px] leading-tight text-slate-400">
-                Phase 3 · Security & Identity
+                Phase 4 · Employee Workspace
               </span>
             </span>
             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-hidden />
           </div>
         ) : (
-          <div className="flex justify-center py-0.5" title="Qubit One Pvt Ltd — Phase 3 · Security & Identity">
+          <div className="flex justify-center py-0.5" title="Qubit One Pvt Ltd — Phase 4 · Employee Workspace">
             <QubitMark className="h-7 w-7 rounded-lg text-[13px]" />
           </div>
         )}

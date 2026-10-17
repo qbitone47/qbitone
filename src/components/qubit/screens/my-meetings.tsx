@@ -1,0 +1,395 @@
+"use client";
+
+import * as React from "react";
+import {
+  CalendarClock,
+  CalendarX2,
+  FileText,
+  ListChecks,
+  MapPin,
+  Sparkles,
+  Users,
+  Video,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { getEmployee } from "@/lib/qubit/data";
+import {
+  fmtDate,
+  fmtTime,
+  ist,
+  MEETINGS,
+  WORKSPACE_NOW,
+  type Meeting,
+} from "@/lib/qubit/workspace-data";
+import { useQubitNav } from "../nav-context";
+import { useRole } from "../role-context";
+import { PageHeader } from "../page-header";
+import { Avatar, EmptyState, SectionCard, StatusBadge } from "../primitives";
+import { AvatarStack } from "../workspace/parts";
+import { DetailDrawer } from "../drawers";
+import { ConfirmDialog } from "../dialogs";
+import { SegmentedToggle } from "../workspace/parts";
+
+// ============================================================
+// Screen 45 · My Meetings — focused meeting workspace (not a
+// calendar clone). Past meetings carry notes, AI summaries and
+// action items; those flow onward to My Tasks (integration
+// point for the Meetings module, Phase 11).
+// ============================================================
+
+type Bucket = "today" | "upcoming" | "past";
+
+export function MyMeetingsScreen() {
+  const nav = useQubitNav();
+  const { toast } = useToast();
+  const { role } = useRole();
+  const params = nav.params as { meetingId?: string };
+
+  const [bucket, setBucket] = React.useState<Bucket>("today");
+  const [selected, setSelected] = React.useState<Meeting | null>(null);
+  const [cancelTarget, setCancelTarget] = React.useState<Meeting | null>(null);
+  const [cancelling, setCancelling] = React.useState(false);
+  const [cancelled, setCancelled] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    if (params.meetingId) {
+      const m = MEETINGS.find((x) => x.id === params.meetingId);
+      if (m) setSelected(m);
+    }
+  }, [params.meetingId]);
+
+  const live = React.useMemo(() => MEETINGS.filter((m) => !cancelled.includes(m.id)), [cancelled]);
+
+  const todays = live
+    .filter((m) => ist(m.start).toDateString() === ist(WORKSPACE_NOW).toDateString())
+    .sort((a, b) => a.start - b.start);
+  const upcoming = live.filter((m) => m.start > WORKSPACE_NOW).sort((a, b) => a.start - b.start);
+  const past = live.filter((m) => m.end < WORKSPACE_NOW && !todays.includes(m)).sort((a, b) => b.start - a.start);
+
+  const bucketList = bucket === "today" ? todays : bucket === "upcoming" ? upcoming : past;
+
+  const isOrganizer = (m: Meeting) => m.organizerId === "sagar";
+
+  const doCancel = async () => {
+    if (!cancelTarget) return;
+    setCancelling(true);
+    // Meeting lifecycle is a server concern in production; here the
+    // cancel is recorded locally and the audit trail notes the intent.
+    await new Promise((r) => setTimeout(r, 700));
+    setCancelled((ids) => [...ids, cancelTarget.id]);
+    setCancelling(false);
+    setCancelTarget(null);
+    setSelected(null);
+    toast({ title: "Meeting cancelled", description: "Participants have been notified and the calendar has been updated." });
+  };
+
+  return (
+    <div>
+      <PageHeader
+        crumbs={[{ label: "Workspace" }, { label: "Meetings" }]}
+        title="My Meetings"
+        description="Your meeting workspace — today's live sessions, what's ahead, and the record of what happened."
+        actions={
+          <Button variant="outline" className="h-9 gap-1.5" onClick={() => nav.navigate("my-calendar")}>
+            <CalendarClock className="h-4 w-4" aria-hidden /> Open calendar
+          </Button>
+        }
+      />
+
+      {/* Today strip */}
+      {todays.length > 0 && (
+        <SectionCard
+          className="mb-4"
+          title="Today"
+          description={`${fmtDate(WORKSPACE_NOW)} · ${todays.length} meeting${todays.length === 1 ? "" : "s"}`}
+        >
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {todays.map((m) => (
+              <MeetingCard key={m.id} meeting={m} onOpen={() => setSelected(m)} compact />
+            ))}
+          </div>
+        </SectionCard>
+      )}
+
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <SegmentedToggle
+          ariaLabel="Meeting buckets"
+          value={bucket}
+          onChange={setBucket}
+          options={[
+            { value: "today", label: `Today (${todays.length})` },
+            { value: "upcoming", label: `Upcoming (${upcoming.length})` },
+            { value: "past", label: `Past (${past.length})` },
+          ]}
+        />
+      </div>
+
+      {bucketList.length === 0 ? (
+        <SectionCard>
+          <EmptyState
+            icon={<Video />}
+            title={bucket === "past" ? "No past meetings in this range" : "Nothing scheduled here"}
+            message={
+              bucket === "past"
+                ? "Completed meetings with notes and summaries will appear here."
+                : "Schedule from the calendar, or propose a time by mail."
+            }
+            action={
+              <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={() => nav.navigate("compose-mail")}>
+                Propose a time by mail
+              </Button>
+            }
+          />
+        </SectionCard>
+      ) : (
+        <div className="space-y-3">
+          {bucketList.map((m) => (
+            <MeetingCard key={m.id} meeting={m} onOpen={() => setSelected(m)} isOrganizer={isOrganizer(m)} onCancel={() => setCancelTarget(m)} role={role} />
+          ))}
+        </div>
+      )}
+
+      {/* Detail drawer */}
+      <DetailDrawer
+        open={Boolean(selected)}
+        onOpenChange={(o) => !o && setSelected(null)}
+        wide
+        title={selected?.title ?? ""}
+        subtitle={
+          selected
+            ? `${fmtDate(selected.start)} · ${fmtTime(selected.start)}–${fmtTime(selected.end)} · ${selected.platform}`
+            : undefined
+        }
+        icon={<Video />}
+      >
+        {selected && (
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge status={selected.status} size="sm" />
+              {selected.location && (
+                <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+                  <MapPin className="h-3 w-3" aria-hidden /> {selected.location}
+                </span>
+              )}
+              {isOrganizer(selected) && <span className="rounded bg-blue-50 px-1.5 py-px text-[10px] font-semibold text-blue-700">You organize</span>}
+            </div>
+
+            {selected.agenda && (
+              <div>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Agenda</p>
+                <p className="text-[13.5px] leading-relaxed text-slate-700">{selected.agenda}</p>
+              </div>
+            )}
+
+            <div>
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <Users className="h-3 w-3" aria-hidden /> Participants ({selected.participantIds.length})
+              </p>
+              <ul className="grid gap-1.5 sm:grid-cols-2">
+                {selected.participantIds.map((pid) => {
+                  const emp = getEmployee(pid);
+                  return (
+                    <li key={pid}>
+                      <button
+                        type="button"
+                        onClick={() => nav.navigate("employee-360", { employeeId: pid })}
+                        className="flex w-full items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 text-left transition-colors hover:border-slate-200 hover:bg-slate-50"
+                      >
+                        <Avatar name={emp?.name ?? pid} size="sm" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[12.5px] font-medium text-slate-800">{emp?.name ?? pid}</span>
+                          <span className="block truncate text-[11px] text-muted-foreground">{emp?.title}</span>
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            {selected.notes && (
+              <div>
+                <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <FileText className="h-3 w-3" aria-hidden /> Meeting notes
+                </p>
+                <p className="rounded-lg border border-slate-200/80 bg-slate-50/60 px-3.5 py-3 text-[13px] leading-relaxed text-slate-700">{selected.notes}</p>
+              </div>
+            )}
+
+            {selected.aiSummary && (
+              <div>
+                <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-violet-600">
+                  <Sparkles className="h-3 w-3" aria-hidden /> AI summary
+                </p>
+                <div className="rounded-lg border border-violet-200/70 bg-violet-50/50 px-3.5 py-3">
+                  <p className="text-[13px] leading-relaxed text-slate-700">{selected.aiSummary}</p>
+                  <p className="mt-2 text-[10.5px] text-violet-700">
+                    Generated from notes and recordings you are authorized to access. Summaries are never a substitute for the official minutes.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {selected.actionItems?.length ? (
+              <div>
+                <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <ListChecks className="h-3 w-3" aria-hidden /> Action items
+                </p>
+                <ul className="space-y-1.5">
+                  {selected.actionItems.map((ai) => {
+                    const owner = getEmployee(ai.ownerId);
+                    return (
+                      <li key={ai.title} className="flex items-center gap-2.5 rounded-lg border border-slate-200/80 bg-white px-3 py-2">
+                        <span className="min-w-0 flex-1 text-[12.5px] font-medium text-slate-800">{ai.title}</span>
+                        <span className="shrink-0 text-[11px] text-slate-500">{owner?.name}</span>
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-blue-600" onClick={() => nav.navigate("my-tasks")}>
+                          View in tasks
+                        </Button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ) : null}
+
+            <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+              {selected.status !== "Completed" && selected.status !== "Cancelled" && (
+                <Button
+                  size="sm"
+                  className="h-8 gap-1.5"
+                  onClick={() =>
+                    toast({
+                      title: selected.platform === "In person" ? "This meeting is in person" : `Joining via ${selected.platform}`,
+                      description:
+                        selected.platform === "In person"
+                          ? `${selected.location} — the room calendar shows it as occupied.`
+                          : "The meeting link opens in the enterprise meeting client.",
+                    })
+                  }
+                >
+                  <Video className="h-3.5 w-3.5" aria-hidden /> Join
+                </Button>
+              )}
+              {isOrganizer(selected) && selected.status === "Scheduled" && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8"
+                    onClick={() => toast({ title: "Reschedule", description: "Propose new times to participants — replies land in your mail and notifications." })}
+                  >
+                    Reschedule
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-8 text-red-600 hover:text-red-700" onClick={() => setCancelTarget(selected)}>
+                    Cancel meeting
+                  </Button>
+                </>
+              )}
+              {!isOrganizer(selected) && selected.status === "Scheduled" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8"
+                  onClick={() => nav.navigate("compose-mail")}
+                >
+                  Message organizer
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+      </DetailDrawer>
+
+      <ConfirmDialog
+        open={Boolean(cancelTarget)}
+        onOpenChange={(o) => !o && setCancelTarget(null)}
+        title="Cancel this meeting?"
+        description={cancelTarget ? `"${cancelTarget.title}" will be removed from ${cancelTarget.participantIds.length} calendars and participants will be notified.` : ""}
+        confirmLabel={cancelling ? "Cancelling…" : "Cancel meeting"}
+        destructive
+        onConfirm={doCancel}
+      />
+    </div>
+  );
+}
+
+function MeetingCard({
+  meeting: m,
+  onOpen,
+  compact = false,
+  isOrganizer = false,
+  onCancel,
+  role,
+}: {
+  meeting: Meeting;
+  onOpen: () => void;
+  compact?: boolean;
+  isOrganizer?: boolean;
+  onCancel?: () => void;
+  role?: string;
+}) {
+  const { toast } = useToast();
+  const organizer = getEmployee(m.organizerId);
+  const live = m.status === "In Progress";
+
+  return (
+    <div className={cn("qubit-card qubit-card-hover p-4", live && "border-emerald-200")}>
+      <div className="flex items-start gap-3">
+        <span className={cn("qubit-icon-tile h-10 w-10 shrink-0", live ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-700")}>
+          <Video />
+        </span>
+        <div className="min-w-0 flex-1">
+          <button type="button" onClick={onOpen} className="block w-full text-left" aria-label={`Open meeting: ${m.title}`}>
+            <p className="truncate text-[14px] font-semibold text-slate-900">{m.title}</p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {fmtDate(m.start)} · {fmtTime(m.start)}–{fmtTime(m.end)}
+              {!compact && ` · ${m.platform}`}
+            </p>
+          </button>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <StatusBadge status={m.status} size="sm" />
+            {live && (
+              <Button size="sm" className="h-7 gap-1.5 rounded-full px-3 text-xs" onClick={onOpen}>
+                <span className="relative flex h-1.5 w-1.5" aria-hidden>
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                </span>
+                Join now
+              </Button>
+            )}
+            {isOrganizer && !compact && <span className="rounded bg-blue-50 px-1.5 py-px text-[10px] font-semibold text-blue-700">Organizer</span>}
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <AvatarStack names={m.participantIds.map((id) => getEmployee(id)?.name ?? "")} max={compact ? 3 : 4} />
+          {!compact && (
+            <span className="text-[10.5px] text-slate-400">
+              {role === "employee" ? "View only" : organizer?.name === "Sagar Singh" ? "" : `by ${organizer?.name?.split(" ")[0] ?? ""}`}
+            </span>
+          )}
+        </div>
+      </div>
+      {!compact && (
+        <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5">
+          <p className="truncate text-[11.5px] text-muted-foreground">
+            {m.location}
+            {m.notes ? " · notes available" : ""}
+            {m.aiSummary ? " · AI summary" : ""}
+          </p>
+          <div className="flex shrink-0 items-center gap-1">
+            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-blue-600" onClick={onOpen}>
+              Open
+            </Button>
+            {isOrganizer && m.status === "Scheduled" && onCancel && (
+              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-red-600" onClick={onCancel} aria-label={`Cancel meeting: ${m.title}`}>
+                <CalendarX2 className="h-3.5 w-3.5" aria-hidden />
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

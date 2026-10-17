@@ -2,6 +2,7 @@
 // Phase 1: Enterprise Architecture (screens 01–12)
 // Phase 2: Enterprise Design System (screens 13–30)
 // Phase 3: Authentication & Security (screens 31–40)
+// Phase 4: Core Employee Workspace (screens 41–58)
 
 export type ScreenId =
   | "org-structure"
@@ -43,9 +44,27 @@ export type ScreenId =
   | "role-access-request"
   | "ip-network-policy"
   | "audit-log"
-  | "security-alerts";
+  | "security-alerts"
+  | "employee-home"
+  | "my-profile"
+  | "my-tasks"
+  | "my-calendar"
+  | "my-meetings"
+  | "my-approvals"
+  | "my-documents"
+  | "my-notifications"
+  | "my-activity"
+  | "company-directory"
+  | "organization-chart"
+  | "employee-360"
+  | "digital-id-card"
+  | "digital-visiting-card"
+  | "mail-inbox"
+  | "compose-mail"
+  | "sent-mail"
+  | "mail-search";
 
-export type ScreenModule = "enterprise" | "design-system" | "security";
+export type ScreenModule = "enterprise" | "design-system" | "security" | "workspace" | "people" | "mail";
 
 /** Screens rendered without the app shell (standalone authentication) */
 export const AUTH_SCREENS: ScreenId[] = ["login", "mfa-verification", "sso-provider-selection"];
@@ -103,6 +122,25 @@ export const SCREENS: ScreenMeta[] = [
   { id: "ip-network-policy", num: "38", title: "IP / Network Policy", shortTitle: "Network Policy", description: "Admin network rules with conflict checks and lockout protection.", module: "security" },
   { id: "audit-log", num: "39", title: "Audit Log", shortTitle: "Audit Log", description: "Trustworthy, searchable enterprise security history.", module: "security" },
   { id: "security-alerts", num: "40", title: "Security Alerts", shortTitle: "Alerts", description: "Calibrated, actionable alerts with recommended next steps.", module: "security" },
+  // ——— Phase 4 · Core Employee Workspace ———
+  { id: "employee-home", num: "41", title: "Employee Home", shortTitle: "Home", description: "Your personalized daily workspace — priorities, work, approvals and messages.", module: "workspace" },
+  { id: "my-profile", num: "42", title: "My Profile", shortTitle: "My Profile", description: "Your enterprise identity — self-service fields, company-controlled record.", module: "workspace" },
+  { id: "my-tasks", num: "43", title: "My Tasks", shortTitle: "My Tasks", description: "One queue for everything assigned to you — meetings, workflows, sales, HR.", module: "workspace" },
+  { id: "my-calendar", num: "44", title: "My Calendar", shortTitle: "My Calendar", description: "Meetings, deadlines, company events and leave — with real privacy.", module: "workspace" },
+  { id: "my-meetings", num: "45", title: "My Meetings", shortTitle: "My Meetings", description: "Today's live sessions, what's ahead, and the record of what happened.", module: "workspace" },
+  { id: "my-approvals", num: "46", title: "My Approvals", shortTitle: "My Approvals", description: "Requests waiting on your decision — routed by the Approval Matrix.", module: "workspace" },
+  { id: "my-documents", num: "47", title: "My Documents", shortTitle: "My Documents", description: "Your authorized document workspace — access enforced server-side.", module: "workspace" },
+  { id: "my-notifications", num: "48", title: "My Notifications", shortTitle: "Notifications", description: "One notification center, deep-linked into the same operating system.", module: "workspace" },
+  { id: "my-activity", num: "49", title: "My Activity", shortTitle: "My Activity", description: "Your personal work timeline — distinct from the enterprise audit trail.", module: "workspace" },
+  { id: "company-directory", num: "50", title: "Company Directory", shortTitle: "Directory", description: "Find anyone at Qubit One — name, skill, department, designation, location.", module: "people" },
+  { id: "organization-chart", num: "51", title: "Organization Chart", shortTitle: "Org Chart", description: "The live structure — progressive expansion, search-driven focus.", module: "people" },
+  { id: "employee-360", num: "52", title: "Employee 360", shortTitle: "Employee 360", description: "The connected overview — scoped by role, never a super-profile.", module: "people" },
+  { id: "digital-id-card", num: "53", title: "Digital ID Card", shortTitle: "Digital ID", description: "Your enterprise identity credential — verifiable against the registry.", module: "people" },
+  { id: "digital-visiting-card", num: "54", title: "Digital Visiting Card", shortTitle: "Visiting Card", description: "Your professional card — vCard, copy and live share link.", module: "people" },
+  { id: "mail-inbox", num: "55", title: "Company Mail Inbox", shortTitle: "Inbox", description: "High-density enterprise mail — one system with Sent, Compose and Search.", module: "mail" },
+  { id: "compose-mail", num: "56", title: "Compose Mail", shortTitle: "Compose", description: "Directory-backed recipients, policy-checked attachments, honest states.", module: "mail" },
+  { id: "sent-mail", num: "57", title: "Sent Mail", shortTitle: "Sent", description: "Every message you've sent — with honest delivery status and retry.", module: "mail" },
+  { id: "mail-search", num: "58", title: "Mail Search", shortTitle: "Mail Search", description: "Server-enforced search across your authorized mailbox.", module: "mail" },
 ];
 
 export const screenMeta = (id: ScreenId): ScreenMeta =>
@@ -121,4 +159,15 @@ export interface ScreenParams {
   challengeId?: string;
   /** Alert / audit correlation focus */
   correlationId?: string;
+  /** Workspace deep links (Phase 4) */
+  taskId?: string;
+  filter?: string;
+  meetingId?: string;
+  approvalId?: string;
+  sentId?: string;
+  /** Mail compose prefill */
+  to?: string;
+  mailReply?: string;
+  mailForward?: string;
+  replyAll?: boolean;
 }

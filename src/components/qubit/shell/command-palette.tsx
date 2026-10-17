@@ -69,6 +69,34 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
           ))}
         </CommandGroup>
         <CommandSeparator />
+        <CommandGroup heading="Employee Workspace — Phase 4 screens">
+          {screensByModule("workspace").map((s) => (
+            <CommandItem
+              key={s.id}
+              value={`${s.num} ${s.title} ${s.shortTitle} workspace home tasks calendar approvals documents`}
+              onSelect={() => run(() => navigate(s.id))}
+              className="gap-3"
+            >
+              <span className="w-6 text-[10px] font-semibold tabular-nums text-slate-400">{s.num}</span>
+              <span className="text-[13px] font-medium text-slate-800">{s.title}</span>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+        <CommandSeparator />
+        <CommandGroup heading="People & Mail — Phase 4 screens">
+          {[...screensByModule("people"), ...screensByModule("mail")].map((s) => (
+            <CommandItem
+              key={s.id}
+              value={`${s.num} ${s.title} ${s.shortTitle} people directory mail inbox compose sent search`}
+              onSelect={() => run(() => navigate(s.id))}
+              className="gap-3"
+            >
+              <span className="w-6 text-[10px] font-semibold tabular-nums text-slate-400">{s.num}</span>
+              <span className="text-[13px] font-medium text-slate-800">{s.title}</span>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+        <CommandSeparator />
         <CommandGroup heading="Security — Phase 3 screens">
           {screensByModule("security").map((s) => (
             <CommandItem

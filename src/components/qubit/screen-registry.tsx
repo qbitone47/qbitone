@@ -42,6 +42,24 @@ import { RoleAccessRequestScreen } from "./screens/role-access-request";
 import { IpNetworkPolicyScreen } from "./screens/ip-network-policy";
 import { AuditLogScreen } from "./screens/audit-log";
 import { SecurityAlertsScreen } from "./screens/security-alerts";
+import { EmployeeHomeScreen } from "./screens/employee-home";
+import { MyProfileScreen } from "./screens/my-profile";
+import { MyTasksScreen } from "./screens/my-tasks";
+import { MyCalendarScreen } from "./screens/my-calendar";
+import { MyMeetingsScreen } from "./screens/my-meetings";
+import { MyApprovalsScreen } from "./screens/my-approvals";
+import { MyDocumentsScreen } from "./screens/my-documents";
+import { MyNotificationsScreen } from "./screens/my-notifications";
+import { MyActivityScreen } from "./screens/my-activity";
+import { CompanyDirectoryScreen } from "./screens/company-directory";
+import { OrganizationChartScreen } from "./screens/organization-chart";
+import { Employee360Screen } from "./screens/employee-360";
+import { DigitalIdCardScreen } from "./screens/digital-id-card";
+import { DigitalVisitingCardScreen } from "./screens/digital-visiting-card";
+import { MailInboxScreen } from "./screens/mail-inbox";
+import { ComposeMailScreen } from "./screens/compose-mail";
+import { SentMailScreen } from "./screens/sent-mail";
+import { MailSearchScreen } from "./screens/mail-search";
 
 export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "org-structure": OrganizationStructureScreen,
@@ -84,4 +102,22 @@ export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "ip-network-policy": IpNetworkPolicyScreen,
   "audit-log": AuditLogScreen,
   "security-alerts": SecurityAlertsScreen,
+  "employee-home": EmployeeHomeScreen,
+  "my-profile": MyProfileScreen,
+  "my-tasks": MyTasksScreen,
+  "my-calendar": MyCalendarScreen,
+  "my-meetings": MyMeetingsScreen,
+  "my-approvals": MyApprovalsScreen,
+  "my-documents": MyDocumentsScreen,
+  "my-notifications": MyNotificationsScreen,
+  "my-activity": MyActivityScreen,
+  "company-directory": CompanyDirectoryScreen,
+  "organization-chart": OrganizationChartScreen,
+  "employee-360": Employee360Screen,
+  "digital-id-card": DigitalIdCardScreen,
+  "digital-visiting-card": DigitalVisitingCardScreen,
+  "mail-inbox": MailInboxScreen,
+  "compose-mail": ComposeMailScreen,
+  "sent-mail": SentMailScreen,
+  "mail-search": MailSearchScreen,
 };

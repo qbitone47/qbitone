@@ -28,6 +28,7 @@ export async function apiGet<T>(
   path: string,
   params?: Record<string, string | number | undefined>,
   role?: string,
+  basePath: string = "/api/security",
 ): Promise<T> {
   const qs = params
     ? Object.entries(params)
@@ -35,7 +36,7 @@ export async function apiGet<T>(
         .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
         .join("&")
     : "";
-  const res = await fetch(`/api/security${path}${qs ? `?${qs}` : ""}`, { headers: headers(role), cache: "no-store" });
+  const res = await fetch(`${basePath}${path}${qs ? `?${qs}` : ""}`, { headers: headers(role), cache: "no-store" });
   if (!res.ok) {
     let code: string | undefined;
     let message = `Request failed (${res.status}).`;
