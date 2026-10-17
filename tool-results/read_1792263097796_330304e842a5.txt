@@ -1,0 +1,1592 @@
+     1→     1→You are continuing the existing Qubit One Enterprise Operating System project.
+     2→     2→
+     3→     3→IMPORTANT:
+     4→     4→This is NOT a new product.
+     5→     5→Do NOT restart the architecture.
+     6→     6→Do NOT redesign Qubit One from scratch.
+     7→     7→Do NOT create a separate CEO application.
+     8→     8→
+     9→     9→You are implementing ONLY PHASE 5 — CEO COMMAND CENTER.
+    10→    10→
+    11→    11→This phase contains EXACTLY 14 screens:
+    12→    12→
+    13→    13→59. CEO Overview
+    14→    14→60. Revenue Snapshot
+    15→    15→61. Sales Command Center
+    16→    16→62. Finance Snapshot
+    17→    17→63. People Overview
+    18→    18→64. Marketing Overview
+    19→    19→65. Service Overview
+    20→    20→66. Inventory Overview
+    21→    21→67. Field Operations
+    22→    22→68. Executive Alerts
+    23→    23→69. Executive Approvals
+    24→    24→70. CEO AI Insights
+    25→    25→71. Company KPI Drilldown
+    26→    26→72. Executive Reports
+    27→    27→
+    28→    28→The existing Qubit One architecture, design system, navigation, authentication, security, RBAC/ABAC, employee identity, workflows, notifications, audit architecture, AI architecture and previous phases already exist.
+    29→    29→
+    30→    30→Preserve them.
+    31→    31→
+    32→    32→Do not duplicate existing functionality.
+    33→    33→
+    34→    34→==================================================
+    35→    35→1. VISUAL SOURCE OF TRUTH — CRITICAL
+    36→    36→==================================================
+    37→    37→
+    38→    38→The attached image is the CURRENT APPROVED QUBIT ONE UI REFERENCE.
+    39→    39→
+    40→    40→STRICTLY FOLLOW THIS IMAGE.
+    41→    41→
+    42→    42→The attached Qubit One Organization Structure screen is the visual and UX source of truth for Phase 5.
+    43→    43→
+    44→    44→Every CEO Command Center screen must feel like the SAME Qubit One product.
+    45→    45→
+    46→    46→Match:
+    47→    47→
+    48→    48→- deep navy sidebar
+    49→    49→- light workspace
+    50→    50→- top application bar
+    51→    51→- breadcrumb/context
+    52→    52→- global search
+    53→    53→- notification/help/profile area
+    54→    54→- page header hierarchy
+    55→    55→- typography
+    56→    56→- spacing
+    57→    57→- card proportions
+    58→    58→- borders
+    59→    59→- subtle shadows
+    60→    60→- moderate radius
+    61→    61→- restrained blue accents
+    62→    62→- table patterns
+    63→    63→- filter patterns
+    64→    64→- status badges
+    65→    65→- icons
+    66→    66→- interaction patterns
+    67→    67→- responsive behavior
+    68→    68→
+    69→    69→You may improve visual polish, information hierarchy and executive readability, but never break the established Qubit One visual language.
+    70→    70→
+    71→    71→==================================================
+    72→    72→2. EXECUTIVE UX QUALITY TARGET
+    73→    73→==================================================
+    74→    74→
+    75→    75→The CEO Command Center should feel comparable in product maturity to:
+    76→    76→
+    77→    77→- Microsoft enterprise products
+    78→    78→- Google enterprise products
+    79→    79→- Salesforce executive experiences
+    80→    80→- ServiceNow executive experiences
+    81→    81→- Oracle enterprise dashboards
+    82→    82→- SAP/Fiori enterprise analytics
+    83→    83→- Workday executive experiences
+    84→    84→- high-quality FAANG internal business systems
+    85→    85→
+    86→    86→Use these only as conceptual references.
+    87→    87→
+    88→    88→Do NOT copy their:
+    89→    89→
+    90→    90→- branding
+    91→    91→- proprietary UI
+    92→    92→- source code
+    93→    93→- exact layouts
+    94→    94→- visual identity
+    95→    95→
+    96→    96→Qubit One must remain its own product.
+    97→    97→
+    98→    98→==================================================
+    99→    99→3. CORE CEO DESIGN PRINCIPLE
+   100→   100→==================================================
+   101→   101→
+   102→   102→The CEO should not need to manually assemble the company's situation.
+   103→   103→
+   104→   104→The system should answer:
+   105→   105→
+   106→   106→"How is the company performing?"
+   107→   107→
+   108→   108→"What changed?"
+   109→   109→
+   110→   110→"Where is attention required?"
+   111→   111→
+   112→   112→"What is at risk?"
+   113→   113→
+   114→   114→"What requires my decision?"
+   115→   115→
+   116→   116→"What should I investigate?"
+   117→   117→
+   118→   118→"What should I do next?"
+   119→   119→
+   120→   120→The interface must prioritize:
+   121→   121→
+   122→   122→1. Company health
+   123→   123→2. Critical exceptions
+   124→   124→3. Key business KPIs
+   125→   125→4. Trends
+   126→   126→5. Risks
+   127→   127→6. Decisions
+   128→   128→7. Approvals
+   129→   129→8. AI-generated insights
+   130→   130→9. Drill-down
+   131→   131→
+   132→   132→Do NOT overwhelm the CEO with every metric.
+   133→   133→
+   134→   134→Executive UX is about signal over noise.
+   135→   135→
+   136→   136→==================================================
+   137→   137→4. CEO COMMAND CENTER INFORMATION MODEL
+   138→   138→==================================================
+   139→   139→
+   140→   140→The command center should connect:
+   141→   141→
+   142→   142→Company
+   143→   143→→ Revenue
+   144→   144→→ Sales
+   145→   145→→ Finance
+   146→   146→→ People
+   147→   147→→ Marketing
+   148→   148→→ Service
+   149→   149→→ Inventory
+   150→   150→→ Field Operations
+   151→   151→→ Alerts
+   152→   152→→ Approvals
+   153→   153→→ AI Insights
+   154→   154→→ Reports
+   155→   155→
+   156→   156→All data must come from the underlying Qubit One systems.
+   157→   157→
+   158→   158→Do NOT create fake parallel executive data models.
+   159→   159→
+   160→   160→The CEO layer is a presentation and decision layer over the existing business domains.
+   161→   161→
+   162→   162→==================================================
+   163→   163→5. EXACT SCREEN COUNT
+   164→   164→==================================================
+   165→   165→
+   166→   166→Create EXACTLY 14 screens.
+   167→   167→
+   168→   168→59. CEO Overview
+   169→   169→60. Revenue Snapshot
+   170→   170→61. Sales Command Center
+   171→   171→62. Finance Snapshot
+   172→   172→63. People Overview
+   173→   173→64. Marketing Overview
+   174→   174→65. Service Overview
+   175→   175→66. Inventory Overview
+   176→   176→67. Field Operations
+   177→   177→68. Executive Alerts
+   178→   178→69. Executive Approvals
+   179→   179→70. CEO AI Insights
+   180→   180→71. Company KPI Drilldown
+   181→   181→72. Executive Reports
+   182→   182→
+   183→   183→DO NOT:
+   184→   184→
+   185→   185→- add extra core screens
+   186→   186→- remove screens
+   187→   187→- rename screens
+   188→   188→- duplicate screens
+   189→   189→- merge screens
+   190→   190→- skip screens
+   191→   191→
+   192→   192→Final result:
+   193→   193→
+   194→   194→14 / 14 screens.
+   195→   195→
+   196→   196→==================================================
+   197→   197→SCREEN 59 — CEO OVERVIEW
+   198→   198→==================================================
+   199→   199→
+   200→   200→Create:
+   201→   201→
+   202→   202→59. CEO Overview
+   203→   203→
+   204→   204→This is the primary executive landing page.
+   205→   205→
+   206→   206→The first screen should answer:
+   207→   207→
+   208→   208→"How is Qubit One's company performing right now?"
+   209→   209→
+   210→   210→Do NOT make this a wall of charts.
+   211→   211→
+   212→   212→Use a clear hierarchy.
+   213→   213→
+   214→   214→Recommended structure:
+   215→   215→
+   216→   216→TOP:
+   217→   217→- Company health summary
+   218→   218→- reporting period
+   219→   219→- last updated state
+   220→   220→- critical exceptions
+   221→   221→
+   222→   222→PRIMARY KPI AREA:
+   223→   223→
+   224→   224→- Revenue
+   225→   225→- Gross/Net performance where applicable
+   226→   226→- Sales pipeline
+   227→   227→- Cash / financial health
+   228→   228→- Customer/service health
+   229→   229→- Workforce health
+   230→   230→- Inventory/operations health
+   231→   231→
+   232→   232→Each KPI should show:
+   233→   233→
+   234→   234→- current value
+   235→   235→- comparison
+   236→   236→- trend
+   237→   237→- target where applicable
+   238→   238→- status
+   239→   239→- click-through/drilldown
+   240→   240→
+   241→   241→Then:
+   242→   242→
+   243→   243→EXECUTIVE ATTENTION:
+   244→   244→
+   245→   245→- critical alerts
+   246→   246→- risks
+   247→   247→- overdue decisions
+   248→   248→- pending approvals
+   249→   249→- major deviations
+   250→   250→
+   251→   251→Then:
+   252→   252→
+   253→   253→BUSINESS DOMAIN SUMMARY:
+   254→   254→
+   255→   255→- Sales
+   256→   256→- Finance
+   257→   257→- People
+   258→   258→- Marketing
+   259→   259→- Service
+   260→   260→- Inventory
+   261→   261→- Operations
+   262→   262→
+   263→   263→Then:
+   264→   264→
+   265→   265→AI EXECUTIVE INSIGHT PREVIEW
+   266→   266→
+   267→   267→Show only a few high-value insights.
+   268→   268→
+   269→   269→Do NOT turn the overview into a chatbot.
+   270→   270→
+   271→   271→==================================================
+   272→   272→SCREEN 60 — REVENUE SNAPSHOT
+   273→   273→==================================================
+   274→   274→
+   275→   275→Create:
+   276→   276→
+   277→   277→60. Revenue Snapshot
+   278→   278→
+   279→   279→Purpose:
+   280→   280→
+   281→   281→Give the CEO a concise view of company revenue performance.
+   282→   282→
+   283→   283→Show appropriate metrics such as:
+   284→   284→
+   285→   285→- revenue
+   286→   286→- target
+   287→   287→- achievement %
+   288→   288→- previous period comparison
+   289→   289→- year-over-year comparison
+   290→   290→- month-over-month comparison
+   291→   291→- revenue trend
+   292→   292→- revenue by business unit/department
+   293→   293→- top contributors
+   294→   294→- major variance
+   295→   295→
+   296→   296→Where applicable:
+   297→   297→
+   298→   298→- booked revenue
+   299→   299→- recognized revenue
+   300→   300→- collected revenue
+   301→   301→
+   302→   302→Do NOT mix financial concepts without clearly labeling them.
+   303→   303→
+   304→   304→Charts should be simple and readable.
+   305→   305→
+   306→   306→Use:
+   307→   307→
+   308→   308→- trend chart
+   309→   309→- target vs actual
+   310→   310→- contribution breakdown
+   311→   311→- variance indicators
+   312→   312→
+   313→   313→Every metric should support drill-down.
+   314→   314→
+   315→   315→The CEO should be able to move:
+   316→   316→
+   317→   317→Revenue
+   318→   318→→ Business Unit
+   319→   319→→ Department
+   320→   320→→ Customer
+   321→   321→→ Transaction/underlying source
+   322→   322→
+   323→   323→only where authorized.
+   324→   324→
+   325→   325→==================================================
+   326→   326→SCREEN 61 — SALES COMMAND CENTER
+   327→   327→==================================================
+   328→   328→
+   329→   329→Create:
+   330→   330→
+   331→   331→61. Sales Command Center
+   332→   332→
+   333→   333→This is the executive sales view.
+   334→   334→
+   335→   335→Connect with the existing Sales Operating System architecture.
+   336→   336→
+   337→   337→Show:
+   338→   338→
+   339→   339→- sales target
+   340→   340→- achieved sales
+   341→   341→- pipeline
+   342→   342→- weighted pipeline
+   343→   343→- forecast
+   344→   344→- conversion
+   345→   345→- win rate
+   346→   346→- average deal value
+   347→   347→- sales cycle
+   348→   348→- top opportunities
+   349→   349→- at-risk opportunities
+   350→   350→- sales team performance
+   351→   351→
+   352→   352→Use executive-level information density.
+   353→   353→
+   354→   354→Do NOT duplicate the detailed Sales Home screen.
+   355→   355→
+   356→   356→This is a command view.
+   357→   357→
+   358→   358→Include:
+   359→   359→
+   360→   360→- pipeline health
+   361→   361→- target achievement
+   362→   362→- forecast confidence
+   363→   363→- major deals
+   364→   364→- sales risks
+   365→   365→- regional/team performance
+   366→   366→
+   367→   367→Drill-down:
+   368→   368→
+   369→   369→Company Sales
+   370→   370→→ Region/Business Unit
+   371→   371→→ Team
+   372→   372→→ Salesperson
+   373→   373→→ Opportunity
+   374→   374→
+   375→   375→Respect sales data permissions.
+   376→   376→
+   377→   377→==================================================
+   378→   378→SCREEN 62 — FINANCE SNAPSHOT
+   379→   379→==================================================
+   380→   380→
+   381→   381→Create:
+   382→   382→
+   383→   383→62. Finance Snapshot
+   384→   384→
+   385→   385→Provide CEO-level financial visibility.
+   386→   386→
+   387→   387→Possible metrics:
+   388→   388→
+   389→   389→- revenue
+   390→   390→- expenses
+   391→   391→- gross margin
+   392→   392→- operating expenses
+   393→   393→- cash position
+   394→   394→- receivables
+   395→   395→- payables
+   396→   396→- overdue receivables
+   397→   397→- budget variance
+   398→   398→- profitability indicators
+   399→   399→
+   400→   400→Clearly distinguish:
+   401→   401→
+   402→   402→- actual
+   403→   403→- forecast
+   404→   404→- budget
+   405→   405→- variance
+   406→   406→
+   407→   407→Use:
+   408→   408→
+   409→   409→- KPI summary
+   410→   410→- trend
+   411→   411→- variance
+   412→   412→- financial risk indicators
+   413→   413→
+   414→   414→Do not expose highly sensitive finance data to users who are not authorized.
+   415→   415→
+   416→   416→CEO access must still be controlled through the authorization model.
+   417→   417→
+   418→   418→Do not duplicate Finance Home.
+   419→   419→
+   420→   420→This is executive interpretation of finance data.
+   421→   421→
+   422→   422→==================================================
+   423→   423→SCREEN 63 — PEOPLE OVERVIEW
+   424→   424→==================================================
+   425→   425→
+   426→   426→Create:
+   427→   427→
+   428→   428→63. People Overview
+   429→   429→
+   430→   430→CEO-level workforce health.
+   431→   431→
+   432→   432→Show appropriate metrics:
+   433→   433→
+   434→   434→- total employees
+   435→   435→- headcount trend
+   436→   436→- hiring
+   437→   437→- exits
+   438→   438→- attrition
+   439→   439→- attendance
+   440→   440→- open positions
+   441→   441→- workforce distribution
+   442→   442→- department distribution
+   443→   443→- leadership/team health where authorized
+   444→   444→
+   445→   445→Potential insights:
+   446→   446→
+   447→   447→- unusually high attrition
+   448→   448→- hiring bottlenecks
+   449→   449→- workforce concentration
+   450→   450→- attendance anomalies
+   451→   451→- organizational growth
+   452→   452→
+   453→   453→Do not expose individual sensitive HR data unnecessarily.
+   454→   454→
+   455→   455→Executive view should primarily use aggregated information.
+   456→   456→
+   457→   457→Drill-down must remain authorization-aware.
+   458→   458→
+   459→   459→==================================================
+   460→   460→SCREEN 64 — MARKETING OVERVIEW
+   461→   461→==================================================
+   462→   462→
+   463→   463→Create:
+   464→   464→
+   465→   465→64. Marketing Overview
+   466→   466→
+   467→   467→CEO-level marketing performance.
+   468→   468→
+   469→   469→Show:
+   470→   470→
+   471→   471→- campaign performance
+   472→   472→- leads generated
+   473→   473→- qualified leads
+   474→   474→- conversion contribution
+   475→   475→- marketing pipeline contribution
+   476→   476→- acquisition trends
+   477→   477→- channel performance
+   478→   478→- content performance where meaningful
+   479→   479→- spend vs result where available
+   480→   480→
+   481→   481→Focus on business impact.
+   482→   482→
+   483→   483→Avoid turning this into a social-media analytics dashboard.
+   484→   484→
+   485→   485→Connect:
+   486→   486→
+   487→   487→Marketing
+   488→   488→→ Leads
+   489→   489→→ Sales
+   490→   490→→ Revenue
+   491→   491→
+   492→   492→where data is available.
+   493→   493→
+   494→   494→Highlight:
+   495→   495→
+   496→   496→- high-performing channels
+   497→   497→- underperforming campaigns
+   498→   498→- major changes
+   499→   499→- opportunities
+   500→   500→
+   501→   501→==================================================
+   502→   502→SCREEN 65 — SERVICE OVERVIEW
+   503→   503→==================================================
+   504→   504→
+   505→   505→Create:
+   506→   506→
+   507→   507→65. Service Overview
+   508→   508→
+   509→   509→CEO-level service/customer support health.
+   510→   510→
+   511→   511→Show:
+   512→   512→
+   513→   513→- open tickets
+   514→   514→- resolved tickets
+   515→   515→- SLA performance
+   516→   516→- response time
+   517→   517→- resolution time
+   518→   518→- customer satisfaction where available
+   519→   519→- backlog
+   520→   520→- critical service issues
+   521→   521→- engineer/service performance
+   522→   522→
+   523→   523→Prioritize exceptions.
+   524→   524→
+   525→   525→Example:
+   526→   526→
+   527→   527→"3 high-value customers have unresolved critical tickets."
+   528→   528→
+   529→   529→Such insights should be actionable and drillable.
+   530→   530→
+   531→   531→Do not expose customer or employee information beyond authorization.
+   532→   532→
+   533→   533→==================================================
+   534→   534→SCREEN 66 — INVENTORY OVERVIEW
+   535→   535→==================================================
+   536→   536→
+   537→   537→Create:
+   538→   538→
+   539→   539→66. Inventory Overview
+   540→   540→
+   541→   541→Executive inventory and supply visibility.
+   542→   542→
+   543→   543→Show:
+   544→   544→
+   545→   545→- inventory value
+   546→   546→- stock health
+   547→   547→- low-stock items
+   548→   548→- overstock
+   549→   549→- stock movement
+   550→   550→- purchase pipeline
+   551→   551→- dispatch health
+   552→   552→- returns
+   553→   553→- damaged inventory
+   554→   554→- warehouse distribution
+   555→   555→
+   556→   556→Highlight:
+   557→   557→
+   558→   558→- inventory risks
+   559→   559→- major stock-outs
+   560→   560→- excessive stock
+   561→   561→- operational bottlenecks
+   562→   562→
+   563→   563→Do not overload the page with SKU-level information.
+   564→   564→
+   565→   565→The CEO should see exceptions first.
+   566→   566→
+   567→   567→Allow drill-down to Inventory systems.
+   568→   568→
+   569→   569→==================================================
+   570→   570→SCREEN 67 — FIELD OPERATIONS
+   571→   571→==================================================
+   572→   572→
+   573→   573→Create:
+   574→   574→
+   575→   575→67. Field Operations
+   576→   576→
+   577→   577→Executive-level field operations view.
+   578→   578→
+   579→   579→Show:
+   580→   580→
+   581→   581→- active field employees/engineers
+   582→   582→- scheduled visits
+   583→   583→- completed visits
+   584→   584→- delayed visits
+   585→   585→- unresolved jobs
+   586→   586→- geographic/region performance where appropriate
+   587→   587→- productivity
+   588→   588→- travel/visit trends
+   589→   589→- critical operational exceptions
+   590→   590→
+   591→   591→Do NOT create a map simply because it looks impressive.
+   592→   592→
+   593→   593→Use maps only when location actually improves decision-making.
+   594→   594→
+   595→   595→If a map is used:
+   596→   596→
+   597→   597→- keep it restrained
+   598→   598→- avoid visual clutter
+   599→   599→- show meaningful operational information
+   600→   600→- respect employee/customer location privacy
+   601→   601→
+   602→   602→Connect to Service Engineer OS and Sales Travel/Field Visit data where authorized.
+   603→   603→
+   604→   604→==================================================
+   605→   605→SCREEN 68 — EXECUTIVE ALERTS
+   606→   606→==================================================
+   607→   607→
+   608→   608→Create:
+   609→   609→
+   610→   610→68. Executive Alerts
+   611→   611→
+   612→   612→This is NOT the same as normal employee notifications.
+   613→   613→
+   614→   614→It is a high-signal executive exception center.
+   615→   615→
+   616→   616→Possible alerts:
+   617→   617→
+   618→   618→- revenue deviation
+   619→   619→- sales forecast risk
+   620→   620→- major customer issue
+   621→   621→- cash/financial risk
+   622→   622→- critical service issue
+   623→   623→- inventory shortage
+   624→   624→- operational disruption
+   625→   625→- major workforce issue
+   626→   626→- security issue
+   627→   627→- system reliability issue
+   628→   628→
+   629→   629→Severity:
+   630→   630→
+   631→   631→- Info
+   632→   632→- Attention
+   633→   633→- High
+   634→   634→- Critical
+   635→   635→
+   636→   636→Each alert should answer:
+   637→   637→
+   638→   638→What happened?
+   639→   639→When?
+   640→   640→Why does it matter?
+   641→   641→What is affected?
+   642→   642→What is the recommended next step?
+   643→   643→
+   644→   644→Actions:
+   645→   645→
+   646→   646→- View
+   647→   647→- Drill Down
+   648→   648→- Assign
+   649→   649→- Approve
+   650→   650→- Investigate
+   651→   651→- Dismiss where appropriate
+   652→   652→
+   653→   653→Do not generate alert spam.
+   654→   654→
+   655→   655→Executive alerts must be high-value.
+   656→   656→
+   657→   657→==================================================
+   658→   658→SCREEN 69 — EXECUTIVE APPROVALS
+   659→   659→==================================================
+   660→   660→
+   661→   661→Create:
+   662→   662→
+   663→   663→69. Executive Approvals
+   664→   664→
+   665→   665→Show only approvals that actually require executive authority.
+   666→   666→
+   667→   667→Examples may include:
+   668→   668→
+   669→   669→- major expenses
+   670→   670→- high-value purchases
+   671→   671→- major discounts
+   672→   672→- exceptional pricing
+   673→   673→- strategic hiring decisions
+   674→   674→- sensitive access
+   675→   675→- high-value contracts
+   676→   676→- important business workflows
+   677→   677→
+   678→   678→Display:
+   679→   679→
+   680→   680→- request
+   681→   681→- requester
+   682→   682→- department
+   683→   683→- value
+   684→   684→- risk
+   685→   685→- submitted date
+   686→   686→- approval stage
+   687→   687→- required action
+   688→   688→
+   689→   689→Actions:
+   690→   690→
+   691→   691→- Approve
+   692→   692→- Reject
+   693→   693→- Request Changes
+   694→   694→- View Details
+   695→   695→
+   696→   696→For sensitive actions:
+   697→   697→
+   698→   698→- confirmation
+   699→   699→- step-up authentication
+   700→   700→- audit logging
+   701→   701→
+   702→   702→must be supported.
+   703→   703→
+   704→   704→Never make approval a frontend-only operation.
+   705→   705→
+   706→   706→Connect to:
+   707→   707→
+   708→   708→Approval Matrix
+   709→   709→→ Workflow Engine
+   710→   710→→ Audit
+   711→   711→→ Notifications
+   712→   712→
+   713→   713→==================================================
+   714→   714→SCREEN 70 — CEO AI INSIGHTS
+   715→   715→==================================================
+   716→   716→
+   717→   717→Create:
+   718→   718→
+   719→   719→70. CEO AI Insights
+   720→   720→
+   721→   721→This is the executive AI interpretation layer.
+   722→   722→
+   723→   723→IMPORTANT:
+   724→   724→
+   725→   725→This is NOT a generic chatbot.
+   726→   726→
+   727→   727→The AI should analyze authorized company data and surface useful insights.
+   728→   728→
+   729→   729→Possible categories:
+   730→   730→
+   731→   731→- Revenue
+   732→   732→- Sales
+   733→   733→- Finance
+   734→   734→- People
+   735→   735→- Marketing
+   736→   736→- Service
+   737→   737→- Inventory
+   738→   738→- Operations
+   739→   739→- Risk
+   740→   740→- Opportunities
+   741→   741→
+   742→   742→Each insight should clearly show:
+   743→   743→
+   744→   744→- insight
+   745→   745→- evidence/data context
+   746→   746→- confidence where meaningful
+   747→   747→- business impact
+   748→   748→- recommended action
+   749→   749→- affected area
+   750→   750→- timestamp/data freshness
+   751→   751→
+   752→   752→Example conceptual insight:
+   753→   753→
+   754→   754→"Sales pipeline is 12% below target for the current period, primarily due to two delayed opportunities."
+   755→   755→
+   756→   756→Then:
+   757→   757→
+   758→   758→View Opportunities
+   759→   759→Analyze Cause
+   760→   760→Create Follow-up
+   761→   761→
+   762→   762→The AI must NEVER invent facts.
+   763→   763→
+   764→   764→If data is incomplete:
+   765→   765→
+   766→   766→Say so.
+   767→   767→
+   768→   768→If confidence is low:
+   769→   769→
+   770→   770→Communicate uncertainty.
+   771→   771→
+   772→   772→AI must respect:
+   773→   773→
+   774→   774→- CEO authorization
+   775→   775→- data access
+   776→   776→- department boundaries
+   777→   777→- sensitive data policies
+   778→   778→
+   779→   779→AI-generated actions require confirmation.
+   780→   780→
+   781→   781→==================================================
+   782→   782→SCREEN 71 — COMPANY KPI DRILLDOWN
+   783→   783→==================================================
+   784→   784→
+   785→   785→Create:
+   786→   786→
+   787→   787→71. Company KPI Drilldown
+   788→   788→
+   789→   789→This is the detailed exploration layer behind executive KPIs.
+   790→   790→
+   791→   791→The user should be able to move from:
+   792→   792→
+   793→   793→Company KPI
+   794→   794→→ Business Domain
+   795→   795→→ Department
+   796→   796→→ Team
+   797→   797→→ Entity
+   798→   798→→ underlying data
+   799→   799→
+   800→   800→Example:
+   801→   801→
+   802→   802→Revenue
+   803→   803→→ Region
+   804→   804→→ Sales Team
+   805→   805→→ Account
+   806→   806→→ Opportunity
+   807→   807→→ Order
+   808→   808→
+   809→   809→The drilldown should preserve context.
+   810→   810→
+   811→   811→Show:
+   812→   812→
+   813→   813→- KPI definition
+   814→   814→- current value
+   815→   815→- target
+   816→   816→- variance
+   817→   817→- trend
+   818→   818→- comparison
+   819→   819→- contributors
+   820→   820→- drivers
+   821→   821→- underlying records where authorized
+   822→   822→
+   823→   823→Include:
+   824→   824→
+   825→   825→- filters
+   826→   826→- date range
+   827→   827→- department
+   828→   828→- region
+   829→   829→- business unit
+   830→   830→- comparison period
+   831→   831→
+   832→   832→Avoid creating an overwhelming BI tool.
+   833→   833→
+   834→   834→This is a focused executive investigation interface.
+   835→   835→
+   836→   836→==================================================
+   837→   837→SCREEN 72 — EXECUTIVE REPORTS
+   838→   838→==================================================
+   839→   839→
+   840→   840→Create:
+   841→   841→
+   842→   842→72. Executive Reports
+   843→   843→
+   844→   844→Provide executive-level reporting.
+   845→   845→
+   846→   846→Report categories may include:
+   847→   847→
+   848→   848→- Company Performance
+   849→   849→- Revenue
+   850→   850→- Sales
+   851→   851→- Finance
+   852→   852→- People
+   853→   853→- Marketing
+   854→   854→- Service
+   855→   855→- Inventory
+   856→   856→- Operations
+   857→   857→- Risk
+   858→   858→
+   859→   859→Show:
+   860→   860→
+   861→   861→- report title
+   862→   862→- reporting period
+   863→   863→- owner
+   864→   864→- last generated
+   865→   865→- status
+   866→   866→- schedule
+   867→   867→- format
+   868→   868→- recipients where authorized
+   869→   869→
+   870→   870→Actions:
+   871→   871→
+   872→   872→- Open
+   873→   873→- Generate
+   874→   874→- Export
+   875→   875→- Schedule
+   876→   876→- Share where authorized
+   877→   877→
+   878→   878→Reports must use authorized data only.
+   879→   879→
+   880→   880→Do not create a completely separate reporting engine.
+   881→   881→
+   882→   882→Connect to the broader Analytics/Reports architecture.
+   883→   883→
+   884→   884→==================================================
+   885→   885→6. EXECUTIVE INFORMATION HIERARCHY
+   886→   886→==================================================
+   887→   887→
+   888→   888→Every executive screen should follow:
+   889→   889→
+   890→   890→SIGNAL
+   891→   891→↓
+   892→   892→CONTEXT
+   893→   893→↓
+   894→   894→IMPACT
+   895→   895→↓
+   896→   896→ACTION
+   897→   897→↓
+   898→   898→DRILLDOWN
+   899→   899→
+   900→   900→Do not show metrics without meaning.
+   901→   901→
+   902→   902→For example:
+   903→   903→
+   904→   904→Bad:
+   905→   905→
+   906→   906→Revenue: ₹4.7 Cr
+   907→   907→
+   908→   908→Better:
+   909→   909→
+   910→   910→Revenue: ₹4.7 Cr
+   911→   911→Target: ₹5.0 Cr
+   912→   912→Variance: -6%
+   913→   913→Trend: ↓
+   914→   914→Primary driver: Region North
+   915→   915→Action: View variance
+   916→   916→
+   917→   917→Use contextual intelligence.
+   918→   918→
+   919→   919→==================================================
+   920→   920→7. TIME & DATA FRESHNESS
+   921→   921→==================================================
+   922→   922→
+   923→   923→Executive data must communicate freshness.
+   924→   924→
+   925→   925→Where appropriate show:
+   926→   926→
+   927→   927→- Last updated
+   928→   928→- Data as of
+   929→   929→- Live
+   930→   930→- Updated X minutes ago
+   931→   931→- Forecast
+   932→   932→- Estimated
+   933→   933→- Finalized
+   934→   934→
+   935→   935→Do not make stale data look live.
+   936→   936→
+   937→   937→If a source system is delayed:
+   938→   938→
+   939→   939→Communicate that clearly.
+   940→   940→
+   941→   941→Do not silently present incomplete data as complete.
+   942→   942→
+   943→   943→==================================================
+   944→   944→8. KPI DEFINITIONS
+   945→   945→==================================================
+   946→   946→
+   947→   947→Every important KPI should have an accessible definition.
+   948→   948→
+   949→   949→Provide an unobtrusive:
+   950→   950→
+   951→   951→- info icon
+   952→   952→- tooltip
+   953→   953→- definition drawer
+   954→   954→
+   955→   955→Explain:
+   956→   956→
+   957→   957→- what the KPI means
+   958→   958→- calculation/source where appropriate
+   959→   959→- reporting period
+   960→   960→- whether it is actual/forecast/target
+   961→   961→
+   962→   962→Avoid ambiguity.
+   963→   963→
+   964→   964→==================================================
+   965→   965→9. DATA CONSISTENCY
+   966→   966→==================================================
+   967→   967→
+   968→   968→CEO dashboards must not invent parallel numbers.
+   969→   969→
+   970→   970→Revenue shown in:
+   971→   971→
+   972→   972→CEO Overview
+   973→   973→Revenue Snapshot
+   974→   974→Finance Snapshot
+   975→   975→Reports
+   976→   976→
+   977→   977→must come from a consistent underlying source and definition.
+   978→   978→
+   979→   979→If two values differ because they use different accounting definitions:
+   980→   980→
+   981→   981→Make the distinction explicit.
+   982→   982→
+   983→   983→Do NOT silently show conflicting metrics.
+   984→   984→
+   985→   985→==================================================
+   986→   986→10. ROLE & AUTHORIZATION
+   987→   987→==================================================
+   988→   988→
+   989→   989→CEO access is still authorization-controlled.
+   990→   990→
+   991→   991→Do NOT assume:
+   992→   992→
+   993→   993→"CEO = unrestricted database access."
+   994→   994→
+   995→   995→Use:
+   996→   996→
+   997→   997→- RBAC
+   998→   998→- ABAC
+   999→   999→- data ownership
+  1000→  1000→- sensitivity
+  1001→  1001→- organizational scope
+  1002→  1002→- security policies
+  1003→  1003→
+  1004→  1004→Backend must enforce access.
+  1005→  1005→
+  1006→  1006→The UI must not merely hide restricted information.
+  1007→  1007→
+  1008→  1008→==================================================
+  1009→  1009→11. AI GOVERNANCE
+  1010→  1010→==================================================
+  1011→  1011→
+  1012→  1012→CEO AI can analyze authorized data.
+  1013→  1013→
+  1014→  1014→It cannot:
+  1015→  1015→
+  1016→  1016→- bypass permissions
+  1017→  1017→- access restricted employee data
+  1018→  1018→- invent metrics
+  1019→  1019→- silently modify records
+  1020→  1020→- approve critical actions automatically
+  1021→  1021→- change financial/security settings without authorization
+  1022→  1022→
+  1023→  1023→For consequential actions:
+  1024→  1024→
+  1025→  1025→AI:
+  1026→  1026→
+  1027→  1027→Recommend
+  1028→  1028→→ Explain
+  1029→  1029→→ Ask for confirmation
+  1030→  1030→→ Execute through authorized workflow
+  1031→  1031→→ Audit
+  1032→  1032→
+  1033→  1033→==================================================
+  1034→  1034→12. EXECUTIVE ALERT QUALITY
+  1035→  1035→==================================================
+  1036→  1036→
+  1037→  1037→Avoid alert fatigue.
+  1038→  1038→
+  1039→  1039→Do NOT create an alert for every metric movement.
+  1040→  1040→
+  1041→  1041→Use thresholds based on:
+  1042→  1042→
+  1043→  1043→- materiality
+  1044→  1044→- business impact
+  1045→  1045→- trend
+  1046→  1046→- severity
+  1047→  1047→- role
+  1048→  1048→- context
+  1049→  1049→
+  1050→  1050→Example:
+  1051→  1051→
+  1052→  1052→A 0.5% sales movement may not need an executive alert.
+  1053→  1053→
+  1054→  1054→A major forecast miss or critical customer issue may.
+  1055→  1055→
+  1056→  1056→Alert logic should be configurable through the enterprise workflow/notification architecture.
+  1057→  1057→
+  1058→  1058→==================================================
+  1059→  1059→13. CHART DESIGN
+  1060→  1060→==================================================
+  1061→  1061→
+  1062→  1062→Charts must support decisions.
+  1063→  1063→
+  1064→  1064→Prefer:
+  1065→  1065→
+  1066→  1066→- line charts
+  1067→  1067→- bar charts
+  1068→  1068→- target vs actual
+  1069→  1069→- variance
+  1070→  1070→- trend
+  1071→  1071→- contribution
+  1072→  1072→- funnel where appropriate
+  1073→  1073→
+  1074→  1074→Avoid:
+  1075→  1075→
+  1076→  1076→- decorative 3D charts
+  1077→  1077→- unnecessary pie charts
+  1078→  1078→- excessive gradients
+  1079→  1079→- overloaded legends
+  1080→  1080→- too many colors
+  1081→  1081→
+  1082→  1082→Use Qubit One's restrained color system.
+  1083→  1083→
+  1084→  1084→Do not invent random chart colors.
+  1085→  1085→
+  1086→  1086→Critical states may use established status colors from the design system.
+  1087→  1087→
+  1088→  1088→==================================================
+  1089→  1089→14. DASHBOARD DENSITY
+  1090→  1090→==================================================
+  1091→  1091→
+  1092→  1092→Do not make every page a dashboard wall.
+  1093→  1093→
+  1094→  1094→CEO Overview:
+  1095→  1095→high-level summary.
+  1096→  1096→
+  1097→  1097→Revenue:
+  1098→  1098→focused financial performance.
+  1099→  1099→
+  1100→  1100→Sales:
+  1101→  1101→sales command view.
+  1102→  1102→
+  1103→  1103→Finance:
+  1104→  1104→financial health.
+  1105→  1105→
+  1106→  1106→People:
+  1107→  1107→workforce health.
+  1108→  1108→
+  1109→  1109→Marketing:
+  1110→  1110→business impact.
+  1111→  1111→
+  1112→  1112→Service:
+  1113→  1113→customer/service health.
+  1114→  1114→
+  1115→  1115→Inventory:
+  1116→  1116→stock/operations health.
+  1117→  1117→
+  1118→  1118→Field:
+  1119→  1119→field execution.
+  1120→  1120→
+  1121→  1121→Alerts:
+  1122→  1122→exceptions.
+  1123→  1123→
+  1124→  1124→Approvals:
+  1125→  1125→decisions.
+  1126→  1126→
+  1127→  1127→AI:
+  1128→  1128→insights.
+  1129→  1129→
+  1130→  1130→KPI Drilldown:
+  1131→  1131→investigation.
+  1132→  1132→
+  1133→  1133→Reports:
+  1134→  1134→report management.
+  1135→  1135→
+  1136→  1136→Each screen should have a distinct job.
+  1137→  1137→
+  1138→  1138→==================================================
+  1139→  1139→15. RESPONSIVE DESIGN
+  1140→  1140→==================================================
+  1141→  1141→
+  1142→  1142→Desktop is the primary CEO experience.
+  1143→  1143→
+  1144→  1144→Tablet must remain usable.
+  1145→  1145→
+  1146→  1146→Mobile must become an executive mobile command experience.
+  1147→  1147→
+  1148→  1148→Do NOT simply shrink desktop dashboards.
+  1149→  1149→
+  1150→  1150→On mobile:
+  1151→  1151→
+  1152→  1152→- prioritize critical KPIs
+  1153→  1153→- stack important information
+  1154→  1154→- simplify charts
+  1155→  1155→- make alerts actionable
+  1156→  1156→- keep approvals accessible
+  1157→  1157→- allow drilldown
+  1158→  1158→- use bottom sheets/drawers appropriately
+  1159→  1159→
+  1160→  1160→A CEO should be able to understand critical company issues from mobile without being presented with an unreadable desktop dashboard.
+  1161→  1161→
+  1162→  1162→==================================================
+  1163→  1163→16. ACCESSIBILITY
+  1164→  1164→==================================================
+  1165→  1165→
+  1166→  1166→Implement enterprise accessibility.
+  1167→  1167→
+  1168→  1168→Include:
+  1169→  1169→
+  1170→  1170→- semantic structure
+  1171→  1171→- keyboard navigation
+  1172→  1172→- focus states
+  1173→  1173→- accessible charts/data alternatives
+  1174→  1174→- sufficient contrast
+  1175→  1175→- non-color-only indicators
+  1176→  1176→- accessible filters
+  1177→  1177→- accessible dialogs
+  1178→  1178→- screen-reader support
+  1179→  1179→- logical tab order
+  1180→  1180→
+  1181→  1181→Important metrics must remain understandable without relying only on color.
+  1182→  1182→
+  1183→  1183→==================================================
+  1184→  1184→17. PERFORMANCE
+  1185→  1185→==================================================
+  1186→  1186→
+  1187→  1187→Executive dashboards may aggregate large datasets.
+  1188→  1188→
+  1189→  1189→Design for:
+  1190→  1190→
+  1191→  1191→- efficient queries
+  1192→  1192→- server-side aggregation
+  1193→  1193→- caching where appropriate
+  1194→  1194→- pagination
+  1195→  1195→- lazy loading
+  1196→  1196→- progressive rendering
+  1197→  1197→- optimized API calls
+  1198→  1198→
+  1199→  1199→Do not load every department's raw data into the browser.
+  1200→  1200→
+  1201→  1201→Do not create massive client-side aggregation.
+  1202→  1202→
+  1203→  1203→==================================================
+  1204→  1204→18. FAILURE STATES
+  1205→  1205→==================================================
+  1206→  1206→
+  1207→  1207→Handle real-world failures.
+  1208→  1208→
+  1209→  1209→Examples:
+  1210→  1210→
+  1211→  1211→- finance data unavailable
+  1212→  1212→- sales service delayed
+  1213→  1213→- analytics query timeout
+  1214→  1214→- AI unavailable
+  1215→  1215→- stale data
+  1216→  1216→- partial domain failure
+  1217→  1217→- network failure
+  1218→  1218→- authorization failure
+  1219→  1219→
+  1220→  1220→IMPORTANT:
+  1221→  1221→
+  1222→  1222→One failed department/data source must NOT break the entire CEO Command Center.
+  1223→  1223→
+  1224→  1224→Example:
+  1225→  1225→
+  1226→  1226→If Marketing data is temporarily unavailable:
+  1227→  1227→
+  1228→  1228→CEO Overview should still load Sales, Finance, People and other available information.
+  1229→  1229→
+  1230→  1230→Clearly mark Marketing data as unavailable/stale.
+  1231→  1231→
+  1232→  1232→Use graceful degradation.
+  1233→  1233→
+  1234→  1234→==================================================
+  1235→  1235→19. SECURITY
+  1236→  1236→==================================================
+  1237→  1237→
+  1238→  1238→CEO screens may contain highly sensitive information.
+  1239→  1239→
+  1240→  1240→Protect:
+  1241→  1241→
+  1242→  1242→- financial data
+  1243→  1243→- employee information
+  1244→  1244→- customer information
+  1245→  1245→- sales performance
+  1246→  1246→- security information
+  1247→  1247→- operational data
+  1248→  1248→
+  1249→  1249→Use:
+  1250→  1250→
+  1251→  1251→- secure APIs
+  1252→  1252→- authorization
+  1253→  1253→- audit logging
+  1254→  1254→- appropriate reauthentication for sensitive actions
+  1255→  1255→- secure exports
+  1256→  1256→- controlled sharing
+  1257→  1257→
+  1258→  1258→Exports must respect the same authorization model as screen access.
+  1259→  1259→
+  1260→  1260→==================================================
+  1261→  1261→20. EXPORT & REPORTING
+  1262→  1262→==================================================
+  1263→  1263→
+  1264→  1264→Where export exists:
+  1265→  1265→
+  1266→  1266→- validate authorization
+  1267→  1267→- record export event
+  1268→  1268→- respect data masking
+  1269→  1269→- respect date/filter context
+  1270→  1270→- avoid exposing unauthorized data
+  1271→  1271→
+  1272→  1272→Do not provide unrestricted "Export Everything."
+  1273→  1273→
+  1274→  1274→==================================================
+  1275→  1275→21. DESIGN SYSTEM CONTINUITY
+  1276→  1276→==================================================
+  1277→  1277→
+  1278→  1278→Reuse Phase 2 design system.
+  1279→  1279→
+  1280→  1280→Reuse:
+  1281→  1281→
+  1282→  1282→- buttons
+  1283→  1283→- tables
+  1284→  1284→- cards
+  1285→  1285→- badges
+  1286→  1286→- tabs
+  1287→  1287→- filters
+  1288→  1288→- charts
+  1289→  1289→- drawers
+  1290→  1290→- modals
+  1291→  1291→- alerts
+  1292→  1292→- loading states
+  1293→  1293→- empty states
+  1294→  1294→- error states
+  1295→  1295→
+  1296→  1296→If a new executive visualization component is required:
+  1297→  1297→
+  1298→  1298→Create it as a reusable Qubit component.
+  1299→  1299→
+  1300→  1300→Do not create one-off visual systems.
+  1301→  1301→
+  1302→  1302→==================================================
+  1303→  1303→22. ARCHITECTURAL CONTINUITY
+  1304→  1304→==================================================
+  1305→  1305→
+  1306→  1306→Do NOT create:
+  1307→  1307→
+  1308→  1308→- separate CEO database
+  1309→  1309→- separate CEO authentication
+  1310→  1310→- separate KPI database without architectural justification
+  1311→  1311→- separate AI authorization
+  1312→  1312→- duplicate reporting system
+  1313→  1313→- duplicate notification system
+  1314→  1314→- duplicate approval system
+  1315→  1315→
+  1316→  1316→CEO Command Center should consume existing Qubit domain data and services.
+  1317→  1317→
+  1318→  1318→Where aggregation is required, create proper backend/domain aggregation rather than duplicating business truth.
+  1319→  1319→
+  1320→  1320→==================================================
+  1321→  1321→23. CROSS-DOMAIN CONNECTIONS
+  1322→  1322→==================================================
+  1323→  1323→
+  1324→  1324→The CEO experience should connect domains naturally.
+  1325→  1325→
+  1326→  1326→Examples:
+  1327→  1327→
+  1328→  1328→Sales alert
+  1329→  1329→→ Sales Command Center
+  1330→  1330→→ Opportunity
+  1331→  1331→→ Account
+  1332→  1332→
+  1333→  1333→Revenue variance
+  1334→  1334→→ Revenue Snapshot
+  1335→  1335→→ Business Unit
+  1336→  1336→→ Sales/Finance source
+  1337→  1337→
+  1338→  1338→People trend
+  1339→  1339→→ People Overview
+  1340→  1340→→ Department
+  1341→  1341→→ authorized employee data
+  1342→  1342→
+  1343→  1343→Service issue
+  1344→  1344→→ Service Overview
+  1345→  1345→→ Customer
+  1346→  1346→→ Ticket
+  1347→  1347→
+  1348→  1348→Inventory risk
+  1349→  1349→→ Inventory Overview
+  1350→  1350→→ Warehouse
+  1351→  1351→→ Product/Stock
+  1352→  1352→
+  1353→  1353→Executive approval
+  1354→  1354→→ Workflow
+  1355→  1355→→ Approval Matrix
+  1356→  1356→→ Audit
+  1357→  1357→
+  1358→  1358→AI insight
+  1359→  1359→→ Evidence
+  1360→  1360→→ Drilldown
+  1361→  1361→→ Recommended action
+  1362→  1362→
+  1363→  1363→Do not break these relationships.
+  1364→  1364→
+  1365→  1365→==================================================
+  1366→  1366→24. REALISTIC ENTERPRISE DATA
+  1367→  1367→==================================================
+  1368→  1368→
+  1369→  1369→Use realistic sample data.
+  1370→  1370→
+  1371→  1371→Examples:
+  1372→  1372→
+  1373→  1373→Revenue:
+  1374→  1374→
+  1375→  1375→- current period
+  1376→  1376→- target
+  1377→  1377→- previous period
+  1378→  1378→- forecast
+  1379→  1379→
+  1380→  1380→Sales:
+  1381→  1381→
+  1382→  1382→- pipeline
+  1383→  1383→- opportunities
+  1384→  1384→- teams
+  1385→  1385→- conversion
+  1386→  1386→- forecast
+  1387→  1387→
+  1388→  1388→Finance:
+  1389→  1389→
+  1390→  1390→- actual
+  1391→  1391→- budget
+  1392→  1392→- variance
+  1393→  1393→- cash
+  1394→  1394→- receivables
+  1395→  1395→
+  1396→  1396→People:
+  1397→  1397→
+  1398→  1398→- headcount
+  1399→  1399→- hiring
+  1400→  1400→- attrition
+  1401→  1401→
+  1402→  1402→Service:
+  1403→  1403→
+  1404→  1404→- tickets
+  1405→  1405→- SLA
+  1406→  1406→- resolution
+  1407→  1407→
+  1408→  1408→Inventory:
+  1409→  1409→
+  1410→  1410→- stock
+  1411→  1411→- valuation
+  1412→  1412→- movement
+  1413→  1413→
+  1414→  1414→Do NOT use:
+  1415→  1415→
+  1416→  1416→- lorem ipsum
+  1417→  1417→- meaningless random numbers
+  1418→  1418→- fake "AI magic"
+  1419→  1419→- obviously placeholder dashboards
+  1420→  1420→
+  1421→  1421→==================================================
+  1422→  1422→25. AI INSIGHT QUALITY
+  1423→  1423→==================================================
+  1424→  1424→
+  1425→  1425→AI insights must be evidence-based.
+  1426→  1426→
+  1427→  1427→Each insight should conceptually follow:
+  1428→  1428→
+  1429→  1429→OBSERVATION
+  1430→  1430→→ EVIDENCE
+  1431→  1431→→ INTERPRETATION
+  1432→  1432→→ IMPACT
+  1433→  1433→→ RECOMMENDATION
+  1434→  1434→→ ACTION
+  1435→  1435→
+  1436→  1436→Do not generate generic statements such as:
+  1437→  1437→
+  1438→  1438→"Sales are looking good."
+  1439→  1439→
+  1440→  1440→Instead:
+  1441→  1441→
+  1442→  1442→"Pipeline coverage is below the current target, with the largest gap concentrated in the West region."
+  1443→  1443→
+  1444→  1444→The user must be able to inspect the evidence.
+  1445→  1445→
+  1446→  1446→==================================================
+  1447→  1447→26. NO VISUAL OVERLOAD
+  1448→  1448→==================================================
+  1449→  1449→
+  1450→  1450→This is extremely important.
+  1451→  1451→
+  1452→  1452→Do NOT fill every available area with:
+  1453→  1453→
+  1454→  1454→- charts
+  1455→  1455→- KPI cards
+  1456→  1456→- badges
+  1457→  1457→- AI suggestions
+  1458→  1458→- alerts
+  1459→  1459→- tables
+  1460→  1460→
+  1461→  1461→Whitespace is valuable.
+  1462→  1462→
+  1463→  1463→The CEO should immediately understand where attention is required.
+  1464→  1464→
+  1465→  1465→Use progressive disclosure.
+  1466→  1466→
+  1467→  1467→==================================================
+  1468→  1468→27. IMPLEMENTATION QUALITY
+  1469→  1469→==================================================
+  1470→  1470→
+  1471→  1471→Build developer-grade enterprise UI.
+  1472→  1472→
+  1473→  1473→Use:
+  1474→  1474→
+  1475→  1475→- modular components
+  1476→  1476→- typed models
+  1477→  1477→- reusable components
+  1478→  1478→- proper API boundaries
+  1479→  1479→- server-side authorization
+  1480→  1480→- scalable aggregation
+  1481→  1481→- testable logic
+  1482→  1482→- clear domain boundaries
+  1483→  1483→
+  1484→  1484→Do NOT create:
+  1485→  1485→
+  1486→  1486→- one giant HTML file
+  1487→  1487→- one giant dashboard component
+  1488→  1488→- hardcoded executive permissions
+  1489→  1489→- fake API responses presented as production behavior
+  1490→  1490→- duplicate business logic
+  1491→  1491→- duplicate data sources
+  1492→  1492→
+  1493→  1493→==================================================
+  1494→  1494→28. FINAL VALIDATION
+  1495→  1495→==================================================
+  1496→  1496→
+  1497→  1497→Before declaring Phase 5 complete:
+  1498→  1498→
+  1499→  1499→[ ] 59 CEO Overview
+  1500→  1500→[ ] 60 Revenue Snapshot
+  1501→  1501→[ ] 61 Sales Command Center
+  1502→  1502→[ ] 62 Finance Snapshot
+  1503→  1503→[ ] 63 People Overview
+  1504→  1504→[ ] 64 Marketing Overview
+  1505→  1505→[ ] 65 Service Overview
+  1506→  1506→[ ] 66 Inventory Overview
+  1507→  1507→[ ] 67 Field Operations
+  1508→  1508→[ ] 68 Executive Alerts
+  1509→  1509→[ ] 69 Executive Approvals
+  1510→  1510→[ ] 70 CEO AI Insights
+  1511→  1511→[ ] 71 Company KPI Drilldown
+  1512→  1512→[ ] 72 Executive Reports
+  1513→  1513→
+  1514→  1514→TOTAL:
+  1515→  1515→
+  1516→  1516→14 / 14 screens.
+  1517→  1517→
+  1518→  1518→Then verify:
+  1519→  1519→
+  1520→  1520→[ ] No skipped screen
+  1521→  1521→[ ] No duplicate screen
+  1522→  1522→[ ] No renamed screen
+  1523→  1523→[ ] Existing Qubit visual language preserved
+  1524→  1524→[ ] Attached reference image followed
+  1525→  1525→[ ] Phase 2 design system reused
+  1526→  1526→[ ] Phase 3 security reused
+  1527→  1527→[ ] Existing business-domain architecture reused
+  1528→  1528→[ ] No duplicate data sources
+  1529→  1529→[ ] KPI definitions are clear
+  1530→  1530→[ ] Data freshness is communicated
+  1531→  1531→[ ] Executive alerts are high-signal
+  1532→  1532→[ ] Executive approvals are secure
+  1533→  1533→[ ] AI is evidence-based
+  1534→  1534→[ ] AI respects authorization
+  1535→  1535→[ ] Sensitive data is protected
+  1536→  1536→[ ] Exports are authorized
+  1537→  1537→[ ] Partial domain failures degrade gracefully
+  1538→  1538→[ ] Responsive executive experience implemented
+  1539→  1539→[ ] Accessibility implemented
+  1540→  1540→[ ] Loading states implemented
+  1541→  1541→[ ] Empty states implemented
+  1542→  1542→[ ] Error states implemented
+  1543→  1543→[ ] Permission states implemented
+  1544→  1544→[ ] Realistic enterprise data used
+  1545→  1545→[ ] No unnecessary visual clutter
+  1546→  1546→[ ] No decorative dashboard overload
+  1547→  1547→[ ] No fake production success
+  1548→  1548→
+  1549→  1549→==================================================
+  1550→  1550→29. MOST IMPORTANT INSTRUCTION
+  1551→  1551→==================================================
+  1552→  1552→
+  1553→  1553→DO NOT build 14 isolated dashboards.
+  1554→  1554→
+  1555→  1555→Build ONE connected:
+  1556→  1556→
+  1557→  1557→QUBIT ONE CEO COMMAND CENTER.
+  1558→  1558→
+  1559→  1559→The CEO experience should feel like:
+  1560→  1560→
+  1561→  1561→Company
+  1562→  1562→→ What is happening?
+  1563→  1563→→ Why is it happening?
+  1564→  1564→→ What matters?
+  1565→  1565→→ What is at risk?
+  1566→  1566→→ What requires my decision?
+  1567→  1567→→ What should I investigate?
+  1568→  1568→→ What should I do next?
+  1569→  1569→
+  1570→  1570→The CEO should not have to manually assemble the company's story from disconnected modules.
+  1571→  1571→
+  1572→  1572→The system should progressively reveal:
+  1573→  1573→
+  1574→  1574→SIGNAL
+  1575→  1575→→ CONTEXT
+  1576→  1576→→ IMPACT
+  1577→  1577→→ ACTION
+  1578→  1578→→ DRILLDOWN
+  1579→  1579→
+  1580→  1580→The attached Qubit One UI reference image is the visual source of truth.
+  1581→  1581→
+  1582→  1582→STRICTLY FOLLOW IT.
+  1583→  1583→
+  1584→  1584→Improve polish without changing the product identity.
+  1585→  1585→
+  1586→  1586→Do not restart architecture.
+  1587→  1587→
+  1588→  1588→Do not duplicate functionality.
+  1589→  1589→
+  1590→  1590→Do not ask what to build next.
+  1591→  1591→
+  1592→  1592→Complete PHASE 5 — SCREENS 59–72.

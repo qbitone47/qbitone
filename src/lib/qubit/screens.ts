@@ -3,6 +3,7 @@
 // Phase 2: Enterprise Design System (screens 13–30)
 // Phase 3: Authentication & Security (screens 31–40)
 // Phase 4: Core Employee Workspace (screens 41–58)
+// Phase 5: CEO Command Center (screens 59–72)
 
 export type ScreenId =
   | "org-structure"
@@ -62,9 +63,23 @@ export type ScreenId =
   | "mail-inbox"
   | "compose-mail"
   | "sent-mail"
-  | "mail-search";
+  | "mail-search"
+  | "ceo-overview"
+  | "revenue-snapshot"
+  | "sales-command"
+  | "finance-snapshot"
+  | "people-overview"
+  | "marketing-overview"
+  | "service-overview"
+  | "inventory-overview"
+  | "field-operations"
+  | "executive-alerts"
+  | "executive-approvals"
+  | "ceo-ai-insights"
+  | "kpi-drilldown"
+  | "executive-reports";
 
-export type ScreenModule = "enterprise" | "design-system" | "security" | "workspace" | "people" | "mail";
+export type ScreenModule = "enterprise" | "design-system" | "security" | "workspace" | "people" | "mail" | "executive";
 
 /** Screens rendered without the app shell (standalone authentication) */
 export const AUTH_SCREENS: ScreenId[] = ["login", "mfa-verification", "sso-provider-selection"];
@@ -141,6 +156,21 @@ export const SCREENS: ScreenMeta[] = [
   { id: "compose-mail", num: "56", title: "Compose Mail", shortTitle: "Compose", description: "Directory-backed recipients, policy-checked attachments, honest states.", module: "mail" },
   { id: "sent-mail", num: "57", title: "Sent Mail", shortTitle: "Sent", description: "Every message you've sent — with honest delivery status and retry.", module: "mail" },
   { id: "mail-search", num: "58", title: "Mail Search", shortTitle: "Mail Search", description: "Server-enforced search across your authorized mailbox.", module: "mail" },
+  // ——— Phase 5 · CEO Command Center ———
+  { id: "ceo-overview", num: "59", title: "CEO Overview", shortTitle: "CEO Overview", description: "Company health, key KPIs, attention items and today's decisions — one executive picture.", module: "executive" },
+  { id: "revenue-snapshot", num: "60", title: "Revenue Snapshot", shortTitle: "Revenue", description: "Concise revenue performance — target, trend, contribution and variance.", module: "executive" },
+  { id: "sales-command", num: "61", title: "Sales Command Center", shortTitle: "Sales Command", description: "Executive sales view — pipeline health, forecast confidence and major deals.", module: "executive" },
+  { id: "finance-snapshot", num: "62", title: "Finance Snapshot", shortTitle: "Finance", description: "CEO-level financial health — cash, margins, receivables and budget variance.", module: "executive" },
+  { id: "people-overview", num: "63", title: "People Overview", shortTitle: "People", description: "Workforce health — headcount, hiring, attrition and distribution, aggregated.", module: "executive" },
+  { id: "marketing-overview", num: "64", title: "Marketing Overview", shortTitle: "Marketing", description: "Marketing business impact — leads, pipeline contribution and channel ROI.", module: "executive" },
+  { id: "service-overview", num: "65", title: "Service Overview", shortTitle: "Service", description: "Customer service health — SLA, backlog and critical exceptions first.", module: "executive" },
+  { id: "inventory-overview", num: "66", title: "Inventory Overview", shortTitle: "Inventory", description: "Stock and supply visibility — value, exceptions and bottlenecks, not SKU walls.", module: "executive" },
+  { id: "field-operations", num: "67", title: "Field Operations", shortTitle: "Field Ops", description: "Field execution — visits, delays and regional performance at a glance.", module: "executive" },
+  { id: "executive-alerts", num: "68", title: "Executive Alerts", shortTitle: "Executive Alerts", description: "High-signal exceptions that need executive awareness — calibrated, actionable.", module: "executive" },
+  { id: "executive-approvals", num: "69", title: "Executive Approvals", shortTitle: "Executive Approvals", description: "Decisions only executive authority can make — step-up protected and audited.", module: "executive" },
+  { id: "ceo-ai-insights", num: "70", title: "CEO AI Insights", shortTitle: "AI Insights", description: "Evidence-based AI interpretation of authorized company data — never invented.", module: "executive" },
+  { id: "kpi-drilldown", num: "71", title: "Company KPI Drilldown", shortTitle: "KPI Drilldown", description: "Focused investigation behind every executive KPI — definition to underlying records.", module: "executive" },
+  { id: "executive-reports", num: "72", title: "Executive Reports", shortTitle: "Executive Reports", description: "Executive reporting library — generate, schedule and share authorized reports.", module: "executive" },
 ];
 
 export const screenMeta = (id: ScreenId): ScreenMeta =>
@@ -170,4 +200,10 @@ export interface ScreenParams {
   mailReply?: string;
   mailForward?: string;
   replyAll?: boolean;
+  /** Executive deep links (Phase 5) */
+  kpiId?: string;
+  domainId?: string;
+  reportId?: string;
+  insightId?: string;
+  region?: string;
 }

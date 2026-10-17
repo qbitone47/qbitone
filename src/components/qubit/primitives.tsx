@@ -32,6 +32,10 @@ const STATUS_TONE: Record<string, Tone> = {
   "Configuration Required": "violet", "On Leave": "violet",
   Inactive: "slate", Archived: "slate", Paused: "slate", Disabled: "slate", Low: "slate",
   Expired: "slate", "Action needed": "amber", Degraded: "amber",
+  // Phase 5 — executive vocabulary
+  "On Track": "emerald", Watch: "amber", "At Risk": "red", Generating: "blue", Failed: "red",
+  Live: "emerald", Delayed: "amber", Stale: "amber", Unavailable: "red", Dismissed: "slate",
+  Assigned: "blue", Ready: "emerald", Forecast: "violet", Estimated: "violet", Finalized: "emerald",
 };
 
 export function StatusBadge({
