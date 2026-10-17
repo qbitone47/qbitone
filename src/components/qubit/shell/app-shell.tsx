@@ -17,7 +17,7 @@ function ShellFooter() {
         <p>© 2026 Qubit One Pvt Ltd · Enterprise Business Operating System</p>
         <p className="flex items-center gap-2">
           <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 font-medium text-slate-500 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
-            Phase 1 — Enterprise Architecture
+            Phase 2 — Enterprise Design System
           </span>
           <span>v1.0.0</span>
         </p>

@@ -11,7 +11,7 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { SCREENS } from "@/lib/qubit/screens";
+import { screensByModule } from "@/lib/qubit/screens";
 import { useQubitNav } from "../nav-context";
 import { useRole, VIEW_AS_ROLES } from "../role-context";
 
@@ -42,10 +42,24 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Enterprise — Phase 1 screens">
-          {SCREENS.map((s) => (
+          {screensByModule("enterprise").map((s) => (
             <CommandItem
               key={s.id}
               value={`${s.num} ${s.title} ${s.shortTitle}`}
+              onSelect={() => run(() => navigate(s.id))}
+              className="gap-3"
+            >
+              <span className="w-6 text-[10px] font-semibold tabular-nums text-slate-400">{s.num}</span>
+              <span className="text-[13px] font-medium text-slate-800">{s.title}</span>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+        <CommandSeparator />
+        <CommandGroup heading="Design System — Phase 2 screens">
+          {screensByModule("design-system").map((s) => (
+            <CommandItem
+              key={s.id}
+              value={`${s.num} ${s.title} ${s.shortTitle} design system`}
               onSelect={() => run(() => navigate(s.id))}
               className="gap-3"
             >

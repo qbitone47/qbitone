@@ -193,3 +193,131 @@ Work Log:
 
 Stage Summary:
 - One unified premium visual system across all 12 screens: light sidebar + blue accent identity per reference, one card language (.qubit-card), one icon-tile language, 40px controls, consistent chips/links/states. Zero text changes, zero logic changes. Screens 02-10 sweeps documented in Task 5-a/5-b/5-c sections above. Remaining known pre-existing items: sidebar active state doesn't highlight Business/Intelligence modules while their placeholder is open (phase-placeholder design), and 4 pre-existing tsc errors live in examples/skills scaffolding, not app src.
+
+---
+Task ID: 1
+Agent: main (orchestrator)
+Task: Phase 2 foundation — screens 13–30 registration, shared DS doc scaffold, shell updates
+
+Work Log:
+- src/lib/qubit/screens.ts: added ScreenModule type ("enterprise" | "design-system"), tagged 12 Phase 1 metas with module, added 18 Phase 2 metas (design-tokens, typography, color-system, buttons, inputs-forms, tables, cards, charts, navigation, command-bar, modal-drawer, status-system, empty-states, loading-states, error-states, toast-alerts, accessibility, responsive-grid), added screensByModule()
+- src/components/qubit/ds/doc.tsx: NEW shared design-system doc scaffold — DSSection, DSStage, DSCaption, DSExample, DSSpec, DSVar, DSTokenTable, DSGuidance (do/don't), DSScreenNav (prev/next within 13–30) — one doc voice for all 18 screens
+- 18 stub screen files created in screens/ (valid, minimal); screen-registry.tsx registers all 30 components
+- sidebar.tsx: generalized expandable module groups (expandableModule field) — Enterprise + new Design System module (Palette icon, System section, numbered submenu 13–30, starts collapsed); org-plan card now "Phase 2 · Enterprise Design System"
+- topbar.tsx: breadcrumb module label now meta.module-aware ("Design System" vs "Enterprise")
+- command-palette.tsx: two screen groups (Enterprise 01–12, Design System 13–30)
+- app-shell.tsx footer badge → "Phase 2 — Enterprise Design System"
+- lint exit 0; tsc no errors in app src
+
+Stage Summary:
+- All 30 screens registered and navigable; shared DS doc language in place; Phase 2 module live in sidebar/command palette/topbar. Next: 6 parallel agents fill the 18 screens.
+
+---
+Task ID: 2-e
+Agent: full-stack-developer
+Task: Phase 2 DS screens 17 Inputs & Forms + 23 Modal & Drawer Patterns
+
+Work Log:
+- Read worklog + shared system: ds/doc.tsx (DSSection/DSStage/DSExample/DSSpec/DSVar/DSTokenTable/DSGuidance/DSScreenNav), dialogs.tsx (ConfirmDialog/FormDialog/Field), drawers.tsx (DetailDrawer), primitives.tsx (Avatar/IconTile/StatusBadge/KV/StatTile/SearchInput), page-header, lib/qubit/screens.ts (ScreenId) and data.ts (employees/departments/getEmployee), plus ui/ calendar (react-day-picker v9), popover, select, sheet, dialog, checkbox, radio-group, switch, textarea and use-toast APIs
+- Overwrote ONLY screens/inputs-forms.tsx (813 lines, id "inputs-forms"): PageHeader "Enterprise form system — fields, states, validation, layout." → 6 DSSections: (1) Field types — 16 live specimens in a sm:2/xl:3 gallery (text empty/filled "Engineering", password Eye/EyeOff aria-labelled toggle, SearchInput, working department Select from real departments, working 4-chip checkbox multi-select In-App/Email/Push/WhatsApp with aria-pressed, Popover+Calendar date pre-set 17 Oct 2026 with format "d MMM yyyy", From/To date-range pair, time 14:30, number min 1 "Team size", ₹-prefix currency "12,50,000", textarea+hint, dashed dropzone with hidden file input → toast on change, checkbox "Send invitation email", RadioGroup Monthly/Quarterly/Annually, Switch "Auto-assign approvals" with description); (2) Field states — 8-cell sm:2/lg:4 matrix (Default/Focus/Filled/Error aria-invalid + red text with AlertCircle/Warning amber/Disabled+policy hint/Read-only bg-slate-50/Loading spinner-in-field with role=status); (3) Anatomy — large field with numbered callouts 1–4 and a "Show error state" toggle that flips helper↔error (aria-describedby swaps); (4) Realistic form — max-w-[560px] "Create role" grid sm:2, submit gated on name, 900 ms submitting state → toast "Role created successfully." + form reset, plus real FormDialog twin via "Open in dialog" section action; (5) Form layout rules — 7-row DSTokenTable (16/6/24px, 560px, 1→2 cols, right actions, destructive separated) + Do/Don't pair; (6) DSSpec (Purpose/Use when/Avoid when/States/Responsive/Accessibility) → DSScreenNav
+- Overwrote ONLY screens/modal-drawer.tsx (684 lines, id "modal-drawer"): PageHeader → 9 DSSections: (1) Pattern picker 7-row table (modal.sm/confirm/form/lg, drawer.right/full, sheet.mobile with when-to-use); (2) Confirmation modal — destructive ConfirmDialog "Delete department?" ("remove Engineering and detach 248 employees… cannot be undone", red confirm → toast) + non-destructive "Approve request?" (₹2,40,000, default confirm); (3) Form modal — real FormDialog "Create role" (name + department Select, 900 ms submitting → toast + reset); (4) Large modal — sm:max-w-lg Dialog, internally scrollable body (summary paragraph + 3 StatTiles 1,245/8/6 + KV legal-entity rows), Cancel/Close footer; (5) Right-side drawer — real DetailDrawer wide with live employee Meera Iyer (StatusBadge in title, Avatar header, KV Email/Phone/Manager/Location, footer "View reporting line" + "Open full profile" → toasts); (6) Full-height drawer (Sheet side=right w-full sm:max-w-md, audit-log list with 6 realistic entries + Export/Close footer) and mobile sheet (Sheet side=bottom rounded-t-2xl, drag-handle bar, 3 action rows with IconTile tones incl. destructive rose Archive, each → toast + close); (7) Anatomy & behavior — 5 numbered anatomy items + 5 behavior rules, DSVar-annotated (bg-black/50, X, Esc, Radix focus trap); (8) Do/Don't guidance pair; (9) DSSpec → DSScreenNav
+- Shared needs solved locally per ownership rules: shared control class consts (inputCls/selectCls) and a numbered Callout/AuditRow helper defined per file; no file outside my two was touched
+- Verification: bunx tsc --noEmit → zero errors in my two files; bun run lint → zero errors in my two files; curl / → 200; dev.log "✓ Compiled" clean
+
+Stage Summary:
+- Screens 17 + 23 complete: full input vocabulary (16 live field types + 8-state matrix + anatomy + realistic form + layout tokens) and the complete overlay system (7-pattern picker + 6 working overlays wired to real ConfirmDialog/FormDialog/DetailDrawer/Sheet primitives). NOTE for orchestrator: tsc/lint currently report errors ONLY in screens/design-tokens.tsx (12) and screens/loading-states.tsx (6) — files owned by concurrent Phase 2 agents, outside my ownership; my two files are clean, plus the 4 known examples//skills/ scaffolding errors.
+
+---
+Task ID: 2-a
+Agent: full-stack-developer
+Task: Phase 2 Screens 13–15 — Design Tokens, Typography, Color System (live design-system reference screens)
+
+Work Log:
+- Read worklog.md + studied established system (ds/doc.tsx voice, primitives, PageHeader, globals.css @theme ramps incl. navy + workspace #F5F7FB, qubit-* surface layer, screens.ts metas, data.ts contract) before writing
+- design-tokens.tsx (684 lines): governance DSSpec at top; "Copy token names" header action (clipboard + toast); Token architecture — 3-layer primitives→semantic→component cards, dot-delimited naming with 10 DSVar chips, 2 governance rules amber strip, DSSpec (Purpose/Naming/Governance/Where defined); Color tokens — single DSTokenTable grouped by prefix (text/surface/border/brand/semantic) with inline swatch+mono hex helper; Spacing — visual 4px base bar row spacing.1–8 + layout-spacing token table (page.gutter 16/24/32, row.density 36/44/52); Radius — 4 live specimens at exact 6/8/12/full px (arbitrary-value rounded-[6px] etc. because project Tailwind theme maps rounded-md→8px/rounded-xl→14px, so default classes would misstate the tokens); Border & elevation — 3 border tokens incl. focus-ring demo button + 3 elevation mini-cards with mono shadow values (level.0/1/2, never-stronger rule); Sizing & controls — Search/Building2 at 16/20/24, real Inputs h-8/h-9/h-10, IconTile sm/md/lg; Layout & layers — sidebar 264/68, content.max 1440, z-ladder 0→100, breakpoints 640–1280 in one grouped table; Motion — duration/easing table + live "Replay motion" demo (hide @120ms ease, enter @220ms cubic-bezier(0.16,1,0.3,1) = duration.enter + easing.enter); Do/Don't pair
+- typography.tsx (462 lines): "Baseline grid" header toggle (aria-pressed, 8px repeating hairlines on ramp specimens); Type ramp — 11 live styles (Display 30/700/-0.02em … Numeric 14/500 tabular-nums) each in a 2-col RampRow (specimen left, mono size/weight/line-height/tracking + usage right); Realistic context — Organization Structure page-header stack rebuilt exactly (chip, Display, body secondary, numeric "1,245 employees" via formatCount(COMPANY_EMPLOYEES), Label, Caption, live Add Department button → toast) + element legend; Weights & casing — 400/500/600/700 sentence cards with fixed jobs + uppercase-only-10-11px rule; Data density — 13px 3-row table from real employees (rahul/priya/arjun via getEmployee), truncate + line-clamp-2 specimens, truncation rules; Do/Don't + Governance DSSpec (min sizes, AA, size-alone-never-carries-hierarchy-on-mobile)
+- color-system.tsx (517 lines): Qubit Blue ramp 50–900 as clickable SwatchCards (copy hex via navigator.clipboard guarded try/catch + toast, role annotations on 50/200/500/600/700/800) + blue rule strip; Navy ramp 50–950 (role tags on 800/900) + heritage strip; Neutrals slate 50–900 + surface-roles tiles (workspace/default/subtle/border/text trio) + cool-undertone strip; Semantic — 4 cards (Success/Warning/Error/Info) each with swatch+token+meaning+real example (StatusBadge Active/Warning/Disconnected, destructive Reject button, blue inline alert) + copy rules, "never color-only" note; Interactive states — 6 forced-class specimens (default/hover blue-700/pressed blue-800/focused ring/disabled opacity-50/tint selected) + 1 live Button + disabled-keeps-brand-hue rule; Color in context — white strip with primary Save Changes, ArrowLink, StatusBadge Pending, amber Confidential Badge, IconTile, Avatar (finance head Priya Sharma); Do/Don't + Governance DSSpec (AA contrast, color-never-alone, focus visibility)
+- Verification: curl / = 200; dev.log compiles clean, zero runtime errors; agent-browser walkthrough of all 3 screens (sidebar Design System 13/14/15): every section heading present, Copy-token-names + Replay-motion + Baseline-grid + Add-Department + swatch-copy + Save-Changes all fire with no page errors, screenshots captured desktop 1440 + mobile 390; mobile scrollWidth check = no horizontal overflow
+- Status at handoff: my 3 files lint-clean and tsc-clean (zero errors/warnings); full-project lint shows only 1 warning in navigation.tsx and full tsc only the 4 known pre-existing examples/+skills/ scaffold errors — both live in files owned by other agents (loading-states.tsx/toast-alerts.tsx errors seen mid-run were being fixed by their owners in parallel)
+Stage Summary:
+- Screens 13–15 complete: the closed token vocabulary (color/spacing/radius/border/elevation/sizing/layout/motion), the 11-style type ramp with a rebuildable page-header stack, and the full color language (blue interaction, navy heritage, slate neutrals, 4 semantic hues, interactive states) — every future Phase 2 screen now has an authoritative reference to inherit from. All specimens are live Qubit One components, toast-wired, responsive and aria-labelled. Shared files untouched; no escalations. One implementation note for sibling agents: project Tailwind theme makes rounded-md=8px / rounded-lg=10px / rounded-xl=14px — use arbitrary values (rounded-[6px]/rounded-[12px]) when a token's exact px matters, and radius.lg (12px) = .qubit-card is a CSS-layer class, not rounded-xl.
+---
+Task ID: 2-f
+Agent: full-stack-developer
+Task: Phase 2 screens 25–28 — Empty States, Loading States, Error States, Toast & Alerts
+
+Work Log:
+- Screen 25 empty-states.tsx (431 lines): Anatomy (large EmptyState specimen in bordered panel + 4 numbered callouts: icon tile / title / explanation / next action, "Clear filters" wired to toast); Variants gallery — 7 real EmptyState panels with Qubit copy + per-panel "Use for" captions (tasks, directory "No employees match 'arj'.", documents, notifications, global search, integrations with Plug icon, approvals ClipboardCheck, each action fires toasts); Filtered vs truly empty (deliberately different copy/actions, annotated) + "In situ" example showing EmptyState inside a toolbar'd card with live SearchInput; Rules DSSpec (Purpose/Use when/Avoid when/States/Responsive/Accessibility) + Do/Don't pair
+- Screen 26 loading-states.tsx (494 lines): shared "Reload demo" outline button (RefreshCw, aria-label) in PageHeader actions toggling a screen-level 1.4s loading window, default LOADED; Page loading — Org Structure replica flips skeleton↔real (skeleton header h-7 w-72 + h-4 w-96, 3 StatTile skeletons, table skeleton → real StatTiles 1,245 employees / departments.length / 96% active + department-heads table); Table loading — static skeleton specimen (header bar + 5 h-10 row bars) vs real 5-employee mini table; Card & detail loading — card skeleton vs loaded employee card, drawer skeleton vs loaded Finance department detail (both live-flip during the reload window); Button & inline loading — SaveButtonDemo (idle→Saving… 1.2s→Saved emerald 0.8s→idle), SearchInput demo (Loader2 overlays clear icon while "searching", aria-live status), inline spinner "Syncing integrations…", determinate Progress 0→100 over 1.4s with % label + Replay; Rules DSTokenTable (skeleton-delay/motion/spinner-scope/min-display/blocking-scope) + Do/Don't
+- Screen 27 error-states.tsx (433 lines): intro contract strip ("1 · What happened? / 2 · What can the user do?"); Field & validation (live inline error — clears on typing, aria-invalid + aria-describedby + role=alert; validation summary card "2 fields need attention" with clickable Role name / Approval limit links → toasts); Data & API errors — card keeps its shell, content area swaps red banner (AlertTriangle, Retry live simulate → 1s Loader2 → toast "Back online (demo)" → recovered 3 stat rows + Reset demo; reference chip QB-2026-0417); Network (WifiOff "You're offline… changes saved locally") & Server (Server icon, reference code, no stack traces) page-level blocks, each Retry live with recovered bar + Reset; Permission (ShieldAlert, names "Approvals · Manage permission", Request access → toast) & Not found (FileQuestion, Go to Home + Go back); Session expired (compact centered LogOut block, Sign in); Rules DSTokenTable (tone mapping field/banner/page-level, copy contract, never list) + Do/Don't; "Go back" buttons wired to real in-app history (useQubitNav().back when canBack, toast fallback)
+- Screen 28 toast-alerts.tsx (341 lines): 4 wired toast cells (tone chip + firing button + when-to-use line) using the app's real useToast system — Success / Information (title only) / Warning / Error (variant destructive); toast anatomy specimen (static replica of real toast chrome: type icon, title, description, close X — close is wired) + numbered callouts + placement chips (stack limit, ~5s auto-dismiss, swipe, pause on hover); Alerts — 4 real <Alert> patterns: inline info (blue tint, Install update button), page destructive (Payroll sync failed, Review records), system muted (Scheduled maintenance, no action), critical (border-l-4 border-l-red-600, Revoke access) each with when-to-use caption; Toast vs alert DSTokenTable (purpose/lifetime/action/placement/announcement); Rules Do/Don't + rule-of-thumb strip
+- Constraints respected: only the 4 owned files touched; all demos use local state/hooks + shared primitives (EmptyState, SearchInput, StatTile, IconTile via qubit-icon-tile classes) and shadcn ui (Button, Input, Label, Alert, Skeleton, Progress); lucide icons verified against lucide-react exports before use; strict TS, aria-labels on icon-only buttons, no new deps
+- Verification: agent-browser (1440×900 + 390×844) — all 4 screens render all sections via sidebar navigation; toasts fire for all 4 semantic types; Reload demo shows 63 skeletons during window → content returns (21 static specimen skeletons remain, expected); Save button cycles Saving…→Saved→idle; progress runs + replays; search shows "Searching employees…" then result count; error retry flows flip to recovered + toast; validation error clears on typing; no horizontal overflow on mobile; zero page errors; HTTP 200 after every file
+- lint: 0 errors project-wide (1 pre-existing warning in navigation.tsx — not this task's file); bunx tsc --noEmit: zero errors in src, only the 4 known pre-existing errors in examples/ + skills/ scaffolding
+
+Stage Summary:
+- Screens 25–28 complete and registered: the four state-communication references (empty, loading, error, toast/alert) now follow the DS doc voice end-to-end with live wired demos. Note for orchestrator: use-toast's shared type intersects the HTML `title` attribute, so toast() titles are TS-typed as string — semantic tone in toasts is expressed via the anatomy specimen; if icon-titled toasts are wanted product-wide, the fix belongs in ui/toast (Omit "title" from ToastProps before intersecting), not in screens.
+
+---
+Task ID: 2-b (reconstructed by orchestrator — agent hit tooling deadline after writing files)
+Agent: full-stack-developer
+Task: Screens 16 Buttons + 24 Status System + 29 Accessibility Patterns
+
+Work Log:
+- buttons.tsx (549 lines): 13 DSSection blocks — variants (Primary/Secondary/Outline/Ghost/Destructive/Link/Icon-only with realistic labels), states matrix (Default/Hover/Pressed/Focused/Disabled/Loading/Success forced-class specimens), sizes sm/default/lg, icon+count combos, behavior spec, do/don't
+- status-system.tsx (318 lines): 11 sections — canonical vocabulary table with real StatusBadge rows, 4 sanctioned presentations, never-color-only side-by-side, restraint do/don't
+- accessibility.tsx (694 lines): 19 sections — focus ring, keyboard tree demo, accessible form fields (aria-invalid/role=alert), DataTable caption/aria-sort, dialog focus guarantees, sr-only + tooltip alternatives, aria-live save demo, touch targets, permission states
+- Note: files were completed and compile clean (tsc 0 in src, lint clean); agent's final report + own worklog append were lost to a tooling deadline — verified by orchestrator instead.
+
+Stage Summary:
+- Screens 16/24/29 implemented per spec; orchestrator took over verification (Task 3).
+
+---
+Task ID: 2-c (reconstructed by orchestrator — agent hit tooling deadline after writing files)
+Agent: full-stack-developer
+Task: Screens 18 Tables + 19 Cards + 20 Charts
+
+Work Log:
+- tables.tsx (911 lines): 19 sections — 3 densities over real employees, sort+filter with SearchInput/Selects, row selection + bulk-action bar, pagination + column-visibility dropdown, sticky header + row actions, expandable rows, loading/empty/error/selected state panels
+- cards.tsx (492 lines): anatomy with numbered callouts, 6 variants (Summary/Entity/Action/Information/Status/Preview), card-vs-table guidance, hover behavior demo
+- charts.tsx (577 lines): chart palette rules (blue-first, max 5 series), line/bar/donut/area via recharts + shadcn ChartContainer, progress bars + horizontal funnel, chart states (loading/empty/error), do/don't
+- Note: files completed and compile clean; final report + worklog append lost to tooling deadline — verified by orchestrator.
+
+Stage Summary:
+- Screens 18/19/20 implemented per spec; orchestrator took over verification (Task 3).
+
+---
+Task ID: 2-d (reconstructed by orchestrator — agent hit tooling deadline after writing files)
+Agent: full-stack-developer
+Task: Screens 21 Navigation + 22 Command Bar + 30 Responsive Grid
+
+Work Log:
+- navigation.tsx (755 lines): 19 sections — sidebar replica with all nav states (default/hover/active/parent-expanded/active-child/collapsed rail), nested nav + permission "Hidden" chip, real Breadcrumb/Tabs/Pagination, contextual nav, mobile Sheet nav, scalability rules
+- command-bar.tsx (428 lines): trigger affordances replica, anatomy with Recent searches/Suggested actions/Recent pages/Results groups, live screen-scoped CommandDialog demo (no duplicate global ⌘K binding), keyboard hints, AI-boundary guidance
+- responsive-grid.tsx (489 lines): breakpoints table + live viewport indicator, 12-col strip, responsive cards/tables(mobileCard)/forms, desktop↔mobile navigation mapping, mobile-first rules
+- Note: files completed and compile clean; final report + worklog append lost to tooling deadline — verified by orchestrator.
+
+Stage Summary:
+- Screens 21/22/30 implemented per spec; orchestrator took over verification (Task 3).
+
+---
+Task ID: 3
+Agent: main (orchestrator)
+Task: Phase 2 integration + end-to-end browser verification (screens 13–30)
+
+Work Log:
+- Reconstructed + appended worklog sections for 2-b/2-c/2-d (agents wrote all files but hit tooling deadlines before reporting; code was already complete and compiling)
+- Lint: zero errors project-wide; tsc: zero errors in app src (only 4 known examples/+skills/ scaffold errors); dev server HTTP 200, dev.log clean (no runtime errors during the whole sweep)
+- Agent Browser desktop 1440×900 — all 18 screens navigated via command palette and verified:
+  13 Design Tokens (9 sections, 4 token tables, swatches, motion replay), 14 Typography, 15 Color System (blue/navy/slate ramps + semantic cards),
+  16 Buttons (7 variants + state matrix + sizes), 17 Inputs & Forms (16 field specimens, 8-state matrix, ₹/IST localized), 18 Tables (3 densities, real employee data),
+  19 Cards, 20 Charts (4 recharts SVGs render live, 5-color governed palette), 21 Navigation (sidebar replica states + collapsed rail),
+  22 Command Bar (live screen-scoped CommandDialog: filter "map" → matched Integration Map → Enter navigated), 23 Modal & Drawer (destructive ConfirmDialog open → confirm → toast → closed; pattern picker),
+  24 Status System (22-row vocabulary with real StatusBadges), 25 Empty States, 26 Loading States (Reload demo: 21→63→21 pulse elements = skeletons → content),
+  27 Error States (contract strip, inline validation, QB reference code, retry), 28 Toast & Alerts (real toast fired: "Department created successfully."), 29 Accessibility Patterns, 30 Responsive Grid (live viewport indicator: "base · <640px" active at 390px, chips switch with resize)
+- Mobile 390×844: hamburger nav sheet opens, Design System group expands with all 18 numbered items, single-column layout, no horizontal overflow
+- DSScreenNav prev/next verified (29 → 28); footer badge "Phase 2 — Enterprise Design System"; topbar breadcrumb module-aware ("Design System")
+- Interaction artifacts fixed during verification: leftover mobile Sheet overlay (test artifact, not a product bug); palette ref staleness on fast navigations (test flow, not product)
+
+Stage Summary:
+- PHASE 2 COMPLETE: 30/30 screens live — 12 Enterprise Architecture + 18 Enterprise Design System references, one shared DS doc voice (ds/doc.tsx scaffold), one sidebar Design System module, zero content/logic regressions, lint+tsc clean, browser-verified desktop + mobile with working interactions end-to-end.

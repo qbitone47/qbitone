@@ -9,6 +9,7 @@ import {
   House,
   Megaphone,
   Package,
+  Palette,
   PanelLeftClose,
   PanelLeftOpen,
   Settings2,
@@ -21,7 +22,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SCREENS, type ScreenId } from "@/lib/qubit/screens";
+import { screensByModule, type ScreenId, type ScreenModule } from "@/lib/qubit/screens";
 import { useQubitNav } from "../nav-context";
 
 export interface SidebarModule {
@@ -29,12 +30,13 @@ export interface SidebarModule {
   label: string;
   icon: React.ElementType;
   section: string;
-  screen?: ScreenId; // present = navigable in Phase 1
+  screen?: ScreenId; // present = navigable directly
+  expandableModule?: ScreenModule; // present = collapsible numbered submenu
 }
 
 export const SIDEBAR_MODULES: SidebarModule[] = [
   { id: "home", label: "Home", icon: House, section: "Workspace" },
-  { id: "enterprise", label: "Enterprise", icon: Building2, section: "Workspace", screen: "org-structure" },
+  { id: "enterprise", label: "Enterprise", icon: Building2, section: "Workspace", expandableModule: "enterprise" },
   { id: "people", label: "People", icon: UserRound, section: "Workspace" },
   { id: "sales", label: "Sales", icon: TrendingUp, section: "Business" },
   { id: "finance", label: "Finance", icon: Wallet, section: "Business" },
@@ -46,6 +48,7 @@ export const SIDEBAR_MODULES: SidebarModule[] = [
   { id: "ai", label: "AI", icon: Sparkles, section: "Intelligence" },
   { id: "analytics", label: "Analytics", icon: BarChart3, section: "Intelligence" },
   { id: "documents", label: "Documents", icon: FolderClosed, section: "Intelligence" },
+  { id: "design-system", label: "Design System", icon: Palette, section: "System", expandableModule: "design-system" },
   { id: "settings", label: "Settings", icon: Settings2, section: "System" },
 ];
 
@@ -62,6 +65,7 @@ export const MODULE_PHASE: Record<string, string> = {
   ai: "Phase 12 — Qubit AI Platform",
   analytics: "Phase 13 — Analytics & Reporting",
   documents: "Phase 14 — Documents & Knowledge",
+  "design-system": "Phase 2 — Enterprise Design System",
   settings: "Phase 15 — Administration & Settings",
 };
 
@@ -91,7 +95,8 @@ export function SidebarContent({
   onNavigate?: () => void;
 }) {
   const { screen, navigate } = useQubitNav();
-  const [enterpriseOpen, setEnterpriseOpen] = React.useState(true);
+  // Enterprise starts expanded (Phase 1 home); Design System starts collapsed.
+  const [open, setOpen] = React.useState<Record<string, boolean>>({ enterprise: true, "design-system": false });
 
   const sections = React.useMemo(() => {
     const map = new Map<string, SidebarModule[]>();
@@ -158,44 +163,48 @@ export function SidebarContent({
             <ul className="space-y-0.5">
               {modules.map((m) => {
                 const Icon = m.icon;
-                const isEnterprise = m.id === "enterprise";
-                const enterpriseActive = isEnterprise && SCREENS.some((s) => s.id === screen);
                 const isActive = m.screen ? m.screen === screen : false;
+                const expandableScreens = m.expandableModule
+                  ? screensByModule(m.expandableModule)
+                  : [];
+                const groupActive =
+                  m.expandableModule != null && expandableScreens.some((s) => s.id === screen);
+                const isOpen = m.expandableModule != null ? (open[m.id] ?? false) : false;
 
-                if (isEnterprise) {
+                if (m.expandableModule) {
                   return (
                     <li key={m.id}>
                       <button
                         type="button"
-                        aria-expanded={enterpriseOpen}
-                        onClick={() => (collapsed ? goScreen("org-structure") : setEnterpriseOpen((o) => !o))}
+                        aria-expanded={isOpen}
+                        onClick={() => (collapsed ? goScreen(expandableScreens[0].id) : setOpen((o) => ({ ...o, [m.id]: !(o[m.id] ?? false) })))}
                         className={cn(
                           "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-colors duration-150",
-                          enterpriseActive
+                          groupActive
                             ? "bg-blue-50 text-blue-700"
                             : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900",
                           collapsed && "justify-center px-0",
                         )}
-                        title={collapsed ? "Enterprise" : undefined}
+                        title={collapsed ? m.label : undefined}
                       >
                         <Icon
-                          className={cn("h-[18px] w-[18px] shrink-0", enterpriseActive ? "text-blue-600" : "text-slate-400")}
+                          className={cn("h-[18px] w-[18px] shrink-0", groupActive ? "text-blue-600" : "text-slate-400")}
                           aria-hidden
                         />
-                        {!collapsed && <span className="flex-1 text-left">Enterprise</span>}
+                        {!collapsed && <span className="flex-1 text-left">{m.label}</span>}
                         {!collapsed && (
                           <svg
                             viewBox="0 0 12 12"
-                            className={cn("h-3 w-3 text-slate-400 transition-transform duration-150", enterpriseOpen && "rotate-90")}
+                            className={cn("h-3 w-3 text-slate-400 transition-transform duration-150", isOpen && "rotate-90")}
                             aria-hidden
                           >
                             <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                           </svg>
                         )}
                       </button>
-                      {!collapsed && enterpriseOpen && (
+                      {!collapsed && isOpen && (
                         <ul className="mt-0.5 space-y-px" role="list">
-                          {SCREENS.map((s) => (
+                          {expandableScreens.map((s) => (
                             <li key={s.id}>
                               <button
                                 type="button"
@@ -263,13 +272,13 @@ export function SidebarContent({
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[12.5px] font-semibold leading-tight text-slate-900">Qubit One Pvt Ltd</span>
               <span className="block truncate text-[10.5px] leading-tight text-slate-400">
-                Phase 1 · Enterprise Architecture
+                Phase 2 · Enterprise Design System
               </span>
             </span>
             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-hidden />
           </div>
         ) : (
-          <div className="flex justify-center py-0.5" title="Qubit One Pvt Ltd — Phase 1 · Enterprise Architecture">
+          <div className="flex justify-center py-0.5" title="Qubit One Pvt Ltd — Phase 2 · Enterprise Design System">
             <QubitMark className="h-7 w-7 rounded-lg text-[13px]" />
           </div>
         )}

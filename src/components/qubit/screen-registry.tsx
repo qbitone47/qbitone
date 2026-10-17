@@ -14,6 +14,24 @@ import { ApprovalMatrixScreen } from "./screens/approval-matrix";
 import { NotificationRulesScreen } from "./screens/notification-rules";
 import { IntegrationMapScreen } from "./screens/integration-map";
 import { EnterpriseNavigationScreen } from "./screens/enterprise-navigation";
+import { DesignTokensScreen } from "./screens/design-tokens";
+import { TypographyScreen } from "./screens/typography";
+import { ColorSystemScreen } from "./screens/color-system";
+import { ButtonsScreen } from "./screens/buttons";
+import { InputsFormsScreen } from "./screens/inputs-forms";
+import { TablesScreen } from "./screens/tables";
+import { CardsScreen } from "./screens/cards";
+import { ChartsScreen } from "./screens/charts";
+import { NavigationScreen } from "./screens/navigation";
+import { CommandBarScreen } from "./screens/command-bar";
+import { ModalDrawerScreen } from "./screens/modal-drawer";
+import { StatusSystemScreen } from "./screens/status-system";
+import { EmptyStatesScreen } from "./screens/empty-states";
+import { LoadingStatesScreen } from "./screens/loading-states";
+import { ErrorStatesScreen } from "./screens/error-states";
+import { ToastAlertsScreen } from "./screens/toast-alerts";
+import { AccessibilityScreen } from "./screens/accessibility";
+import { ResponsiveGridScreen } from "./screens/responsive-grid";
 
 export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "org-structure": OrganizationStructureScreen,
@@ -28,4 +46,22 @@ export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "notification-rules": NotificationRulesScreen,
   "integration-map": IntegrationMapScreen,
   "enterprise-navigation": EnterpriseNavigationScreen,
+  "design-tokens": DesignTokensScreen,
+  typography: TypographyScreen,
+  "color-system": ColorSystemScreen,
+  buttons: ButtonsScreen,
+  "inputs-forms": InputsFormsScreen,
+  tables: TablesScreen,
+  cards: CardsScreen,
+  charts: ChartsScreen,
+  navigation: NavigationScreen,
+  "command-bar": CommandBarScreen,
+  "modal-drawer": ModalDrawerScreen,
+  "status-system": StatusSystemScreen,
+  "empty-states": EmptyStatesScreen,
+  "loading-states": LoadingStatesScreen,
+  "error-states": ErrorStatesScreen,
+  "toast-alerts": ToastAlertsScreen,
+  accessibility: AccessibilityScreen,
+  "responsive-grid": ResponsiveGridScreen,
 };
