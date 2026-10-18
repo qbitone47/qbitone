@@ -41,6 +41,20 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       <CommandInput placeholder="Search screens, modules and actions…" />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
+        <CommandGroup heading="Sales — Phase 6 screens">
+          {screensByModule("sales").map((s) => (
+            <CommandItem
+              key={s.id}
+              value={`${s.num} ${s.title} ${s.shortTitle} sales lead customer opportunity pipeline forecast quotation order whatsapp visit expense`}
+              onSelect={() => run(() => navigate(s.id))}
+              className="gap-3"
+            >
+              <span className="w-6 text-[10px] font-semibold tabular-nums text-slate-400">{s.num}</span>
+              <span className="text-[13px] font-medium text-slate-800">{s.title}</span>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+        <CommandSeparator />
         <CommandGroup heading="CEO Command Center — Phase 5 screens">
           {screensByModule("executive").map((s) => (
             <CommandItem

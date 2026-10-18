@@ -50,6 +50,7 @@ const MODULE_LABELS: Record<ScreenModule, string> = {
   people: "People",
   mail: "Mail",
   executive: "CEO Command Center",
+  sales: "Sales",
 };
 
 export function TopBar({

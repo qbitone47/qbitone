@@ -4,20 +4,20 @@ import * as React from "react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { AUTH_SCREENS, SCREENS } from "@/lib/qubit/screens";
 import { useQubitNav } from "../nav-context";
-import { SidebarContent, SIDEBAR_MODULES } from "./sidebar";
+import { SidebarContent, SIDEBAR_MODULES, MODULE_PHASE } from "./sidebar";
 import { TopBar } from "./topbar";
 import { CommandPalette } from "./command-palette";
 import { ModulePlaceholder } from "./module-placeholder";
 import { SCREEN_COMPONENTS } from "../screen-registry";
 
-function ShellFooter() {
+function ShellFooter({ phase }: { phase: string }) {
   return (
     <footer className="mt-auto border-t border-slate-200/70 pt-4">
       <div className="flex flex-wrap items-center justify-between gap-2 pb-1 text-[11px] text-slate-400">
         <p>© 2026 Qubit One Pvt Ltd · Enterprise Business Operating System</p>
         <p className="flex items-center gap-2">
           <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 font-medium text-slate-500 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
-            Phase 5 — CEO Command Center
+            {phase}
           </span>
           <span>v1.0.0</span>
         </p>
@@ -35,6 +35,7 @@ export function AppShell() {
 
   const meta = SCREENS.find((s) => s.id === screen)!;
   const ScreenComp = SCREEN_COMPONENTS[screen];
+  const phaseLabel = MODULE_PHASE[meta.module] ?? "Qubit One Enterprise OS";
   const previewModuleName = previewModule
     ? SIDEBAR_MODULES.find((m) => m.id === previewModule)?.label ?? ""
     : "";
@@ -82,7 +83,7 @@ export function AppShell() {
         <main id="main-scroll" className="qubit-scroll flex-1 overflow-y-auto" tabIndex={-1}>
           <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col px-4 py-6 md:px-6 lg:px-8">
             <div className="flex-1">{content}</div>
-            <ShellFooter />
+            <ShellFooter phase={phaseLabel} />
           </div>
         </main>
       </div>

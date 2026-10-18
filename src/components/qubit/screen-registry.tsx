@@ -74,6 +74,36 @@ import { ExecutiveApprovalsScreen } from "./screens/executive-approvals";
 import { CeoAiInsightsScreen } from "./screens/ceo-ai-insights";
 import { KpiDrilldownScreen } from "./screens/kpi-drilldown";
 import { ExecutiveReportsScreen } from "./screens/executive-reports";
+import { SalesHomeScreen } from "./screens/sales-home";
+import { LeadInboxScreen } from "./screens/lead-inbox";
+import { LeadDetailScreen } from "./screens/lead-detail";
+import { LeadCreateScreen } from "./screens/lead-create";
+import { ContactDetailScreen } from "./screens/contact-detail";
+import { AccountDetailScreen } from "./screens/account-detail";
+import { OpportunityDetailScreen } from "./screens/opportunity-detail";
+import { SalesPipelineScreen } from "./screens/sales-pipeline";
+import { SalesForecastScreen } from "./screens/sales-forecast";
+import { SalesTargetsScreen } from "./screens/sales-targets";
+import { SalesLeaderboardScreen } from "./screens/sales-leaderboard";
+import { FollowupQueueScreen } from "./screens/followup-queue";
+import { CustomerMeetingsScreen } from "./screens/customer-meetings";
+import { QuotationListScreen } from "./screens/quotation-list";
+import { QuotationBuilderScreen } from "./screens/quotation-builder";
+import { QuotationDetailScreen } from "./screens/quotation-detail";
+import { OrderListScreen } from "./screens/order-list";
+import { OrderDetailScreen } from "./screens/order-detail";
+import { CustomerActivityScreen } from "./screens/customer-activity";
+import { WhatsappInboxScreen } from "./screens/whatsapp-inbox";
+import { WhatsappConversationScreen } from "./screens/whatsapp-conversation";
+import { WhatsappConvertScreen } from "./screens/whatsapp-convert";
+import { SalesVisitingCardScreen } from "./screens/sales-visiting-card";
+import { SalesTravelScreen } from "./screens/sales-travel";
+import { VisitPlannerScreen } from "./screens/visit-planner";
+import { VisitDetailScreen } from "./screens/visit-detail";
+import { SalesExpensesScreen } from "./screens/sales-expenses";
+import { SalesReportsScreen } from "./screens/sales-reports";
+import { TeamSalesDashboardScreen } from "./screens/team-sales-dashboard";
+import { SalesSettingsScreen } from "./screens/sales-settings";
 
 export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "org-structure": OrganizationStructureScreen,
@@ -148,4 +178,34 @@ export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "ceo-ai-insights": CeoAiInsightsScreen,
   "kpi-drilldown": KpiDrilldownScreen,
   "executive-reports": ExecutiveReportsScreen,
+  "sales-home": SalesHomeScreen,
+  "lead-inbox": LeadInboxScreen,
+  "lead-detail": LeadDetailScreen,
+  "lead-create": LeadCreateScreen,
+  "contact-detail": ContactDetailScreen,
+  "account-detail": AccountDetailScreen,
+  "opportunity-detail": OpportunityDetailScreen,
+  "sales-pipeline": SalesPipelineScreen,
+  "sales-forecast": SalesForecastScreen,
+  "sales-targets": SalesTargetsScreen,
+  "sales-leaderboard": SalesLeaderboardScreen,
+  "followup-queue": FollowupQueueScreen,
+  "customer-meetings": CustomerMeetingsScreen,
+  "quotation-list": QuotationListScreen,
+  "quotation-builder": QuotationBuilderScreen,
+  "quotation-detail": QuotationDetailScreen,
+  "order-list": OrderListScreen,
+  "order-detail": OrderDetailScreen,
+  "customer-activity": CustomerActivityScreen,
+  "whatsapp-inbox": WhatsappInboxScreen,
+  "whatsapp-conversation": WhatsappConversationScreen,
+  "whatsapp-convert": WhatsappConvertScreen,
+  "sales-visiting-card": SalesVisitingCardScreen,
+  "sales-travel": SalesTravelScreen,
+  "visit-planner": VisitPlannerScreen,
+  "visit-detail": VisitDetailScreen,
+  "sales-expenses": SalesExpensesScreen,
+  "sales-reports": SalesReportsScreen,
+  "team-sales-dashboard": TeamSalesDashboardScreen,
+  "sales-settings": SalesSettingsScreen,
 };

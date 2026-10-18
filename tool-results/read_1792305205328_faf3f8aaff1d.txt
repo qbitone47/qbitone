@@ -1,0 +1,1673 @@
+     1→// ============================================================
+     2→// Qubit One — Sales enforcement store (SERVER ONLY)
+     3→// ============================================================
+     4→// Phase 6: the operational Sales module follows the Phase 3/4/5
+     5→// pattern — the frontend is NOT the source of truth. Scoping
+     6→// (company / team / own), lifecycle rules, duplicate guards,
+     7→// state transitions, approval routing and audit are enforced
+     8→// here, behind /api/sales route handlers.
+     9→//
+    10→// Integrations (all REUSED, none duplicated):
+    11→//  · Audit  → security-server.writeAudit (ONE enterprise trail)
+    12→//  · Approvals → workspace-server.pushApproval (My Approvals 46,
+    13→//    routed by the enterprise Approval Matrix 09)
+    14→//  · Identity → data.ts employees (owner names resolve there)
+    15→//  · Executive aggregates → executive-data SALES block (never
+    16→//    re-derived here)
+    17→// ============================================================
+    18→
+    19→import { writeAudit } from "./security-server";
+    20→import { pushApproval, SESSION_USER_ID, type WorkspaceRole } from "./workspace-server";
+    21→import { employees } from "./data";
+    22→import {
+    23→  SALES_ACTIVITIES,
+    24→  SALES_ACCOUNTS,
+    25→  SALES_CONTACTS,
+    26→  SALES_EXPENSES,
+    27→  SALES_FOLLOWUPS,
+    28→  SALES_LEADS,
+    29→  SALES_LEADERBOARD,
+    30→  SALES_MEETINGS,
+    31→  SALES_ORDERS,
+    32→  SALES_OPPORTUNITIES,
+    33→  SALES_OWNERS,
+    34→  SALES_PERIOD,
+    35→  SALES_PRODUCTS,
+    36→  SALES_QUOTATIONS,
+    37→  SALES_REPORT_CATALOG,
+    38→  SALES_SETTINGS,
+    39→  SALES_TARGETS,
+    40→  SALES_TEAMS,
+    41→  SALES_TEAM_MEMBERS,
+    42→  SALES_TRAVEL,
+    43→  SALES_VISITS,
+    44→  WA_CONVERSATIONS,
+    45→  computeForecast,
+    46→  SALES_FUNNEL_HISTORY,
+    47→  type ActivityType,
+    48→  type LeadPriority,
+    49→  type LeadStatus,
+    50→  type OpportunityStage,
+    51→  type QuotationStatus,
+    52→  type SalesAccount,
+    53→  type SalesActivity,
+    54→  type SalesContact,
+    55→  type SalesExpense,
+    56→  type SalesFollowUp,
+    57→  type SalesLead,
+    58→  type SalesMeeting,
+    59→  type SalesOpportunity,
+    60→  type SalesOrder,
+    61→  type SalesQuotation,
+    62→  type SalesSettings,
+    63→  type SalesVisit,
+    64→  type TravelPlan,
+    65→  type WaConversation,
+    66→} from "./sales-data";
+    67→
+    68→// ---------- role model ----------
+    69→// administrator → Sales Admin (+ company-wide visibility)
+    70→// dept-head     → Sales Manager (team scope)
+    71→// sales-exec    → Sales Employee (own records)
+    72→// employee / hr-manager → no sales authorization (403, audited)
+    73→
+    74→export type SalesScope = "company" | "team" | "own";
+    75→
+    76→export function requireSalesAccess(
+    77→  role: WorkspaceRole,
+    78→  screen: string,
+    79→): { ok: true; scope: SalesScope } | { ok: false; status: number; code: string; message: string } {
+    80→  if (role === "administrator") return { ok: true, scope: "company" };
+    81→  if (role === "dept-head") return { ok: true, scope: "team" };
+    82→  if (role === "sales-exec") return { ok: true, scope: "own" };
+    83→  writeAudit({
+    84→    actorId: SESSION_USER_ID,
+    85→    action: "Sales access denied",
+    86→    resource: screen,
+    87→    result: "Blocked",
+    88→    severity: "Warning",
+    89→    context: `Role boundary "${role}" holds no authorization for the Sales Operating System`,
+    90→  });
+    91→  return {
+    92→    ok: false,
+    93→    status: 403,
+    94→    code: "sales_access_required",
+    95→    message: "The Sales Operating System requires a sales role. You are previewing a boundary without sales authorization, and the server enforces this restriction.",
+    96→  };
+    97→}
+    98→
+    99→/** Manager boundary: the session user's teams (demo: Sales Head sees all teams). */
+   100→function visibleTeamMemberIds(scope: SalesScope): Set<string> {
+   101→  if (scope === "company") return new Set([...SALES_TEAM_MEMBERS, "sagar"]);
+   102→  if (scope === "team") return new Set([...SALES_TEAM_MEMBERS]); // Sales Head preview: all sales teams
+   103→  // own → session identity only
+   104→  return new Set([SESSION_USER_ID]);
+   105→}
+   106→
+   107→function canSee(scope: SalesScope, ownerId: string | undefined): boolean {
+   108→  if (!ownerId) return true; // unassigned pool is visible for triage at every sales role
+   109→  return visibleTeamMemberIds(scope).has(ownerId);
+   110→}
+   111→
+   112→const nameOf = (id: string | undefined) => (id ? (employees.find((e) => e.id === id)?.name ?? id) : "Unassigned");
+   113→
+   114→// ---------- mutable demo store ----------
+   115→interface SalesStore {
+   116→  seq: number;
+   117→  leads: SalesLead[];
+   118→  contacts: SalesContact[];
+   119→  accounts: SalesAccount[];
+   120→  opportunities: SalesOpportunity[];
+   121→  followups: SalesFollowUp[];
+   122→  meetings: SalesMeeting[];
+   123→  quotations: SalesQuotation[];
+   124→  orders: SalesOrder[];
+   125→  activities: SalesActivity[];
+   126→  conversations: WaConversation[];
+   127→  visits: SalesVisit[];
+   128→  travel: TravelPlan[];
+   129→  expenses: SalesExpense[];
+   130→  settings: SalesSettings;
+   131→}
+   132→
+   133→let _store: SalesStore | null = null;
+   134→
+   135→function store(): SalesStore {
+   136→  if (!_store) {
+   137→    _store = {
+   138→      seq: 1000,
+   139→      leads: SALES_LEADS.map((x) => structuredClone(x)),
+   140→      contacts: SALES_CONTACTS.map((x) => structuredClone(x)),
+   141→      accounts: SALES_ACCOUNTS.map((x) => structuredClone(x)),
+   142→      opportunities: SALES_OPPORTUNITIES.map((x) => structuredClone(x)),
+   143→      followups: SALES_FOLLOWUPS.map((x) => structuredClone(x)),
+   144→      meetings: SALES_MEETINGS.map((x) => structuredClone(x)),
+   145→      quotations: SALES_QUOTATIONS.map((x) => structuredClone(x)),
+   146→      orders: SALES_ORDERS as SalesOrder[],
+   147→      activities: SALES_ACTIVITIES.map((x) => structuredClone(x)),
+   148→      conversations: WA_CONVERSATIONS.map((x) => structuredClone(x)),
+   149→      visits: SALES_VISITS.map((x) => structuredClone(x)),
+   150→      travel: SALES_TRAVEL.map((x) => structuredClone(x)),
+   151→      expenses: SALES_EXPENSES.map((x) => structuredClone(x)),
+   152→      settings: structuredClone(SALES_SETTINGS),
+   153→    };
+   154→  }
+   155→  return _store;
+   156→}
+   157→
+   158→function nextId(prefix: string): string {
+   159→  const s = store();
+   160→  s.seq += 1;
+   161→  return `${prefix}-${s.seq}`;
+   162→}
+   163→
+   164→function addActivity(a: Omit<SalesActivity, "id">) {
+   165→  const s = store();
+   166→  const act: SalesActivity = { id: nextId("act"), ...a };
+   167→  s.activities.unshift(act);
+   168→  return act;
+   169→}
+   170→
+   171→// ---------- shared math ----------
+   172→
+   173→export function quoteSubtotal(q: Pick<SalesQuotation, "items">): number {
+   174→  return q.items.reduce((sum, i) => sum + i.qty * i.unitPrice * (1 - i.discountPct / 100), 0);
+   175→}
+   176→export function quoteTax(q: Pick<SalesQuotation, "items" | "taxPct">): number {
+   177→  return Math.round(quoteSubtotal(q) * (q.taxPct / 100));
+   178→}
+   179→export function quoteTotal(q: Pick<SalesQuotation, "items" | "taxPct">): number {
+   180→  return quoteSubtotal(q) + quoteTax(q);
+   181→}
+   182→export function quoteOverallDiscountPct(q: Pick<SalesQuotation, "items">): number {
+   183→  const gross = q.items.reduce((s, i) => s + i.qty * i.unitPrice, 0);
+   184→  if (gross <= 0) return 0;
+   185→  return ((gross - quoteSubtotal(q)) / gross) * 100;
+   186→}
+   187→
+   188→const rupees = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+   189→
+   190→// ---------- derived payloads ----------
+   191→
+   192→function leadWithRefs(l: SalesLead, scope: SalesScope) {
+   193→  const s = store();
+   194→  return {
+   195→    ...l,
+   196→    ownerName: nameOf(l.ownerId),
+   197→    isMine: l.ownerId === SESSION_USER_ID,
+   198→    activity: s.activities.filter((a) => a.entity.kind === "lead" && a.entity.id === l.id).slice(0, 8),
+   199→    relatedOpportunity: l.convertedTo?.opportunityId
+   200→      ? s.opportunities.find((o) => o.id === l.convertedTo?.opportunityId) ?? null
+   201→      : null,
+   202→    scopeNote: scope === "own" && l.ownerId !== SESSION_USER_ID ? undefined : undefined,
+   203→  };
+   204→}
+   205→
+   206→function oppWithRefs(o: SalesOpportunity) {
+   207→  const s = store();
+   208→  return {
+   209→    ...o,
+   210→    ownerName: nameOf(o.ownerId),
+   211→    account: s.accounts.find((a) => a.id === o.accountId) ?? null,
+   212→    contact: s.contacts.find((c) => c.id === o.contactId) ?? null,
+   213→    quotation: o.quotationId ? s.quotations.find((q) => q.id === o.quotationId) ?? null : null,
+   214→    followups: s.followups.filter((f) => f.opportunityId === o.id),
+   215→    meetings: s.meetings.filter((m) => m.opportunityId === o.id),
+   216→    visits: s.visits.filter((v) => v.opportunityId === o.id),
+   217→    activity: s.activities.filter((a) => a.entity.kind === "opportunity" && a.entity.id === o.id).slice(0, 12),
+   218→    isMine: o.ownerId === SESSION_USER_ID,
+   219→  };
+   220→}
+   221→
+   222→function accountWithRefs(a: SalesAccount) {
+   223→  const s = store();
+   224→  return {
+   225→    ...a,
+   226→    ownerName: nameOf(a.ownerId),
+   227→    contacts: s.contacts.filter((c) => c.accountId === a.id),
+   228→    opportunities: s.opportunities.filter((o) => o.accountId === a.id && o.stage !== "Won" && o.stage !== "Lost"),
+   229→    quotations: s.quotations.filter((q) => q.accountId === a.id),
+   230→    orders: s.orders.filter((o) => o.accountId === a.id),
+   231→    visits: s.visits.filter((v) => v.accountId === a.id),
+   232→    meetings: s.meetings.filter((m) => m.accountId === a.id),
+   233→    activity: s.activities
+   234→      .filter((act) =>
+   235→        (act.entity.kind === "account" && act.entity.id === a.id) ||
+   236→        (act.entity.kind === "opportunity" && s.opportunities.some((o) => o.id === act.entity.id && o.accountId === a.id)) ||
+   237→        (act.entity.kind === "quotation" && s.quotations.some((q) => q.id === act.entity.id && q.accountId === a.id)) ||
+   238→        (act.entity.kind === "order" && s.orders.some((o) => o.id === act.entity.id && o.accountId === a.id)) ||
+   239→        (act.entity.kind === "contact" && s.contacts.some((c) => c.id === act.entity.id && c.accountId === a.id)),
+   240→      )
+   241→      .slice(0, 14),
+   242→  };
+   243→}
+   244→
+   245→function contactWithRefs(c: SalesContact) {
+   246→  const s = store();
+   247→  const account = s.accounts.find((a) => a.id === c.accountId) ?? null;
+   248→  return {
+   249→    ...c,
+   250→    ownerName: nameOf(c.ownerId),
+   251→    account,
+   252→    leads: s.leads.filter((l) => l.company === account?.name),
+   253→    opportunities: s.opportunities.filter((o) => o.contactId === c.id),
+   254→    meetings: s.meetings.filter((m) => m.contactId === c.id),
+   255→    visits: s.visits.filter((v) => v.contactId === c.id),
+   256→    quotations: s.quotations.filter((q) => q.contactId === c.id),
+   257→    activity: s.activities
+   258→      .filter((a) =>
+   259→        (a.entity.kind === "contact" && a.entity.id === c.id) ||
+   260→        (a.entity.kind === "opportunity" && s.opportunities.some((o) => o.id === a.entity.id && o.contactId === c.id)) ||
+   261→        (a.entity.kind === "lead" && s.leads.some((l) => l.id === a.entity.id && l.contactPerson === c.name)),
+   262→      )
+   263→      .slice(0, 12),
+   264→  };
+   265→}
+   266→
+   267→function quotationWithRefs(q: SalesQuotation) {
+   268→  const s = store();
+   269→  return {
+   270→    ...q,
+   271→    ownerName: nameOf(q.ownerId),
+   272→    account: s.accounts.find((a) => a.id === q.accountId) ?? null,
+   273→    contact: q.contactId ? s.contacts.find((c) => c.id === q.contactId) ?? null : null,
+   274→    opportunity: q.opportunityId ? s.opportunities.find((o) => o.id === q.opportunityId) ?? null : null,
+   275→    order: q.status === "Accepted" ? s.orders.find((o) => o.quotationId === q.id) ?? null : null,
+   276→    subtotal: quoteSubtotal(q),
+   277→    taxAmount: quoteTax(q),
+   278→    total: quoteTotal(q),
+   279→    overallDiscountPct: Math.round(quoteOverallDiscountPct(q) * 10) / 10,
+   280→  };
+   281→}
+   282→
+   283→function orderWithRefs(o: SalesOrder) {
+   284→  const s = store();
+   285→  return {
+   286→    ...o,
+   287→    ownerName: nameOf(o.ownerId),
+   288→    account: s.accounts.find((a) => a.id === o.accountId) ?? null,
+   289→    quotation: o.quotationId ? s.quotations.find((q) => q.id === o.quotationId) ?? null : null,
+   290→    opportunity: o.opportunityId ? s.opportunities.find((op) => op.id === o.opportunityId) ?? null : null,
+   291→    activity: s.activities.filter((a) => a.entity.kind === "order" && a.entity.id === o.id),
+   292→  };
+   293→}
+   294→
+   295→function visitWithRefs(v: SalesVisit) {
+   296→  const s = store();
+   297→  return {
+   298→    ...v,
+   299→    ownerName: nameOf(v.ownerId),
+   300→    account: s.accounts.find((a) => a.id === v.accountId) ?? null,
+   301→    contact: v.contactId ? s.contacts.find((c) => c.id === v.contactId) ?? null : null,
+   302→    opportunity: v.opportunityId ? s.opportunities.find((o) => o.id === v.opportunityId) ?? null : null,
+   303→    travel: s.travel.find((t) => t.visitIds.includes(v.id)) ?? null,
+   304→    expenses: s.expenses.filter((e) => e.visitId === v.id),
+   305→    activity: s.activities.filter((a) => a.entity.kind === "visit" && a.entity.id === v.id),
+   306→  };
+   307→}
+   308→
+   309→function pipelinePayload(scope: SalesScope) {
+   310→  const s = store();
+   311→  const open = s.opportunities.filter((o) => canSee(scope, o.ownerId) && o.stage !== "Won" && o.stage !== "Lost");
+   312→  const stages = ["New", "Qualification", "Discovery", "Proposal", "Negotiation", "Contracting"] as OpportunityStage[];
+   313→  const columns = stages.map((st) => {
+   314→    const cards = open.filter((o) => o.stage === st);
+   315→    return {
+   316→      stage: st,
+   317→      count: cards.length,
+   318→      value: cards.reduce((sum, o) => sum + o.valueCr, 0),
+   319→      weighted: cards.reduce((sum, o) => sum + (o.valueCr * o.probability) / 100, 0),
+   320→      cards: cards.map((o) => ({
+   321→        id: o.id,
+   322→        name: o.name,
+   323→        accountId: o.accountId,
+   324→        accountName: s.accounts.find((a) => a.id === o.accountId)?.name ?? "—",
+   325→        ownerName: nameOf(o.ownerId),
+   326→        ownerId: o.ownerId,
+   327→        valueCr: o.valueCr,
+   328→        probability: o.probability,
+   329→        expectedClose: o.expectedClose,
+   330→        nextAction: o.nextAction,
+   331→        riskNote: o.riskNote,
+   332→        isMine: o.ownerId === SESSION_USER_ID,
+   333→      })),
+   334→    };
+   335→  });
+   336→  const won = s.opportunities.filter((o) => canSee(scope, o.ownerId) && o.stage === "Won");
+   337→  const lost = s.opportunities.filter((o) => canSee(scope, o.ownerId) && o.stage === "Lost");
+   338→  const gross = open.reduce((sum, o) => sum + o.valueCr, 0);
+   339→  return {
+   340→    columns,
+   341→    won: { count: won.length, value: won.reduce((s2, o) => s2 + o.valueCr, 0), cards: won.map((o) => ({ id: o.id, name: o.name, accountName: s.accounts.find((a) => a.id === o.accountId)?.name ?? "—", valueCr: o.valueCr, closedAt: o.closedAt, ownerName: nameOf(o.ownerId) })) },
+   342→    lost: { count: lost.length, cards: lost.map((o) => ({ id: o.id, name: o.name, lossReason: o.lossReason ?? "—", ownerName: nameOf(o.ownerId) })) },
+   343→    totals: { gross, weighted: open.reduce((sum, o) => sum + (o.valueCr * o.probability) / 100, 0), count: open.length },
+   344→  };
+   345→}
+   346→
+   347→function forecastPayload(scope: SalesScope) {
+   348→  const rows = SALES_TARGETS.filter((r) => (scope === "own" ? r.kind === "employee" && r.refId === SESSION_USER_ID : true));
+   349→  const summary = computeForecast(rows);
+   350→  return { rows, summary, history: SALES_FUNNEL_HISTORY, period: SALES_PERIOD };
+   351→}
+   352→
+   353→function homePayload(scope: SalesScope) {
+   354→  const s = store();
+   355→  const mine = (o: { ownerId: string }) => canSee(scope, o.ownerId);
+   356→  const myOpps = s.opportunities.filter((o) => mine(o) && o.stage !== "Won" && o.stage !== "Lost");
+   357→  const now = Date.now();
+   358→  const todays = s.followups.filter((f) => mine(f) && (f.state === "Overdue" || f.state === "Due Today"));
+   359→  const upcoming = s.followups
+   360→    .filter((f) => mine(f) && f.state === "Upcoming")
+   361→    .sort((a, b) => a.dueAt - b.dueAt)
+   362→    .slice(0, 4);
+   363→  const meetings = s.meetings
+   364→    .filter((m) => mine(m) && m.status === "Scheduled" && m.startAt >= now - 12 * 3_600_000)
+   365→    .sort((a, b) => a.startAt - b.startAt)
+   366→    .slice(0, 4);
+   367→  const recentLeads = s.leads.filter((l) => mine(l)).sort((a, b) => b.createdAt - a.createdAt).slice(0, 4);
+   368→  const recentActivity = s.activities.filter((a) => {
+   369→    if (a.entity.kind === "opportunity") return s.opportunities.some((o) => o.id === a.entity.id && mine(o));
+   370→    if (a.entity.kind === "lead") return s.leads.some((l) => l.id === a.entity.id && mine(l));
+   371→    if (a.entity.kind === "quotation") return s.quotations.some((q) => q.id === a.entity.id && mine(q));
+   372→    if (a.entity.kind === "order") return s.orders.some((o) => o.id === a.entity.id && mine(o));
+   373→    return false;
+   374→  }).slice(0, 6);
+   375→  const pendingQuotes = s.quotations.filter((q) => mine(q) && ["Draft", "Pending Approval", "Sent", "Viewed", "Negotiation"].includes(q.status));
+   376→  const target = SALES_TARGETS.find((t) => t.kind === "employee" && t.refId === SESSION_USER_ID) ?? null;
+   377→  const teamTarget = scope !== "own" ? SALES_TARGETS.filter((t) => t.kind === "team") : [];
+   378→  return {
+   379→    scope,
+   380→    myOpps: myOpps.slice(0, 5).map((o) => ({ id: o.id, name: o.name, accountName: s.accounts.find((a) => a.id === o.accountId)?.name ?? "—", stage: o.stage, valueCr: o.valueCr, probability: o.probability, expectedClose: o.expectedClose, riskNote: o.riskNote, nextAction: o.nextAction })),
+   381→    pipeline: pipelinePayload(scope).totals,
+   382→    followups: { today: todays.slice(0, 5), upcoming },
+   383→    meetings,
+   384→    recentLeads,
+   385→    recentActivity,
+   386→    pendingQuotations: pendingQuotes.slice(0, 4).map((q) => ({ id: q.id, number: q.number, status: q.status, accountId: q.accountId, accountName: s.accounts.find((a) => a.id === q.accountId)?.name ?? "—", total: quoteTotal(q), ownerName: nameOf(q.ownerId) })),
+   387→    target: target ? { quotaCr: target.quotaCr, achievedCr: target.achievedCr, pipelineCr: target.pipelineCr, forecastCr: target.forecastCr } : null,
+   388→    teamTargets: teamTarget,
+   389→    counts: {
+   390→      myOpenOpps: myOpps.length,
+   391→      dueFollowups: todays.length,
+   392→      unreadWhatsApp: s.conversations.filter((c) => mine(c) && c.unread > 0).length,
+   393→      visitsPlanned: s.visits.filter((v) => mine(v) && v.status === "Planned").length,
+   394→    },
+   395→  };
+   396→}
+   397→
+   398→function teamPayload(scope: SalesScope) {
+   399→  const s = store();
+   400→  if (scope === "own") {
+   401→    return { ok: false as const, status: 403, code: "manager_required", message: "The team dashboard requires a manager boundary. Sales executives see their own workspace on Sales Home." };
+   402→  }
+   403→  const teams = SALES_TEAMS.map((t) => {
+   404→    const target = SALES_TARGETS.find((r) => r.kind === "team" && r.refId === t.id)!;
+   405→    const members = t.memberIds.map((m) => {
+   406→      const empTarget = SALES_TARGETS.find((r) => r.kind === "employee" && r.refId === m);
+   407→      const opps = s.opportunities.filter((o) => o.ownerId === m && o.stage !== "Won" && o.stage !== "Lost");
+   408→      const overdue = s.followups.filter((f) => f.ownerId === m && f.state === "Overdue");
+   409→      const lb = SALES_LEADERBOARD.find((l) => l.employeeId === m);
+   410→      return {
+   411→        employeeId: m,
+   412→        name: nameOf(m),
+   413→        quotaCr: empTarget?.quotaCr ?? 0,
+   414→        achievedCr: empTarget?.achievedCr ?? 0,
+   415→        pipelineCr: opps.reduce((sum, o) => sum + o.valueCr, 0),
+   416→        openOpps: opps.length,
+   417→        overdueFollowups: overdue.length,
+   418→        conversionPct: lb?.conversionPct ?? 0,
+   419→        attention:
+   420→          overdue.length >= 2 ? "Overdue follow-ups piling up"
+   421→          : (empTarget && empTarget.quotaCr > 0 && empTarget.achievedCr / empTarget.quotaCr < 0.2) ? "Achievement below pace"
+   422→          : (lb && lb.followupCompletionPct < 70) ? "Follow-up completion needs coaching"
+   423→          : null,
+   424→      };
+   425→    });
+   426→    const teamOpps = s.opportunities.filter((o) => t.memberIds.includes(o.ownerId) && o.stage !== "Won" && o.stage !== "Lost");
+   427→    const risks = teamOpps.filter((o) => o.riskNote);
+   428→    return { id: t.id, name: t.name, region: t.region, head: nameOf(t.headId), target, members, risks: risks.map((o) => ({ id: o.id, name: o.name, riskNote: o.riskNote!, ownerName: nameOf(o.ownerId), valueCr: o.valueCr })), openOpps: teamOpps.length, quotations: s.quotations.filter((q) => t.memberIds.includes(q.ownerId) && ["Draft", "Pending Approval", "Sent", "Viewed", "Negotiation"].includes(q.status)).length };
+   429→  });
+   430→  const totals = {
+   431→    quotaCr: teams.reduce((s2, t) => s2 + t.target.quotaCr, 0),
+   432→    achievedCr: teams.reduce((s2, t) => s2 + t.target.achievedCr, 0),
+   433→    pipelineCr: teams.reduce((s2, t) => s2 + t.target.pipelineCr, 0),
+   434→    forecastCr: teams.reduce((s2, t) => s2 + t.target.forecastCr, 0),
+   435→  };
+   436→  return { ok: true as const, teams, totals, overdueTotal: s.followups.filter((f) => f.state === "Overdue").length };
+   437→}
+   438→
+   439→// ============================================================
+   440→// GET sections
+   441→// ============================================================
+   442→
+   443→export type SalesSection =
+   444→  | "home" | "leads" | "lead" | "contacts" | "contact" | "accounts" | "account"
+   445→  | "opportunities" | "opportunity" | "pipeline" | "forecast" | "targets" | "leaderboard"
+   446→  | "followups" | "meetings" | "quotations" | "quotation" | "orders" | "order"
+   447→  | "activity" | "whatsapp" | "whatsapp-conversation" | "visits" | "visit" | "travel"
+   448→  | "expenses" | "reports" | "team" | "settings" | "form-refs";
+   449→
+   450→export function sectionAllowed(s: string | null): s is SalesSection {
+   451→  return !!s && [
+   452→    "home", "leads", "lead", "contacts", "contact", "accounts", "account",
+   453→    "opportunities", "opportunity", "pipeline", "forecast", "targets", "leaderboard",
+   454→    "followups", "meetings", "quotations", "quotation", "orders", "order",
+   455→    "activity", "whatsapp", "whatsapp-conversation", "visits", "visit", "travel",
+   456→    "expenses", "reports", "team", "settings", "form-refs",
+   457→  ].includes(s);
+   458→}
+   459→
+   460→type Result<T> = { ok: true; data: T } | { ok: false; status: number; code: string; message: string };
+   461→
+   462→export type SalesActionResult =
+   463→  | { ok: true; message: string; [k: string]: unknown }
+   464→  | { ok: false; status: number; code: string; message: string; matches?: { kind: string; id: string; label: string; reason: string }[] };
+   465→
+   466→export function salesGet(role: WorkspaceRole, section: SalesSection, params: URLSearchParams): Result<Record<string, unknown>> {
+   467→  const gate = requireSalesAccess(role, `Sales · ${section}`);
+   468→  if (!gate.ok) return gate;
+   469→  const { scope } = gate;
+   470→  const s = store();
+   471→  const id = params.get("id");
+   472→  const entityId = params.get("entityId");
+   473→
+   474→  const deny = (): Result<never> => ({ ok: false, status: 404, code: "not_found", message: "This record is outside your authorized scope — the server does not disclose it." });
+   475→  const deny404 = (): Result<never> => ({ ok: false, status: 404, code: "not_found", message: "Record not found." });
+   476→
+   477→  switch (section) {
+   478→    case "home":
+   479→      return { ok: true, data: { period: SALES_PERIOD, ...homePayload(scope) } };
+   480→    case "leads": {
+   481→      const rows = s.leads.filter((l) => canSee(scope, l.ownerId)).map((l) => leadWithRefs(l, scope));
+   482→      return { ok: true, data: { rows, scope, owners: SALES_OWNERS, sources: s.settings.leadSources, savedViews: defaultLeadViews(scope) } };
+   483→    }
+   484→    case "lead": {
+   485→      const l = s.leads.find((x) => x.id === id);
+   486→      if (!l || !canSee(scope, l.ownerId)) return l ? deny() : deny404();
+   487→      return { ok: true, data: { lead: leadWithRefs(l, scope), scope } };
+   488→    }
+   489→    case "contacts": {
+   490→      const rows = s.contacts.filter((c) => canSee(scope, c.ownerId)).map(contactWithRefs);
+   491→      return { ok: true, data: { rows } };
+   492→    }
+   493→    case "contact": {
+   494→      const c = s.contacts.find((x) => x.id === id);
+   495→      if (!c || !canSee(scope, c.ownerId)) return c ? deny() : deny404();
+   496→      return { ok: true, data: { contact: contactWithRefs(c) } };
+   497→    }
+   498→    case "accounts": {
+   499→      const rows = s.accounts.filter((a) => canSee(scope, a.ownerId)).map(accountWithRefs);
+   500→      return { ok: true, data: { rows } };
+   501→    }
+   502→    case "account": {
+   503→      const a = s.accounts.find((x) => x.id === id);
+   504→      if (!a || !canSee(scope, a.ownerId)) return a ? deny() : deny404();
+   505→      return { ok: true, data: { account: accountWithRefs(a) } };
+   506→    }
+   507→    case "opportunities": {
+   508→      const rows = s.opportunities.filter((o) => canSee(scope, o.ownerId)).map(oppWithRefs);
+   509→      return { ok: true, data: { rows, scope } };
+   510→    }
+   511→    case "opportunity": {
+   512→      const o = s.opportunities.find((x) => x.id === id);
+   513→      if (!o || !canSee(scope, o.ownerId)) return o ? deny() : deny404();
+   514→      return { ok: true, data: { opportunity: oppWithRefs(o) } };
+   515→    }
+   516→    case "pipeline":
+   517→      return { ok: true, data: { period: SALES_PERIOD, ...pipelinePayload(scope) } };
+   518→    case "forecast":
+   519→      return { ok: true, data: forecastPayload(scope) };
+   520→    case "targets": {
+   521→      const rows = SALES_TARGETS.filter((r) => (scope === "own" ? r.kind === "employee" && r.refId === SESSION_USER_ID : true));
+   522→      return { ok: true, data: { rows, scope, canEdit: role === "administrator", period: SALES_PERIOD } };
+   523→    }
+   524→    case "leaderboard": {
+   525→      const rows = SALES_LEADERBOARD.filter((r) => canSee(scope, r.employeeId));
+   526→      return { ok: true, data: { rows, scope, teams: SALES_TEAMS, period: SALES_PERIOD } };
+   527→    }
+   528→    case "followups": {
+   529→      const rows = s.followups.filter((f) => canSee(scope, f.ownerId));
+   530→      return { ok: true, data: { rows, scope } };
+   531→    }
+   532→    case "meetings": {
+   533→      const rows = s.meetings.filter((m) => canSee(scope, m.ownerId)).map((m) => ({
+   534→        ...m,
+   535→        ownerName: nameOf(m.ownerId),
+   536→        account: s.accounts.find((a) => a.id === m.accountId) ?? null,
+   537→        contact: m.contactId ? s.contacts.find((c) => c.id === m.contactId) ?? null : null,
+   538→        opportunity: m.opportunityId ? s.opportunities.find((o) => o.id === m.opportunityId) ?? null : null,
+   539→      }));
+   540→      return { ok: true, data: { rows, scope } };
+   541→    }
+   542→    case "quotations": {
+   543→      const rows = s.quotations.filter((q) => canSee(scope, q.ownerId)).map(quotationWithRefs);
+   544→      return { ok: true, data: { rows, scope } };
+   545→    }
+   546→    case "quotation": {
+   547→      const q = s.quotations.find((x) => x.id === id);
+   548→      if (!q || !canSee(scope, q.ownerId)) return q ? deny() : deny404();
+   549→      return { ok: true, data: { quotation: quotationWithRefs(q) } };
+   550→    }
+   551→    case "orders": {
+   552→      const rows = s.orders.filter((o) => canSee(scope, o.ownerId)).map(orderWithRefs);
+   553→      return { ok: true, data: { rows, scope } };
+   554→    }
+   555→    case "order": {
+   556→      const o = s.orders.find((x) => x.id === id);
+   557→      if (!o || !canSee(scope, o.ownerId)) return o ? deny() : deny404();
+   558→      return { ok: true, data: { order: orderWithRefs(o) } };
+   559→    }
+   560→    case "activity": {
+   561→      let rows = s.activities.filter((a) => {
+   562→        const resolveOwner = (): string | undefined => {
+   563→          if (a.entity.kind === "lead") return s.leads.find((l) => l.id === a.entity.id)?.ownerId;
+   564→          if (a.entity.kind === "account") return s.accounts.find((x) => x.id === a.entity.id)?.ownerId;
+   565→          if (a.entity.kind === "contact") return s.contacts.find((c) => c.id === a.entity.id)?.ownerId;
+   566→          if (a.entity.kind === "opportunity") return s.opportunities.find((o) => o.id === a.entity.id)?.ownerId;
+   567→          if (a.entity.kind === "quotation") return s.quotations.find((q) => q.id === a.entity.id)?.ownerId;
+   568→          if (a.entity.kind === "order") return s.orders.find((o) => o.id === a.entity.id)?.ownerId;
+   569→          if (a.entity.kind === "visit") return s.visits.find((v) => v.id === a.entity.id)?.ownerId;
+   570→          return undefined;
+   571→        };
+   572→        return canSee(scope, resolveOwner()) && (!entityId || a.entity.id === entityId);
+   573→      });
+   574→      if (entityId) rows = rows.slice(0, 30);
+   575→      const refs = {
+   576→        accounts: Object.fromEntries(s.accounts.map((a) => [a.id, a.name])),
+   577→        opportunities: Object.fromEntries(s.opportunities.map((o) => [o.id, o.name])),
+   578→        leads: Object.fromEntries(s.leads.map((l) => [l.id, l.name])),
+   579→        quotations: Object.fromEntries(s.quotations.map((q) => [q.id, q.number])),
+   580→        orders: Object.fromEntries(s.orders.map((o) => [o.id, o.number])),
+   581→      };
+   582→      return { ok: true, data: { rows, refs, scope } };
+   583→    }
+   584→    case "whatsapp": {
+   585→      const rows = s.conversations.filter((c) => canSee(scope, c.ownerId)).map((c) => ({
+   586→        ...c,
+   587→        ownerName: nameOf(c.ownerId),
+   588→        account: c.accountId ? s.accounts.find((a) => a.id === c.accountId) ?? null : null,
+   589→        lead: c.leadId ? s.leads.find((l) => l.id === c.leadId) ?? null : null,
+   590→        opportunity: c.opportunityId ? s.opportunities.find((o) => o.id === c.opportunityId) ?? null : null,
+   591→        followup: s.followups.find((f) => f.leadId === c.leadId && f.type === "WhatsApp" && f.state !== "Completed") ?? null,
+   592→      }));
+   593→      return { ok: true, data: { rows, scope, connected: true } };
+   594→    }
+   595→    case "whatsapp-conversation": {
+   596→      const c = s.conversations.find((x) => x.id === id);
+   597→      if (!c || !canSee(scope, c.ownerId)) return c ? deny() : deny404();
+   598→      return {
+   599→        ok: true,
+   600→        data: {
+   601→          conversation: {
+   602→            ...c,
+   603→            ownerName: nameOf(c.ownerId),
+   604→            account: c.accountId ? s.accounts.find((a) => a.id === c.accountId) ?? null : null,
+   605→            lead: c.leadId ? s.leads.find((l) => l.id === c.leadId) ?? null : null,
+   606→            opportunity: c.opportunityId ? s.opportunities.find((o) => o.id === c.opportunityId) ?? null : null,
+   607→          },
+   608→        },
+   609→      };
+   610→    }
+   611→    case "visits": {
+   612→      const rows = s.visits.filter((v) => canSee(scope, v.ownerId)).map(visitWithRefs);
+   613→      return { ok: true, data: { rows, scope } };
+   614→    }
+   615→    case "visit": {
+   616→      const v = s.visits.find((x) => x.id === id);
+   617→      if (!v || !canSee(scope, v.ownerId)) return v ? deny() : deny404();
+   618→      return { ok: true, data: { visit: visitWithRefs(v) } };
+   619→    }
+   620→    case "travel": {
+   621→      const rows = s.travel.filter((t) => canSee(scope, t.ownerId)).map((t) => ({
+   622→        ...t,
+   623→        ownerName: nameOf(t.ownerId),
+   624→        visits: t.visitIds.map((vid) => s.visits.find((v) => v.id === vid) ?? null).filter(Boolean),
+   625→        expenses: s.expenses.filter((e) => e.travelId === t.id),
+   626→      }));
+   627→      return { ok: true, data: { rows, scope } };
+   628→    }
+   629→    case "expenses": {
+   630→      const rows = s.expenses.filter((e) => (scope === "own" ? e.employeeId === SESSION_USER_ID : true)).map((e) => ({
+   631→        ...e,
+   632→        employeeName: nameOf(e.employeeId),
+   633→        opportunity: e.opportunityId ? s.opportunities.find((o) => o.id === e.opportunityId) ?? null : null,
+   634→        visit: e.visitId ? s.visits.find((v) => v.id === e.visitId) ?? null : null,
+   635→        travel: e.travelId ? s.travel.find((t) => t.id === e.travelId) ?? null : null,
+   636→      }));
+   637→      return { ok: true, data: { rows, scope, canDecide: role === "administrator" || role === "dept-head" } };
+   638→    }
+   639→    case "reports": {
+   640→      const metrics = {
+   641→        pipeline: pipelinePayload(scope).totals,
+   642→        forecast: forecastPayload(scope).summary,
+   643→        conversion: {
+   644→          leads: s.leads.length,
+   645→          qualified: s.leads.filter((l) => ["Qualified", "Converted"].includes(l.status)).length,
+   646→          converted: s.leads.filter((l) => l.status === "Converted").length,
+   647→          bySource: Object.entries(
+   648→            s.leads.reduce<Record<string, { total: number; converted: number }>>((acc, l) => {
+   649→              acc[l.source] = acc[l.source] ?? { total: 0, converted: 0 };
+   650→              acc[l.source].total += 1;
+   651→              if (l.status === "Converted") acc[l.source].converted += 1;
+   652→              return acc;
+   653→            }, {}),
+   654→          ).map(([source, v]) => ({ source, ...v })),
+   655→        },
+   656→        winloss: {
+   657→          won: s.opportunities.filter((o) => o.stage === "Won").map((o) => ({ id: o.id, name: o.name, valueCr: o.valueCr, ownerName: nameOf(o.ownerId), closedAt: o.closedAt })),
+   658→          lost: s.opportunities.filter((o) => o.stage === "Lost").map((o) => ({ id: o.id, name: o.name, lossReason: o.lossReason ?? "—" })),
+   659→          lossReasons: s.settings.lossReasons,
+   660→        },
+   661→        quotation: {
+   662→          total: s.quotations.length,
+   663→          accepted: s.quotations.filter((q) => q.status === "Accepted").length,
+   664→          pending: s.quotations.filter((q) => q.status === "Pending Approval").length,
+   665→          avgDiscountPct: Math.round((s.quotations.reduce((sum, q) => sum + quoteOverallDiscountPct(q), 0) / Math.max(1, s.quotations.length)) * 10) / 10,
+   666→        },
+   667→        aging: s.opportunities
+   668→          .filter((o) => canSee(scope, o.ownerId) && o.stage !== "Won" && o.stage !== "Lost")
+   669→          .map((o) => ({ id: o.id, name: o.name, stage: o.stage, daysInStage: Math.floor((Date.now() - o.lastStageChangeAt) / 86_400_000), ownerName: nameOf(o.ownerId), valueCr: o.valueCr, riskNote: o.riskNote }))
+   670→          .sort((a, b) => b.daysInStage - a.daysInStage),
+   671→      };
+   672→      return { ok: true, data: { catalog: SALES_REPORT_CATALOG, metrics, scope, canExport: role === "administrator" || role === "dept-head" } };
+   673→    }
+   674→    case "team": {
+   675→      const t = teamPayload(scope);
+   676→      return t.ok ? { ok: true, data: { ...t, scope } as unknown as Record<string, unknown> } : { ok: false, status: t.status, code: t.code, message: t.message };
+   677→    }
+   678→    case "settings":
+   679→      return { ok: true, data: { settings: s.settings, canEdit: role === "administrator" } };
+   680→    case "form-refs":
+   681→      return {
+   682→        ok: true,
+   683→        data: {
+   684→          owners: SALES_OWNERS,
+   685→          accounts: s.accounts.map((a) => ({ id: a.id, name: a.name, ownerId: a.ownerId })),
+   686→          contacts: s.contacts.map((c) => ({ id: c.id, name: c.name, accountId: c.accountId })),
+   687→          opportunities: s.opportunities.filter((o) => canSee(scope, o.ownerId)).map((o) => ({ id: o.id, name: o.name, accountId: o.accountId })),
+   688→          leads: s.leads.filter((l) => canSee(scope, l.ownerId)).map((l) => ({ id: l.id, name: l.name, company: l.company })),
+   689→          products: s.settings && SALES_PRODUCTS,
+   690→          sources: s.settings.leadSources,
+   691→          industries: ["Manufacturing", "Retail", "Logistics", "Banking", "Healthcare", "Textiles", "Media", "Energy", "Pharmaceuticals", "Food Processing", "Automotive", "EdTech", "Other"],
+   692→        },
+   693→      };
+   694→    default:
+   695→      return { ok: false, status: 400, code: "bad_section", message: "Unknown sales section." };
+   696→  }
+   697→}
+   698→
+   699→function defaultLeadViews(scope: SalesScope) {
+   700→  const base = [
+   701→    { id: "view-hot", label: "Hot leads", filter: { priority: "Hot" } },
+   702→    { id: "view-new", label: "New this week", filter: { status: "New" } },
+   703→    { id: "view-unassigned", label: "Unassigned", filter: { unassigned: true } },
+   704→    { id: "view-today", label: "Follow-up today", filter: { followup: "today" } },
+   705→  ];
+   706→  return scope === "own" ? base.slice(0, 3) : base;
+   707→}
+   708→
+   709→// ============================================================
+   710→// POST actions — validation, lifecycle rules, audit
+   711→// ============================================================
+   712→
+   713→const emailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+   714→const phoneOk = (v: string) => /^\+?[0-9 ()-]{8,18}$/.test(v);
+   715→const now = () => Date.now();
+   716→
+   717→function findDuplicates(input: { name?: string; email?: string; phone?: string; company?: string }) {
+   718→  const s = store();
+   719→  const matches: { kind: string; id: string; label: string; reason: string }[] = [];
+   720→  for (const l of s.leads) {
+   721→    if (input.email && l.email.toLowerCase() === input.email.toLowerCase()) matches.push({ kind: "lead", id: l.id, label: `${l.name} — ${l.contactPerson}`, reason: "Same email" });
+   722→    else if (input.phone && l.phone.replace(/\D/g, "").endsWith(input.phone.replace(/\D/g, "").slice(-10))) matches.push({ kind: "lead", id: l.id, label: `${l.name} — ${l.contactPerson}`, reason: "Similar phone" });
+   723→    else if (input.name && l.name.toLowerCase() === input.name.toLowerCase()) matches.push({ kind: "lead", id: l.id, label: `${l.name} — ${l.contactPerson}`, reason: "Same lead name" });
+   724→  }
+   725→  for (const c of s.contacts) {
+   726→    if (input.email && c.email.toLowerCase() === input.email.toLowerCase()) matches.push({ kind: "contact", id: c.id, label: `${c.name} (${c.designation})`, reason: "Same email as existing contact" });
+   727→    else if (input.phone && c.phone.replace(/\D/g, "").endsWith(input.phone.replace(/\D/g, "").slice(-10))) matches.push({ kind: "contact", id: c.id, label: `${c.name} (${c.designation})`, reason: "Similar phone to existing contact" });
+   728→  }
+   729→  for (const a of s.accounts) {
+   730→    if (input.company && a.name.toLowerCase() === input.company.toLowerCase()) matches.push({ kind: "account", id: a.id, label: a.name, reason: "Account already exists" });
+   731→  }
+   732→  return matches;
+   733→}
+   734→
+   735→export type Action =
+   736→  | { type: "lead.create"; input: Record<string, unknown> }
+   737→  | { type: "lead.assign"; input: Record<string, unknown> }
+   738→  | { type: "lead.status"; input: Record<string, unknown> }
+   739→  | { type: "lead.note"; input: Record<string, unknown> }
+   740→  | { type: "lead.followup"; input: Record<string, unknown> }
+   741→  | { type: "lead.convert"; input: Record<string, unknown> }
+   742→  | { type: "opportunity.stage"; input: Record<string, unknown> }
+   743→  | { type: "opportunity.update"; input: Record<string, unknown> }
+   744→  | { type: "followup.complete"; input: Record<string, unknown> }
+   745→  | { type: "followup.reschedule"; input: Record<string, unknown> }
+   746→  | { type: "meeting.create"; input: Record<string, unknown> }
+   747→  | { type: "meeting.reschedule"; input: Record<string, unknown> }
+   748→  | { type: "meeting.cancel"; input: Record<string, unknown> }
+   749→  | { type: "meeting.notes"; input: Record<string, unknown> }
+   750→  | { type: "quotation.create"; input: Record<string, unknown> }
+   751→  | { type: "quotation.update"; input: Record<string, unknown> }
+   752→  | { type: "quotation.submit"; input: Record<string, unknown> }
+   753→  | { type: "quotation.decide"; input: Record<string, unknown> }
+   754→  | { type: "quotation.send"; input: Record<string, unknown> }
+   755→  | { type: "quotation.cancel"; input: Record<string, unknown> }
+   756→  | { type: "quotation.revise"; input: Record<string, unknown> }
+   757→  | { type: "order.create"; input: Record<string, unknown> }
+   758→  | { type: "order.update"; input: Record<string, unknown> }
+   759→  | { type: "order.cancel"; input: Record<string, unknown> }
+   760→  | { type: "expense.create"; input: Record<string, unknown> }
+   761→  | { type: "expense.submit"; input: Record<string, unknown> }
+   762→  | { type: "expense.delete"; input: Record<string, unknown> }
+   763→  | { type: "visit.create"; input: Record<string, unknown> }
+   764→  | { type: "visit.reschedule"; input: Record<string, unknown> }
+   765→  | { type: "visit.cancel"; input: Record<string, unknown> }
+   766→  | { type: "visit.start"; input: Record<string, unknown> }
+   767→  | { type: "visit.complete"; input: Record<string, unknown> }
+   768→  | { type: "travel.create"; input: Record<string, unknown> }
+   769→  | { type: "travel.cancel"; input: Record<string, unknown> }
+   770→  | { type: "whatsapp.assign"; input: Record<string, unknown> }
+   771→  | { type: "whatsapp.link"; input: Record<string, unknown> }
+   772→  | { type: "whatsapp.reply"; input: Record<string, unknown> }
+   773→  | { type: "whatsapp.note"; input: Record<string, unknown> }
+   774→  | { type: "whatsapp.lead"; input: Record<string, unknown> }
+   775→  | { type: "settings.update"; input: Record<string, unknown> }
+   776→  | { type: "target.update"; input: Record<string, unknown> };
+   777→
+   778→const str = (o: Record<string, unknown>, k: string): string | undefined => (typeof o[k] === "string" ? (o[k] as string).trim() : undefined);
+   779→const num = (o: Record<string, unknown>, k: string): number | undefined => (typeof o[k] === "number" && Number.isFinite(o[k] as number) ? (o[k] as number) : undefined);
+   780→const bool = (o: Record<string, unknown>, k: string): boolean | undefined => (typeof o[k] === "boolean" ? (o[k] as boolean) : undefined);
+   781→
+   782→export function salesPost(role: WorkspaceRole, action: Action): SalesActionResult {
+   783→  const s = store();
+   784→  const gate = requireSalesAccess(role, `Sales · ${action.type}`);
+   785→  if (!gate.ok) return gate;
+   786→  const { scope } = gate;
+   787→  const audit = (args: { action: string; resource: string; severity?: "Info" | "Warning" | "High"; context: string; result?: "Success" | "Blocked" }) =>
+   788→    writeAudit({ actorId: SESSION_USER_ID, action: args.action, resource: args.resource, result: args.result ?? "Success", severity: args.severity ?? "Info", source: "Sales OS", context: args.context });
+   789→
+   790→  const ownOnly = (ownerId: string | undefined): SalesActionResult | null => {
+   791→    if (scope === "company") return null;
+   792→    if (ownerId && canSee(scope, ownerId)) return null;
+   793→    return { ok: false, status: 403, code: "scope_denied", message: scope === "own" ? "Only records you own can be changed from this boundary." : "Only records inside your team scope can be changed." };
+   794→  };
+   795→
+   796→  switch (action.type) {
+   797→    // ---------- leads ----------
+   798→    case "lead.create": {
+   799→      const i = action.input;
+   800→      const name = str(i, "name");
+   801→      const company = str(i, "company");
+   802→      const email = str(i, "email");
+   803→      const phone = str(i, "phone");
+   804→      if (!name || !company || !email || !phone) return { ok: false, status: 422, code: "required", message: "Lead name, company, email and phone are required." };
+   805→      if (!emailOk(email)) return { ok: false, status: 422, code: "invalid_email", message: "Enter a valid email address." };
+   806→      if (!phoneOk(phone)) return { ok: false, status: 422, code: "invalid_phone", message: "Enter a valid phone number." };
+   807→      if (!str(i, "ownerId")) return { ok: false, status: 422, code: "owner_required", message: "Choose an owner — leads are never created unowned." };
+   808→      const matches = findDuplicates({ name, email, phone, company });
+   809→      if (matches.length > 0 && !bool(i, "force")) {
+   810→        return { ok: false, status: 409, code: "possible_duplicates", message: "Possible existing matches were found — review them before creating a duplicate.", matches };
+   811→      }
+   812→      const lead: SalesLead = {
+   813→        id: nextId("lead"),
+   814→        name, company,
+   815→        contactPerson: str(i, "contactPerson") ?? name,
+   816→        phone, email,
+   817→        source: str(i, "source") ?? "Website",
+   818→        industry: str(i, "industry") ?? "Other",
+   819→        location: str(i, "location") ?? "—",
+   820→        ownerId: str(i, "ownerId")!,
+   821→        status: "New",
+   822→        priority: (str(i, "priority") as LeadPriority) ?? "Warm",
+   823→        score: num(i, "score") ?? 50,
+   824→        estimatedValueCr: num(i, "estimatedValueCr") ?? 0,
+   825→        expectedClose: str(i, "expectedClose"),
+   826→        nextFollowUpAt: num(i, "nextFollowUpAt"),
+   827→        createdAt: now(),
+   828→        lastActivityAt: now(),
+   829→        tags: Array.isArray(i.tags) ? (i.tags as string[]).slice(0, 6) : [],
+   830→        notes: str(i, "notes"),
+   831→      };
+   832→      s.leads.unshift(lead);
+   833→      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: "Lead created", outcome: `Source ${lead.source}` });
+   834→      if (lead.nextFollowUpAt) {
+   835→        s.followups.unshift({ id: nextId("fu"), type: "Call", subject: `First follow-up — ${lead.name}`, ownerId: lead.ownerId, leadId: lead.id, dueAt: lead.nextFollowUpAt, state: "Upcoming", priority: lead.priority === "Hot" ? "High" : "Medium" });
+   836→      }
+   837→      audit({ action: "Lead created", resource: `${lead.name} — ${lead.company}`, context: `Owner ${nameOf(lead.ownerId)} · source ${lead.source}${lead.nextFollowUpAt ? " · follow-up scheduled" : ""}` });
+   838→      return { ok: true, message: `Lead created and assigned to ${nameOf(lead.ownerId)}. An initial activity was recorded.`, lead: leadWithRefs(lead, scope) };
+   839→    }
+   840→
+   841→    case "lead.assign": {
+   842→      const lead = s.leads.find((l) => l.id === str(action.input, "id"));
+   843→      if (!lead) return { ok: false, status: 404, code: "not_found", message: "Lead not found." };
+   844→      if (!canSee(scope, lead.ownerId)) return { ok: false, status: 403, code: "scope_denied", message: "This lead is outside your authorized scope." };
+   845→      if (scope === "own") return { ok: false, status: 403, code: "manager_required", message: "Reassignment is a manager action — ask your sales manager, or use Convert to move the lead forward." };
+   846→      const to = str(action.input, "ownerId");
+   847→      if (!to || !SALES_OWNERS.some((o) => o.id === to)) return { ok: false, status: 422, code: "owner_required", message: "Choose a valid owner from the sales team." };
+   848→      if (to === lead.ownerId) return { ok: false, status: 422, code: "same_owner", message: "This lead already belongs to that owner." };
+   849→      const from = lead.ownerId;
+   850→      lead.ownerId = to;
+   851→      lead.lastActivityAt = now();
+   852→      s.followups.filter((f) => f.leadId === lead.id && f.state !== "Completed").forEach((f) => (f.ownerId = to));
+   853→      addActivity({ at: now(), type: "Lead assigned", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: `Ownership moved ${nameOf(from)} → ${nameOf(to)}` });
+   854→      audit({ action: "Lead ownership changed", resource: `${lead.name} — ${lead.company}`, context: `${nameOf(from)} → ${nameOf(to)}; open follow-ups reassigned` });
+   855→      return { ok: true, message: `Lead reassigned to ${nameOf(to)}. Open follow-ups moved with it.`, lead: leadWithRefs(lead, scope) };
+   856→    }
+   857→
+   858→    case "lead.status": {
+   859→      const lead = s.leads.find((l) => l.id === str(action.input, "id"));
+   860→      if (!lead) return { ok: false, status: 404, code: "not_found", message: "Lead not found." };
+   861→      if (scope === "own" && lead.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only records you own can be changed from this boundary." };
+   862→      const status = str(action.input, "status") as LeadStatus | undefined;
+   863→      if (!status || !["Working", "Qualified", "Unqualified"].includes(status)) return { ok: false, status: 422, code: "invalid_status", message: "Status must be Working, Qualified or Unqualified — use Convert for the full lifecycle." };
+   864→      if (status === "Unqualified" && !str(action.input, "reason")) return { ok: false, status: 422, code: "reason_required", message: "A disqualification reason is required — it is kept on the lead and in the audit trail." };
+   865→      const prev = lead.status;
+   866→      lead.status = status;
+   867→      if (status === "Unqualified") lead.disqualifiedReason = str(action.input, "reason");
+   868→      lead.lastActivityAt = now();
+   869→      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: `Lead ${prev} → ${status}`, outcome: status === "Unqualified" ? lead.disqualifiedReason : undefined });
+   870→      audit({ action: `Lead marked ${status.toLowerCase()}`, resource: `${lead.name} — ${lead.company}`, context: `${prev} → ${status}${status === "Unqualified" ? ` · reason: ${lead.disqualifiedReason}` : ""}` });
+   871→      return { ok: true, message: `Lead marked ${status}.`, lead: leadWithRefs(lead, scope) };
+   872→    }
+   873→
+   874→    case "lead.note": {
+   875→      const lead = s.leads.find((l) => l.id === str(action.input, "id"));
+   876→      if (!lead) return { ok: false, status: 404, code: "not_found", message: "Lead not found." };
+   877→      if (!canSee(scope, lead.ownerId)) return { ok: false, status: 403, code: "scope_denied", message: "This lead is outside your authorized scope." };
+   878→      const body = str(action.input, "body");
+   879→      if (!body || body.length < 3) return { ok: false, status: 422, code: "note_required", message: "Write the note before saving." };
+   880→      lead.lastActivityAt = now();
+   881→      addActivity({ at: now(), type: "Note", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: body });
+   882→      audit({ action: "Note added to lead", resource: `${lead.name} — ${lead.company}`, context: body.slice(0, 120) });
+   883→      return { ok: true, message: "Note recorded on the lead timeline." };
+   884→    }
+   885→
+   886→    case "lead.followup": {
+   887→      const lead = s.leads.find((l) => l.id === str(action.input, "id"));
+   888→      if (!lead) return { ok: false, status: 404, code: "not_found", message: "Lead not found." };
+   889→      if (!canSee(scope, lead.ownerId)) return { ok: false, status: 403, code: "scope_denied", message: "This lead is outside your authorized scope." };
+   890→      const dueAt = num(action.input, "dueAt");
+   891→      const type = (str(action.input, "type") ?? "Call") as SalesFollowUp["type"];
+   892→      if (!dueAt || dueAt < now() - 60_000) return { ok: false, status: 422, code: "invalid_date", message: "Schedule the follow-up for a future date and time." };
+   893→      const fu: SalesFollowUp = { id: nextId("fu"), type, subject: str(action.input, "subject") ?? `Follow-up — ${lead.name}`, ownerId: lead.ownerId, leadId: lead.id, dueAt, state: dueAt < today0End() ? "Due Today" : "Upcoming", priority: (str(action.input, "priority") as "High" | "Medium" | "Low") ?? "Medium" };
+   894→      s.followups.unshift(fu);
+   895→      lead.nextFollowUpAt = dueAt;
+   896→      addActivity({ at: now(), type: "Follow-up", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: `${fu.type} follow-up scheduled — ${new Date(dueAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}` });
+   897→      audit({ action: "Follow-up scheduled", resource: `${lead.name} — ${lead.company}`, context: `${fu.type} · due ${new Date(dueAt).toLocaleString("en-IN")}` });
+   898→      return { ok: true, message: "Follow-up scheduled and visible in the Follow-up Queue." };
+   899→    }
+   900→
+   901→    case "lead.convert": {
+   902→      const lead = s.leads.find((l) => l.id === str(action.input, "id"));
+   903→      if (!lead) return { ok: false, status: 404, code: "not_found", message: "Lead not found." };
+   904→      if (!canSee(scope, lead.ownerId)) return { ok: false, status: 403, code: "scope_denied", message: "This lead is outside your authorized scope." };
+   905→      if (lead.status === "Converted") return { ok: false, status: 409, code: "already_converted", message: "This lead is already converted — the history on the lead shows what was created." };
+   906→      if (lead.status === "Unqualified") return { ok: false, status: 409, code: "unqualified", message: "Unqualified leads cannot be converted. Re-qualify the lead first." };
+   907→      const i = action.input;
+   908→      const accountId = str(i, "accountId");
+   909→      const newAccountName = str(i, "newAccountName");
+   910→      const contactId = str(i, "contactId");
+   911→      if (!accountId && !newAccountName) return { ok: false, status: 422, code: "account_required", message: "Choose an existing account or provide a new account name — the review step prevents duplicates." };
+   912→      if (!contactId && !newAccountName && !accountId) return { ok: false, status: 422, code: "contact_required", message: "Choose an existing contact or create one." };
+   913→      let acc = accountId ? s.accounts.find((a) => a.id === accountId) : undefined;
+   914→      if (!acc) {
+   915→        const dup = findDuplicates({ company: newAccountName });
+   916→        if (dup.some((m) => m.kind === "account")) return { ok: false, status: 409, code: "possible_duplicates", message: "An account with that name already exists — match it instead of creating a duplicate.", matches: dup };
+   917→        acc = { id: nextId("acc"), name: newAccountName!, industry: str(i, "industry") ?? lead.industry, location: lead.location, region: "—", ownerId: str(i, "opportunityOwnerId") ?? lead.ownerId, status: "Customer", customerSince: new Date().toLocaleDateString("en-IN", { month: "short", year: "numeric" }), phone: lead.phone, website: "—", employees: 0 };
+   918→        s.accounts.unshift(acc);
+   919→        audit({ action: "Account created from lead conversion", resource: acc.name, context: `From lead ${lead.name}` });
+   920→      }
+   921→      let ct = contactId ? s.contacts.find((c) => c.id === contactId) : undefined;
+   922→      if (!ct) {
+   923→        const dup = findDuplicates({ email: lead.email, phone: lead.phone });
+   924→        if (dup.some((m) => m.kind === "contact")) return { ok: false, status: 409, code: "possible_duplicates", message: "A contact with that email/phone already exists — match it instead of creating a duplicate.", matches: dup };
+   925→        ct = { id: nextId("ct"), name: lead.contactPerson, designation: str(i, "designation") ?? "Contact", accountId: acc.id, phone: lead.phone, email: lead.email, ownerId: lead.ownerId, consent: { whatsapp: true, email: true, call: true }, preferred: "Email" };
+   926→        s.contacts.unshift(ct);
+   927→      }
+   928→      const oppId = bool(i, "createOpportunity") === false ? undefined : nextId("opp");
+   929→      let opp: SalesOpportunity | undefined;
+   930→      if (oppId) {
+   931→        const valueCr = num(i, "valueCr") ?? lead.estimatedValueCr;
+   932→        if (!valueCr || valueCr <= 0) return { ok: false, status: 422, code: "value_required", message: "Set an opportunity value before converting." };
+   933→        opp = {
+   934→          id: oppId,
+   935→          name: str(i, "opportunityName") ?? `${acc.name} — new business`,
+   936→          accountId: acc.id,
+   937→          contactId: ct.id,
+   938→          ownerId: str(i, "opportunityOwnerId") ?? lead.ownerId,
+   939→          stage: (str(i, "stage") as OpportunityStage) ?? "Qualification",
+   940→          probability: num(i, "probability") ?? 20,
+   941→          valueCr,
+   942→          expectedClose: str(i, "expectedClose") ?? "TBD",
+   943→          source: lead.source,
+   944→          products: [],
+   945→          nextAction: str(i, "nextAction") ?? "First follow-up after conversion",
+   946→          nextFollowUpAt: lead.nextFollowUpAt,
+   947→          createdAt: now(),
+   948→          lastStageChangeAt: now(),
+   949→        };
+   950→        s.opportunities.unshift(opp);
+   951→      }
+   952→      lead.status = "Converted";
+   953→      lead.convertedTo = { contactId: ct.id, accountId: acc.id, opportunityId: opp?.id, at: now() };
+   954→      lead.lastActivityAt = now();
+   955→      addActivity({ at: now(), type: "Conversion", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: `Lead converted — contact, account${opp ? " and opportunity" : ""} created`, outcome: [ct.name, acc.name, opp?.name].filter(Boolean).join(" · ") });
+   956→      audit({ action: "Lead converted", resource: `${lead.name} — ${lead.company}`, context: `Contact ${ct.name} · Account ${acc.name}${opp ? ` · Opportunity ${opp.name}` : " · no opportunity created"}` });
+   957→      return {
+   958→        ok: true,
+   959→        message: `Conversion complete — ${ct.name} · ${acc.name}${opp ? ` · ${opp.name}` : ""}. The conversion is recorded on the lead timeline and in the audit trail.`,
+   960→        contactId: ct.id,
+   961→        accountId: acc.id,
+   962→        opportunityId: opp?.id,
+   963→      };
+   964→    }
+   965→
+   966→    // ---------- opportunities ----------
+   967→    case "opportunity.stage": {
+   968→      const opp = s.opportunities.find((o) => o.id === str(action.input, "id"));
+   969→      if (!opp) return { ok: false, status: 404, code: "not_found", message: "Opportunity not found." };
+   970→      if (scope === "own" && opp.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only records you own can be changed from this boundary." };
+   971→      const to = str(action.input, "stage") as OpportunityStage | undefined;
+   972→      if (!to) return { ok: false, status: 422, code: "stage_required", message: "Choose the target stage." };
+   973→      const flow: OpportunityStage[] = ["New", "Qualification", "Discovery", "Proposal", "Negotiation", "Contracting", "Won"];
+   974→      const prev = opp.stage;
+   975→      if (prev === "Won" || prev === "Lost") return { ok: false, status: 409, code: "closed", message: `This opportunity is closed as ${prev}. Closed records are final — create a new opportunity for follow-on business.` };
+   976→      if (to === "Won") {
+   977→        if (prev !== "Contracting") return { ok: false, status: 409, code: "invalid_transition", message: "Only opportunities in Contracting can be marked Won — move the stage first." };
+   978→        if (!opp.quotationId || s.quotations.find((q) => q.id === opp.quotationId)?.status !== "Accepted") {
+   979→          return { ok: false, status: 409, code: "quotation_required", message: "Business rule: an opportunity needs an Accepted quotation before it can be Won." };
+   980→        }
+   981→      }
+   982→      if (to === "Lost") {
+   983→        if (!["Proposal", "Negotiation", "Contracting", "Discovery", "Qualification", "New"].includes(prev)) return { ok: false, status: 409, code: "invalid_transition", message: "This stage cannot be marked Lost." };
+   984→        if (!str(action.input, "lossReason")) return { ok: false, status: 422, code: "reason_required", message: "A loss reason is required — it feeds the win/loss report." };
+   985→      }
+   986→      if (to !== "Won" && to !== "Lost") {
+   987→        const fromIdx = flow.indexOf(prev);
+   988→        const toIdx = flow.indexOf(to);
+   989→        if (toIdx === -1 || toIdx < fromIdx) return { ok: false, status: 409, code: "invalid_transition", message: `Stage cannot move backwards (${prev} → ${to}). Closed stages are excluded from regression.` };
+   990→        if (toIdx - fromIdx > 2) return { ok: false, status: 409, code: "skip_transition", message: "Stages move max two steps at a time — update through intermediate stages." };
+   991→        const cfg = s.settings.stages.find((st) => st.name === to);
+   992→        if (cfg?.requiresQuotation && !opp.quotationId) return { ok: false, status: 409, code: "quotation_required", message: `The ${to} stage expects a linked quotation — create one from this opportunity first.` };
+   993→      }
+   994→      opp.stage = to;
+   995→      opp.probability = to === "Won" ? 100 : to === "Lost" ? 0 : (s.settings.stages.find((st) => st.name === to)?.probability ?? opp.probability);
+   996→      opp.lastStageChangeAt = now();
+   997→      if (to === "Won") opp.closedAt = now();
+   998→      if (to === "Lost") { opp.lossReason = str(action.input, "lossReason"); opp.closedAt = now(); }
+   999→      addActivity({ at: now(), type: "Stage change", actorId: SESSION_USER_ID, entity: { kind: "opportunity", id: opp.id }, summary: `Stage moved ${prev} → ${to}`, outcome: to === "Lost" ? opp.lossReason : to === "Won" ? "Closed Won" : undefined });
+  1000→      audit({ action: "Opportunity stage changed", resource: `${opp.name} (${nameOf(opp.ownerId)})`, severity: to === "Won" || to === "Lost" ? "High" : "Info", context: `${prev} → ${to}${to === "Lost" ? ` · reason: ${opp.lossReason}` : ""}` });
+  1001→      return { ok: true, message: `Stage updated ${prev} → ${to}. The change is audited.`, opportunity: oppWithRefs(opp) };
+  1002→    }
+  1003→
+  1004→    case "opportunity.update": {
+  1005→      const opp = s.opportunities.find((o) => o.id === str(action.input, "id"));
+  1006→      if (!opp) return { ok: false, status: 404, code: "not_found", message: "Opportunity not found." };
+  1007→      if (scope === "own" && opp.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only records you own can be changed from this boundary." };
+  1008→      const changes: string[] = [];
+  1009→      const valueCr = num(action.input, "valueCr");
+  1010→      if (valueCr !== undefined) {
+  1011→        if (valueCr <= 0) return { ok: false, status: 422, code: "invalid_value", message: "Value must be greater than zero." };
+  1012→        if (valueCr !== opp.valueCr) { changes.push(`value ₹${opp.valueCr} Cr → ₹${valueCr} Cr`); opp.valueCr = valueCr; }
+  1013→      }
+  1014→      const expectedClose = str(action.input, "expectedClose");
+  1015→      if (expectedClose && expectedClose !== opp.expectedClose) { changes.push(`close date ${opp.expectedClose} → ${expectedClose}`); opp.expectedClose = expectedClose; }
+  1016→      const probability = num(action.input, "probability");
+  1017→      if (probability !== undefined) {
+  1018→        if (probability < 0 || probability > 100) return { ok: false, status: 422, code: "invalid_probability", message: "Probability is a percentage between 0 and 100." };
+  1019→        if (probability !== opp.probability) { changes.push(`probability ${opp.probability}% → ${probability}%`); opp.probability = probability; }
+  1020→      }
+  1021→      const nextAction = str(action.input, "nextAction");
+  1022→      if (nextAction !== undefined && nextAction !== opp.nextAction) { changes.push("next action"); opp.nextAction = nextAction; }
+  1023→      if (changes.length === 0) return { ok: false, status: 422, code: "no_changes", message: "Nothing changed — update at least one field." };
+  1024→      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "opportunity", id: opp.id }, summary: `Updated: ${changes.join(" · ")}` });
+  1025→      audit({ action: "Opportunity updated", resource: `${opp.name} (${nameOf(opp.ownerId)})`, context: changes.join(" · ") });
+  1026→      return { ok: true, message: "Opportunity updated — the change is recorded on the timeline and audited.", opportunity: oppWithRefs(opp) };
+  1027→    }
+  1028→
+  1029→    // ---------- follow-ups ----------
+  1030→    case "followup.complete": {
+  1031→      const fu = s.followups.find((f) => f.id === str(action.input, "id"));
+  1032→      if (!fu) return { ok: false, status: 404, code: "not_found", message: "Follow-up not found." };
+  1033→      if (scope === "own" && fu.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own follow-ups can be completed from this boundary." };
+  1034→      if (fu.state === "Completed") return { ok: false, status: 409, code: "already_done", message: "This follow-up is already completed." };
+  1035→      if (fu.state === "Cancelled") return { ok: false, status: 409, code: "cancelled", message: "Cancelled follow-ups cannot be completed — reschedule it first." };
+  1036→      const outcome = str(action.input, "outcome");
+  1037→      if (!outcome || outcome.length < 3) return { ok: false, status: 422, code: "outcome_required", message: "Record the outcome — completed follow-ups carry it into the customer timeline." };
+  1038→      fu.state = "Completed";
+  1039→      fu.outcome = outcome;
+  1040→      fu.completedAt = now();
+  1041→      const entity = fu.leadId ? { kind: "lead" as const, id: fu.leadId } : fu.accountId ? { kind: "account" as const, id: fu.accountId } : { kind: "opportunity" as const, id: fu.opportunityId ?? "" };
+  1042→      addActivity({ at: now(), type: "Follow-up", actorId: SESSION_USER_ID, entity, summary: `${fu.type} follow-up completed — ${fu.subject}`, outcome });
+  1043→      audit({ action: "Follow-up completed", resource: fu.subject, context: outcome.slice(0, 120) });
+  1044→      return { ok: true, message: "Follow-up completed — outcome recorded in the customer timeline." };
+  1045→    }
+  1046→
+  1047→    case "followup.reschedule": {
+  1048→      const fu = s.followups.find((f) => f.id === str(action.input, "id"));
+  1049→      if (!fu) return { ok: false, status: 404, code: "not_found", message: "Follow-up not found." };
+  1050→      if (scope === "own" && fu.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own follow-ups can be rescheduled from this boundary." };
+  1051→      if (fu.state === "Completed") return { ok: false, status: 409, code: "already_done", message: "Completed follow-ups are history — schedule a new one instead." };
+  1052→      const dueAt = num(action.input, "dueAt");
+  1053→      if (!dueAt || dueAt < now() - 60_000) return { ok: false, status: 422, code: "invalid_date", message: "Pick a future date and time." };
+  1054→      const prev = fu.dueAt;
+  1055→      fu.dueAt = dueAt;
+  1056→      fu.state = dueAt < today0End() ? "Due Today" : "Upcoming";
+  1057→      audit({ action: "Follow-up rescheduled", resource: fu.subject, context: `${new Date(prev).toLocaleString("en-IN")} → ${new Date(dueAt).toLocaleString("en-IN")}` });
+  1058→      return { ok: true, message: "Follow-up rescheduled." };
+  1059→    }
+  1060→
+  1061→    // ---------- meetings ----------
+  1062→    case "meeting.create": {
+  1063→      const i = action.input;
+  1064→      const title = str(i, "title");
+  1065→      const accountId = str(i, "accountId");
+  1066→      const startAt = num(i, "startAt");
+  1067→      if (!title || !accountId || !startAt) return { ok: false, status: 422, code: "required", message: "Title, customer and date/time are required." };
+  1068→      if (!s.accounts.some((a) => a.id === accountId)) return { ok: false, status: 422, code: "unknown_account", message: "That customer is not in the account register." };
+  1069→      const m: SalesMeeting = { id: nextId("mtg"), title, accountId, contactId: str(i, "contactId"), opportunityId: str(i, "opportunityId"), ownerId: str(i, "ownerId") ?? SESSION_USER_ID, startAt, durationMin: num(i, "durationMin") ?? 30, location: str(i, "location") ?? "Teams meeting", isLink: !str(i, "location") || (str(i, "location") ?? "").includes("Teams") || (str(i, "location") ?? "").includes("Zoom"), status: "Scheduled", agenda: str(i, "agenda") };
+  1070→      s.meetings.unshift(m);
+  1071→      audit({ action: "Sales meeting created", resource: `${m.title} — ${nameOf(m.ownerId)}`, context: new Date(m.startAt).toLocaleString("en-IN") });
+  1072→      return { ok: true, message: "Meeting created — it also appears in the Meetings module.", meeting: m };
+  1073→    }
+  1074→    case "meeting.reschedule": {
+  1075→      const m = s.meetings.find((x) => x.id === str(action.input, "id"));
+  1076→      if (!m) return { ok: false, status: 404, code: "not_found", message: "Meeting not found." };
+  1077→      if (scope === "own" && m.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own meetings can be changed." };
+  1078→      if (m.status !== "Scheduled") return { ok: false, status: 409, code: "invalid_state", message: `A ${m.status.toLowerCase()} meeting cannot be rescheduled.` };
+  1079→      const startAt = num(action.input, "startAt");
+  1080→      if (!startAt || startAt < now()) return { ok: false, status: 422, code: "invalid_date", message: "Pick a future date and time." };
+  1081→      m.startAt = startAt;
+  1082→      audit({ action: "Sales meeting rescheduled", resource: m.title, context: new Date(startAt).toLocaleString("en-IN") });
+  1083→      return { ok: true, message: "Meeting rescheduled." };
+  1084→    }
+  1085→    case "meeting.cancel": {
+  1086→      const m = s.meetings.find((x) => x.id === str(action.input, "id"));
+  1087→      if (!m) return { ok: false, status: 404, code: "not_found", message: "Meeting not found." };
+  1088→      if (scope === "own" && m.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own meetings can be cancelled." };
+  1089→      if (m.status !== "Scheduled") return { ok: false, status: 409, code: "invalid_state", message: `A ${m.status.toLowerCase()} meeting cannot be cancelled.` };
+  1090→      m.status = "Cancelled";
+  1091→      audit({ action: "Sales meeting cancelled", resource: m.title, context: `Cancelled by ${nameOf(SESSION_USER_ID)} — customer notified through the notification architecture` });
+  1092→      return { ok: true, message: "Meeting cancelled." };
+  1093→    }
+  1094→    case "meeting.notes": {
+  1095→      const m = s.meetings.find((x) => x.id === str(action.input, "id"));
+  1096→      if (!m) return { ok: false, status: 404, code: "not_found", message: "Meeting not found." };
+  1097→      if (scope === "own" && m.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own meetings can be annotated." };
+  1098→      const notes = str(action.input, "notes");
+  1099→      if (!notes) return { ok: false, status: 422, code: "notes_required", message: "Write the meeting notes first." };
+  1100→      m.notes = notes;
+  1101→      addActivity({ at: now(), type: "Meeting", actorId: SESSION_USER_ID, entity: { kind: "account", id: m.accountId }, summary: `Meeting notes — ${m.title}`, outcome: notes.slice(0, 140) });
+  1102→      audit({ action: "Sales meeting notes added", resource: m.title, context: notes.slice(0, 120) });
+  1103→      return { ok: true, message: "Notes saved to the meeting and the customer timeline." };
+  1104→    }
+  1105→
+  1106→    // ---------- quotations ----------
+  1107→    case "quotation.create": {
+  1108→      const i = action.input;
+  1109→      const accountId = str(i, "accountId");
+  1110→      const items = Array.isArray(i.items) ? (i.items as QuoteItemIn[]) : [];
+  1111→      if (!accountId) return { ok: false, status: 422, code: "account_required", message: "Choose the customer account." };
+  1112→      if (items.length === 0) return { ok: false, status: 422, code: "items_required", message: "Add at least one line item." };
+  1113→      for (const it of items) {
+  1114→        if (!it.productId || !SALES_PRODUCTS.some((p) => p.id === it.productId)) return { ok: false, status: 422, code: "unknown_product", message: "Every line must reference the product catalog — free-text products are not allowed." };
+  1115→        if (!it.qty || it.qty <= 0) return { ok: false, status: 422, code: "invalid_qty", message: "Quantities must be at least 1." };
+  1116→      }
+  1117→      const q: SalesQuotation = {
+  1118→        id: nextId("qtn"),
+  1119→        number: `QTN-2026-${String(s.quotations.length + 46).padStart(3, "0")}`,
+  1120→        accountId,
+  1121→        contactId: str(i, "contactId"),
+  1122→        opportunityId: str(i, "opportunityId"),
+  1123→        ownerId: str(i, "ownerId") ?? SESSION_USER_ID,
+  1124→        status: "Draft",
+  1125→        createdAt: now(),
+  1126→        validUntil: str(i, "validUntil") ?? "31 Dec 2026",
+  1127→        items: items.map((it, idx) => {
+  1128→          const p = SALES_PRODUCTS.find((x) => x.id === it.productId)!;
+  1129→          return { id: `i${idx + 1}`, productId: it.productId, name: p.name, qty: it.qty, unitPrice: p.unitPrice, discountPct: Math.max(0, Math.min(100, it.discountPct ?? 0)) };
+  1130→        }),
+  1131→        taxPct: 18,
+  1132→        paymentTerms: str(i, "paymentTerms") ?? "30% advance, milestone-based",
+  1133→        deliveryTerms: str(i, "deliveryTerms") ?? "Standard rollout terms",
+  1134→        notes: str(i, "notes"),
+  1135→        versions: [{ at: now(), by: SESSION_USER_ID === "sagar" ? "Sagar Singh" : nameOf(SESSION_USER_ID), note: "Draft created" }],
+  1136→      };
+  1137→      s.quotations.unshift(q);
+  1138→      if (q.opportunityId) {
+  1139→        const opp = s.opportunities.find((o) => o.id === q.opportunityId);
+  1140→        if (opp && !opp.quotationId) opp.quotationId = q.id;
+  1141→      }
+  1142→      addActivity({ at: now(), type: "Quotation", actorId: SESSION_USER_ID, entity: { kind: "quotation", id: q.id }, summary: `${q.number} created — ${items.length} line items` });
+  1143→      audit({ action: "Quotation created", resource: `${q.number} · ${s.accounts.find((a) => a.id === q.accountId)?.name}`, context: `Owner ${nameOf(q.ownerId)} · total ${rupees(quoteTotal(q))}` });
+  1144→      return { ok: true, message: `${q.number} created as a draft.`, quotation: quotationWithRefs(q) };
+  1145→    }
+  1146→
+  1147→    case "quotation.update": {
+  1148→      const q = s.quotations.find((x) => x.id === str(action.input, "id"));
+  1149→      if (!q) return { ok: false, status: 404, code: "not_found", message: "Quotation not found." };
+  1150→      if (scope === "own" && q.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own quotations can be edited." };
+  1151→      if (q.status !== "Draft" && q.status !== "Negotiation") return { ok: false, status: 409, code: "locked", message: `A ${q.status.toLowerCase()} quotation is locked — use Revise to open a new version. Approved and sent documents are never edited in place.` };
+  1152→      const items = Array.isArray(action.input.items) ? (action.input.items as QuoteItemIn[]) : undefined;
+  1153→      if (items) {
+  1154→        if (items.length === 0) return { ok: false, status: 422, code: "items_required", message: "A quotation needs at least one line item." };
+  1155→        q.items = items.map((it, idx) => {
+  1156→          const p = SALES_PRODUCTS.find((x) => x.id === it.productId)!;
+  1157→          return { id: `i${idx + 1}`, productId: it.productId, name: p?.name ?? it.productId, qty: it.qty, unitPrice: p?.unitPrice ?? 0, discountPct: Math.max(0, Math.min(100, it.discountPct ?? 0)) };
+  1158→        });
+  1159→      }
+  1160→      if (str(action.input, "notes") !== undefined) q.notes = str(action.input, "notes");
+  1161→      if (str(action.input, "paymentTerms") !== undefined) q.paymentTerms = str(action.input, "paymentTerms")!;
+  1162→      if (str(action.input, "deliveryTerms") !== undefined) q.deliveryTerms = str(action.input, "deliveryTerms")!;
+  1163→      q.versions.unshift({ at: now(), by: "Sagar Singh", note: `Draft updated — total ${rupees(quoteTotal(q))}` });
+  1164→      audit({ action: "Quotation updated", resource: q.number, context: `Total ${rupees(quoteTotal(q))} · discount ${quoteOverallDiscountPct(q).toFixed(1)}%` });
+  1165→      return { ok: true, message: "Draft updated.", quotation: quotationWithRefs(q) };
+  1166→    }
+  1167→
+  1168→    case "quotation.submit": {
+  1169→      const q = s.quotations.find((x) => x.id === str(action.input, "id"));
+  1170→      if (!q) return { ok: false, status: 404, code: "not_found", message: "Quotation not found." };
+  1171→      if (scope === "own" && q.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own quotations can be submitted." };
+  1172→      if (q.status !== "Draft") return { ok: false, status: 409, code: "invalid_state", message: `Only drafts can be submitted (this one is ${q.status.toLowerCase()}).` };
+  1173→      const discount = quoteOverallDiscountPct(q);
+  1174→      const total = quoteTotal(q);
+  1175→      const needsDiscountApproval = discount > 15;
+  1176→      const needsValueApproval = total > 5_000_000;
+  1177→      if (!needsDiscountApproval && !needsValueApproval) {
+  1178→        q.status = "Approved";
+  1179→        q.approvalNote = "Auto-approved — within standing limits (discount ≤ 15% and total ≤ ₹50 L).";
+  1180→        q.decidedAt = now();
+  1181→        addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "quotation", id: q.id }, summary: "Approved within standing limits — ready to send" });
+  1182→        audit({ action: "Quotation auto-approved", resource: q.number, context: `Discount ${discount.toFixed(1)}% · total ${rupees(total)} — within standing limits` });
+  1183→        return { ok: true, message: `${q.number} approved within standing limits and ready to send.`, quotation: quotationWithRefs(q) };
+  1184→      }
+  1185→      // Route into the ENTERPRISE approval system (My Approvals 46) —
+  1186→      // one approval engine, not a sales-specific one.
+  1187→      const approval = pushApproval({
+  1188→        kind: "Quotation discount",
+  1189→        title: `${q.number} — ${needsDiscountApproval ? `discount ${discount.toFixed(1)}%` : `value ${rupees(total)}`} requires approval`,
+  1190→        requesterId: q.ownerId,
+  1191→        department: "Sales",
+  1192→        amount: total,
+  1193→        priority: total > 10_000_000 ? "High" : "Medium",
+  1194→        rule: needsDiscountApproval ? "Quotation discount > 15% → Sales Head" : "Quotation total > ₹50 L → Sales Head",
+  1195→        sla: "2 working days",
+  1196→        stepUpRequired: total > 10_000_000,
+  1197→        detail: `${s.accounts.find((a) => a.id === q.accountId)?.name ?? "Customer"} · ${q.items.length} line items · discount ${discount.toFixed(1)}% · total ${rupees(total)}. ${q.notes ?? ""}`.trim(),
+  1198→        history: [{ at: now(), actor: nameOf(q.ownerId), event: `Submitted from Quotation Builder (${q.number})` }],
+  1199→      });
+  1200→      q.status = "Pending Approval";
+  1201→      q.approvalId = approval.id;
+  1202→      q.versions.unshift({ at: now(), by: "Sagar Singh", note: `Submitted for approval — ${approval.rule}` });
+  1203→      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "quotation", id: q.id }, summary: `Submitted for approval — ${approval.rule}` });
+  1204→      audit({ action: "Quotation submitted for approval", resource: q.number, severity: "Info", context: `Routed via Approval Matrix (${approval.rule}) · total ${rupees(total)}` });
+  1205→      return { ok: true, message: `${q.number} submitted — routed through the enterprise Approval Matrix (${approval.rule}). Track it in My Approvals.`, quotation: quotationWithRefs(q), approvalId: approval.id };
+  1206→    }
+  1207→
+  1208→    case "quotation.decide": {
+  1209→      const q = s.quotations.find((x) => x.id === str(action.input, "id"));
+  1210→      if (!q) return { ok: false, status: 404, code: "not_found", message: "Quotation not found." };
+  1211→      const decision = str(action.input, "decision");
+  1212→      if (!decision || !["Approved", "Rejected"].includes(decision)) return { ok: false, status: 422, code: "invalid_decision", message: "Decision must be Approved or Rejected." };
+  1213→      if (role !== "administrator" && role !== "dept-head") {
+  1214→        audit({ action: "Quotation approval denied", resource: q.number, result: "Blocked", severity: "Warning", context: `Role boundary "${role}" holds no quotation approval authority` });
+  1215→        return { ok: false, status: 403, code: "authority_required", message: "Quotation approval authority belongs to the Sales Head / administrator boundary — routed via the Approval Matrix." };
+  1216→      }
+  1217→      if (q.status !== "Pending Approval") return { ok: false, status: 409, code: "invalid_state", message: `This quotation is ${q.status.toLowerCase()} — no approval is pending.` };
+  1218→      const total = quoteTotal(q);
+  1219→      if (total > 10_000_000) {
+  1220→        const pw = str(action.input, "stepUpPassword");
+  1221→        if (!pw || pw.length < 8) {
+  1222→          audit({ action: "Quotation approval step-up failed", resource: q.number, result: "Blocked", severity: "Warning", context: "Reauthentication missing or too short for a > ₹1 Cr decision" });
+  1223→          return { ok: false, status: 401, code: "step_up_required", message: "Reauthentication is required before recording this approval decision." };
+  1224→        }
+  1225→      }
+  1226→      if (decision === "Rejected" && !str(action.input, "note")) return { ok: false, status: 422, code: "note_required", message: "A reason is required when rejecting — it goes back to the owner." };
+  1227→      q.status = decision as QuotationStatus;
+  1228→      q.decidedAt = now();
+  1229→      q.approvalNote = decision === "Rejected" ? str(action.input, "note") : "Approved via enterprise approval flow.";
+  1230→      q.versions.unshift({ at: now(), by: "Sagar Singh", note: `${decision}${str(action.input, "note") ? ` — ${str(action.input, "note")}` : ""}` });
+  1231→      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "quotation", id: q.id }, summary: `${decision} by approver${str(action.input, "note") ? ` — ${str(action.input, "note")}` : ""}` });
+  1232→      audit({ action: `Quotation ${decision.toLowerCase()}`, resource: q.number, severity: total > 10_000_000 ? "High" : "Info", context: `Total ${rupees(total)}${total > 10_000_000 ? " · step-up verified" : ""}` });
+  1233→      return { ok: true, message: `${q.number} ${decision.toLowerCase()}.`, quotation: quotationWithRefs(q) };
+  1234→    }
+  1235→
+  1236→    case "quotation.send": {
+  1237→      const q = s.quotations.find((x) => x.id === str(action.input, "id"));
+  1238→      if (!q) return { ok: false, status: 404, code: "not_found", message: "Quotation not found." };
+  1239→      if (scope === "own" && q.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own quotations can be sent." };
+  1240→      if (q.status !== "Approved") return { ok: false, status: 409, code: "invalid_state", message: `Only Approved quotations can be sent (this one is ${q.status.toLowerCase()}).` };
+  1241→      q.status = "Sent";
+  1242→      q.sentAt = now();
+  1243→      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "quotation", id: q.id }, summary: "Quotation sent to customer" });
+  1244→      audit({ action: "Quotation sent", resource: q.number, context: `Sent to ${s.accounts.find((a) => a.id === q.accountId)?.name ?? "customer"}` });
+  1245→      return { ok: true, message: `${q.number} sent to the customer.`, quotation: quotationWithRefs(q) };
+  1246→    }
+  1247→
+  1248→    case "quotation.cancel": {
+  1249→      const q = s.quotations.find((x) => x.id === str(action.input, "id"));
+  1250→      if (!q) return { ok: false, status: 404, code: "not_found", message: "Quotation not found." };
+  1251→      if (scope === "own" && q.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own quotations can be cancelled." };
+  1252→      if (["Accepted", "Cancelled", "Expired", "Rejected"].includes(q.status)) return { ok: false, status: 409, code: "invalid_state", message: `A ${q.status.toLowerCase()} quotation cannot be cancelled.` };
+  1253→      if (!str(action.input, "reason")) return { ok: false, status: 422, code: "reason_required", message: "A reason is required to cancel a quotation." };
+  1254→      q.status = "Cancelled";
+  1255→      q.notes = `${q.notes ? q.notes + " " : ""}Cancelled: ${str(action.input, "reason")}`;
+  1256→      q.versions.unshift({ at: now(), by: "Sagar Singh", note: `Cancelled — ${str(action.input, "reason")}` });
+  1257→      audit({ action: "Quotation cancelled", resource: q.number, context: str(action.input, "reason")! });
+  1258→      return { ok: true, message: `${q.number} cancelled.`, quotation: quotationWithRefs(q) };
+  1259→    }
+  1260→
+  1261→    case "quotation.revise": {
+  1262→      const src = s.quotations.find((x) => x.id === str(action.input, "id"));
+  1263→      if (!src) return { ok: false, status: 404, code: "not_found", message: "Quotation not found." };
+  1264→      if (scope === "own" && src.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own quotations can be revised." };
+  1265→      if (["Draft", "Pending Approval"].includes(src.status)) return { ok: false, status: 409, code: "invalid_state", message: "Drafts and pending approvals are edited directly — revision copies exist for decided documents." };
+  1266→      const q: SalesQuotation = {
+  1267→        ...structuredClone(src),
+  1268→        id: nextId("qtn"),
+  1269→        number: `QTN-2026-${String(s.quotations.length + 46).padStart(3, "0")}`,
+  1270→        status: "Draft",
+  1271→        createdAt: now(),
+  1272→        sentAt: undefined,
+  1273→        viewedAt: undefined,
+  1274→        decidedAt: undefined,
+  1275→        approvalId: undefined,
+  1276→        approvalNote: undefined,
+  1277→        versions: [{ at: now(), by: "Sagar Singh", note: `Revision of ${src.number}` }],
+  1278→      };
+  1279→      s.quotations.unshift(q);
+  1280→      if (q.opportunityId) {
+  1281→        const opp = s.opportunities.find((o) => o.id === q.opportunityId);
+  1282→        if (opp) opp.quotationId = q.id;
+  1283→      }
+  1284→      addActivity({ at: now(), type: "Quotation", actorId: SESSION_USER_ID, entity: { kind: "quotation", id: q.id }, summary: `Revision of ${src.number} created` });
+  1285→      audit({ action: "Quotation revision created", resource: `${q.number} (from ${src.number})`, context: "Revision copy — original preserved for the record" });
+  1286→      return { ok: true, message: `Revision ${q.number} created from ${src.number}. The original stays unchanged for the record.`, quotation: quotationWithRefs(q) };
+  1287→    }
+  1288→
+  1289→    // ---------- orders ----------
+  1290→    case "order.create": {
+  1291→      const q = s.quotations.find((x) => x.id === str(action.input, "quotationId"));
+  1292→      if (!q) return { ok: false, status: 404, code: "not_found", message: "Quotation not found." };
+  1293→      if (scope === "own" && q.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own quotations can be ordered." };
+  1294→      if (q.status !== "Accepted") return { ok: false, status: 409, code: "invalid_state", message: `Orders are created from Accepted quotations (this one is ${q.status.toLowerCase()}).` };
+  1295→      const existing = s.orders.find((o) => o.quotationId === q.id && o.status !== "Cancelled");
+  1296→      if (existing) return { ok: false, status: 409, code: "already_ordered", message: `An order already exists for ${q.number} (${existing.number}) — duplicates are blocked.` };
+  1297→      const total = quoteTotal(q);
+  1298→      const o: SalesOrder = {
+  1299→        id: nextId("so"),
+  1300→        number: `SO-2026-${String(s.orders.length + 39).padStart(3, "0")}`,
+  1301→        accountId: q.accountId,
+  1302→        quotationId: q.id,
+  1303→        opportunityId: q.opportunityId,
+  1304→        ownerId: q.ownerId,
+  1305→        status: "Confirmed",
+  1306→        payment: "Unpaid",
+  1307→        fulfillment: "Pending",
+  1308→        items: structuredClone(q.items),
+  1309→        total,
+  1310→        createdAt: now(),
+  1311→        invoiceId: `INV-2026-${1100 + Math.floor(Math.random() * 800)}`,
+  1312→        deliveryBy: q.deliveryTerms,
+  1313→      };
+  1314→      s.orders.unshift(o);
+  1315→      addActivity({ at: now(), type: "Order", actorId: SESSION_USER_ID, entity: { kind: "order", id: o.id }, summary: `${o.number} created from ${q.number} — invoice ${o.invoiceId} raised` });
+  1316→      audit({ action: "Sales order created", resource: `${o.number} · ${s.accounts.find((a) => a.id === o.accountId)?.name}`, severity: "Info", context: `From ${q.number} · ${rupees(total)} · invoice ${o.invoiceId} sent to Finance; fulfillment request sent to Inventory` });
+  1317→      return { ok: true, message: `${o.number} created — invoice ${o.invoiceId} raised in Finance and fulfillment requested from Inventory.`, order: orderWithRefs(o) };
+  1318→    }
+  1319→
+  1320→    case "order.update": {
+  1321→      const o = s.orders.find((x) => x.id === str(action.input, "id"));
+  1322→      if (!o) return { ok: false, status: 404, code: "not_found", message: "Order not found." };
+  1323→      if (scope === "own" && o.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own orders can be updated." };
+  1324→      const payment = str(action.input, "payment") as PaymentStateIn | undefined;
+  1325→      const fulfillment = str(action.input, "fulfillment") as FulfillmentStateIn | undefined;
+  1326→      const payFlow = ["Unpaid", "Partially Paid", "Paid"];
+  1327→      const fulFlow = ["Pending", "Packed", "Dispatched", "Delivered"];
+  1328→      if (payment && !payFlow.includes(payment)) return { ok: false, status: 422, code: "invalid_state", message: "Payment state must be Unpaid, Partially Paid or Paid." };
+  1329→      if (fulfillment && !fulFlow.includes(fulfillment)) return { ok: false, status: 422, code: "invalid_state", message: "Fulfillment must be Pending, Packed, Dispatched or Delivered." };
+  1330→      if (payment && payFlow.indexOf(payment) < payFlow.indexOf(o.payment)) return { ok: false, status: 409, code: "invalid_transition", message: `Payment cannot move backwards (${o.payment} → ${payment}).` };
+  1331→      if (fulfillment && fulFlow.indexOf(fulfillment) < fulFlow.indexOf(o.fulfillment)) return { ok: false, status: 409, code: "invalid_transition", message: `Fulfillment cannot move backwards (${o.fulfillment} → ${fulfillment}).` };
+  1332→      const changes: string[] = [];
+  1333→      if (payment && payment !== o.payment) { o.payment = payment; changes.push(`payment → ${payment}`); }
+  1334→      if (fulfillment && fulfillment !== o.fulfillment) {
+  1335→        o.fulfillment = fulfillment;
+  1336→        changes.push(`fulfillment → ${fulfillment}`);
+  1337→        if (fulfillment === "Dispatched" && !o.dispatchId) o.dispatchId = `DSP-2026-${770 + Math.floor(Math.random() * 200)}`;
+  1338→        if (fulfillment === "Delivered") o.status = o.payment === "Paid" ? "Closed" : "Delivered";
+  1339→      }
+  1340→      if (changes.length === 0) return { ok: false, status: 422, code: "no_changes", message: "Nothing changed." };
+  1341→      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "order", id: o.id }, summary: changes.join(" · ") });
+  1342→      audit({ action: "Sales order updated", resource: o.number, context: `${changes.join(" · ")}${o.dispatchId ? ` · dispatch ${o.dispatchId}` : ""}` });
+  1343→      return { ok: true, message: "Order updated — downstream systems are notified through the workflow layer.", order: orderWithRefs(o) };
+  1344→    }
+  1345→
+  1346→    case "order.cancel": {
+  1347→      const o = s.orders.find((x) => x.id === str(action.input, "id"));
+  1348→      if (!o) return { ok: false, status: 404, code: "not_found", message: "Order not found." };
+  1349→      if (scope === "own" && o.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own orders can be cancelled." };
+  1350→      if (["Dispatched", "Delivered", "Closed", "Cancelled"].includes(o.status)) return { ok: false, status: 409, code: "invalid_state", message: `An order that is ${o.status.toLowerCase()} cannot be cancelled.` };
+  1351→      if (!str(action.input, "reason")) return { ok: false, status: 422, code: "reason_required", message: "A reason is required — cancellation is audited and Finance is notified." };
+  1352→      o.status = "Cancelled";
+  1353→      o.cancelledReason = str(action.input, "reason");
+  1354→      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "order", id: o.id }, summary: `Order cancelled — ${o.cancelledReason}` });
+  1355→      audit({ action: "Sales order cancelled", resource: o.number, severity: "High", context: `${str(action.input, "reason")} · Finance and Inventory notified through the workflow layer` });
+  1356→      return { ok: true, message: `${o.number} cancelled. Finance and Inventory are notified through the workflow layer.`, order: orderWithRefs(o) };
+  1357→    }
+  1358→
+  1359→    // ---------- expenses ----------
+  1360→    case "expense.create": {
+  1361→      const i = action.input;
+  1362→      const amount = num(i, "amount");
+  1363→      const category = str(i, "category");
+  1364→      const description = str(i, "description");
+  1365→      if (!amount || amount <= 0) return { ok: false, status: 422, code: "invalid_amount", message: "Enter a positive amount." };
+  1366→      if (!category) return { ok: false, status: 422, code: "category_required", message: "Choose a category." };
+  1367→      if (!description || description.length < 4) return { ok: false, status: 422, code: "description_required", message: "Describe the expense — it travels with the claim to Finance." };
+  1368→      const e: SalesExpense = {
+  1369→        id: nextId("exp"),
+  1370→        employeeId: SESSION_USER_ID,
+  1371→        date: num(i, "date") ?? now(),
+  1372→        category: category as SalesExpense["category"],
+  1373→        amount,
+  1374→        description,
+  1375→        opportunityId: str(i, "opportunityId"),
+  1376→        visitId: str(i, "visitId"),
+  1377→        travelId: str(i, "travelId"),
+  1378→        status: "Draft",
+  1379→        receiptName: str(i, "receiptName"),
+  1380→      };
+  1381→      s.expenses.unshift(e);
+  1382→      audit({ action: "Sales expense drafted", resource: `${category} — ${rupees(amount)}`, context: description });
+  1383→      return { ok: true, message: "Expense saved as draft — submit it when ready.", expense: e };
+  1384→    }
+  1385→
+  1386→    case "expense.submit": {
+  1387→      const e = s.expenses.find((x) => x.id === str(action.input, "id"));
+  1388→      if (!e) return { ok: false, status: 404, code: "not_found", message: "Expense not found." };
+  1389→      if (e.employeeId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "You can only submit your own expenses." };
+  1390→      if (e.status !== "Draft") return { ok: false, status: 409, code: "invalid_state", message: `This expense is already ${e.status.toLowerCase()}.` };
+  1391→      e.status = "Submitted";
+  1392→      e.submittedAt = now();
+  1393→      const approval = pushApproval({
+  1394→        kind: "Expense claim",
+  1395→        title: `Expense claim — ${e.category} ${rupees(e.amount)}`,
+  1396→        requesterId: e.employeeId,
+  1397→        department: "Sales",
+  1398→        amount: e.amount,
+  1399→        priority: e.amount > 10_000 ? "High" : "Medium",
+  1400→        rule: e.amount > 10_000 ? "Expense claim > ₹10,000 → Sales Head" : "Expense claim → reporting manager",
+  1401→        sla: "3 working days",
+  1402→        stepUpRequired: false,
+  1403→        detail: `${e.description}${e.receiptName ? ` · receipt ${e.receiptName}` : ""}${e.visitId ? " · linked to a field visit" : ""}`,
+  1404→        history: [{ at: now(), actor: nameOf(e.employeeId), event: "Submitted from Sales Expenses" }],
+  1405→      });
+  1406→      audit({ action: "Sales expense submitted", resource: `${e.category} — ${rupees(e.amount)}`, context: `Routed via Approval Matrix (${approval.rule}) · Finance remains the financial source of truth` });
+  1407→      return { ok: true, message: "Expense submitted — routed through the enterprise Approval Matrix. Track the decision in My Approvals.", expense: e };
+  1408→    }
+  1409→
+  1410→    case "expense.delete": {
+  1411→      const e = s.expenses.find((x) => x.id === str(action.input, "id"));
+  1412→      if (!e) return { ok: false, status: 404, code: "not_found", message: "Expense not found." };
+  1413→      if (e.employeeId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "You can only delete your own drafts." };
+  1414→      if (e.status !== "Draft") return { ok: false, status: 409, code: "invalid_state", message: "Only drafts can be deleted — submitted claims are part of the approval record." };
+  1415→      s.expenses = s.expenses.filter((x) => x.id !== e.id);
+  1416→      audit({ action: "Sales expense draft deleted", resource: `${e.category} — ${rupees(e.amount)}`, context: "Draft removed before submission" });
+  1417→      return { ok: true, message: "Draft deleted." };
+  1418→    }
+  1419→
+  1420→    // ---------- visits ----------
+  1421→    case "visit.create": {
+  1422→      const i = action.input;
+  1423→      const accountId = str(i, "accountId");
+  1424→      const plannedAt = num(i, "plannedAt");
+  1425→      const purpose = str(i, "purpose");
+  1426→      if (!accountId || !plannedAt || !purpose) return { ok: false, status: 422, code: "required", message: "Customer, date/time and purpose are required." };
+  1427→      const v: SalesVisit = {
+  1428→        id: nextId("vis"),
+  1429→        accountId,
+  1430→        contactId: str(i, "contactId"),
+  1431→        ownerId: str(i, "ownerId") ?? SESSION_USER_ID,
+  1432→        opportunityId: str(i, "opportunityId"),
+  1433→        plannedAt,
+  1434→        durationMin: num(i, "durationMin") ?? 60,
+  1435→        location: str(i, "location") ?? s.accounts.find((a) => a.id === accountId)?.location ?? "Customer site",
+  1436→        purpose,
+  1437→        status: "Planned",
+  1438→        checklist: [{ label: "Opening discussion", done: false }, { label: "Requirements captured", done: false }, { label: "Next steps agreed", done: false }],
+  1439→      };
+  1440→      s.visits.unshift(v);
+  1441→      audit({ action: "Field visit planned", resource: `${s.accounts.find((a) => a.id === v.accountId)?.name} — ${purpose}`, context: `${nameOf(v.ownerId)} · ${new Date(plannedAt).toLocaleString("en-IN")}` });
+  1442→      return { ok: true, message: "Visit planned — it appears in the Field Visit Planner.", visit: visitWithRefs(v) };
+  1443→    }
+  1444→    case "visit.reschedule": {
+  1445→      const v = s.visits.find((x) => x.id === str(action.input, "id"));
+  1446→      if (!v) return { ok: false, status: 404, code: "not_found", message: "Visit not found." };
+  1447→      if (scope === "own" && v.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own visits can be rescheduled." };
+  1448→      if (v.status !== "Planned") return { ok: false, status: 409, code: "invalid_state", message: `A ${v.status.toLowerCase()} visit cannot be rescheduled.` };
+  1449→      const plannedAt = num(action.input, "plannedAt");
+  1450→      if (!plannedAt || plannedAt < now()) return { ok: false, status: 422, code: "invalid_date", message: "Pick a future date and time." };
+  1451→      v.plannedAt = plannedAt;
+  1452→      audit({ action: "Field visit rescheduled", resource: `${s.accounts.find((a) => a.id === v.accountId)?.name}`, context: new Date(plannedAt).toLocaleString("en-IN") });
+  1453→      return { ok: true, message: "Visit rescheduled." };
+  1454→    }
+  1455→    case "visit.cancel": {
+  1456→      const v = s.visits.find((x) => x.id === str(action.input, "id"));
+  1457→      if (!v) return { ok: false, status: 404, code: "not_found", message: "Visit not found." };
+  1458→      if (scope === "own" && v.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own visits can be cancelled." };
+  1459→      if (v.status !== "Planned") return { ok: false, status: 409, code: "invalid_state", message: `A ${v.status.toLowerCase()} visit cannot be cancelled.` };
+  1460→      v.status = "Cancelled";
+  1461→      audit({ action: "Field visit cancelled", resource: `${s.accounts.find((a) => a.id === v.accountId)?.name}`, context: "Cancelled before start" });
+  1462→      return { ok: true, message: "Visit cancelled." };
+  1463→    }
+  1464→    case "visit.start": {
+  1465→      const v = s.visits.find((x) => x.id === str(action.input, "id"));
+  1466→      if (!v) return { ok: false, status: 404, code: "not_found", message: "Visit not found." };
+  1467→      if (scope === "own" && v.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own visits can be started." };
+  1468→      if (v.status !== "Planned") return { ok: false, status: 409, code: "invalid_state", message: `A ${v.status.toLowerCase()} visit cannot be started.` };
+  1469→      v.status = "In Progress";
+  1470→      v.checkedInAt = now();
+  1471→      audit({ action: "Field visit started", resource: `${s.accounts.find((a) => a.id === v.accountId)?.name}`, context: "Check-in recorded" });
+  1472→      return { ok: true, message: "Visit started — check-in recorded.", visit: visitWithRefs(v) };
+  1473→    }
+  1474→    case "visit.complete": {
+  1475→      const v = s.visits.find((x) => x.id === str(action.input, "id"));
+  1476→      if (!v) return { ok: false, status: 404, code: "not_found", message: "Visit not found." };
+  1477→      if (scope === "own" && v.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own visits can be completed." };
+  1478→      if (v.status === "Completed") return { ok: false, status: 409, code: "already_done", message: "This visit is already completed." };
+  1479→      if (v.status === "Cancelled") return { ok: false, status: 409, code: "invalid_state", message: "Cancelled visits cannot be completed." };
+  1480→      const outcome = str(action.input, "outcome");
+  1481→      const notes = str(action.input, "notes");
+  1482→      if (!outcome) return { ok: false, status: 422, code: "outcome_required", message: "Record the visit outcome before completing." };
+  1483→      if (!notes) return { ok: false, status: 422, code: "notes_required", message: "Add visit notes — they feed the customer timeline." };
+  1484→      v.status = "Completed";
+  1485→      v.outcome = outcome;
+  1486→      v.notes = notes;
+  1487→      v.nextAction = str(action.input, "nextAction");
+  1488→      v.completedAt = now();
+  1489→      v.evidence = Array.isArray(action.input.evidence) ? (action.input.evidence as string[]).slice(0, 6) : v.evidence;
+  1490→      const followUpSubject = str(action.input, "followUpSubject");
+  1491→      const followUpDue = num(action.input, "followUpDueAt");
+  1492→      if (followUpSubject && followUpDue) {
+  1493→        s.followups.unshift({ id: nextId("fu"), type: "Call", subject: followUpSubject, ownerId: v.ownerId, accountId: v.accountId, opportunityId: v.opportunityId, dueAt: followUpDue, state: "Upcoming", priority: "Medium" });
+  1494→      }
+  1495→      addActivity({ at: now(), type: "Visit", actorId: SESSION_USER_ID, entity: { kind: "visit", id: v.id }, summary: `Visit completed — ${v.purpose}`, outcome });
+  1496→      audit({ action: "Field visit completed", resource: `${s.accounts.find((a) => a.id === v.accountId)?.name} — ${v.purpose}`, context: `Outcome: ${outcome}${v.nextAction ? ` · next: ${v.nextAction}` : ""}` });
+  1497→      return { ok: true, message: `Visit completed — notes and outcome recorded.${followUpSubject && followUpDue ? " Follow-up scheduled." : ""}`, visit: visitWithRefs(v) };
+  1498→    }
+  1499→
+  1500→    // ---------- travel ----------
+  1501→    case "travel.create": {
+  1502→      const i = action.input;
+  1503→      const destination = str(i, "destination");
+  1504→      const purpose = str(i, "purpose");
+  1505→      const startAt = num(i, "startAt");
+  1506→      const endAt = num(i, "endAt");
+  1507→      if (!destination || !purpose || !startAt || !endAt) return { ok: false, status: 422, code: "required", message: "Destination, purpose and dates are required." };
+  1508→      if (endAt < startAt) return { ok: false, status: 422, code: "invalid_dates", message: "The end of the trip cannot be before the start." };
+  1509→      const t: TravelPlan = { id: nextId("tvl"), ownerId: str(i, "ownerId") ?? SESSION_USER_ID, destination, purpose, startAt, endAt, estimatedCost: num(i, "estimatedCost") ?? 0, status: "Planned", visitIds: Array.isArray(i.visitIds) ? (i.visitIds as string[]) : [], notes: str(i, "notes") };
+  1510→      s.travel.unshift(t);
+  1511→      audit({ action: "Sales travel planned", resource: `${destination} — ${purpose}`, context: `${nameOf(t.ownerId)} · est. ${rupees(t.estimatedCost)}` });
+  1512→      return { ok: true, message: "Travel plan created — link visits to it from the planner.", travel: t };
+  1513→    }
+  1514→    case "travel.cancel": {
+  1515→      const t = s.travel.find((x) => x.id === str(action.input, "id"));
+  1516→      if (!t) return { ok: false, status: 404, code: "not_found", message: "Travel plan not found." };
+  1517→      if (scope === "own" && t.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own travel can be changed." };
+  1518→      if (t.status === "Completed") return { ok: false, status: 409, code: "invalid_state", message: "Completed travel cannot be cancelled." };
+  1519→      t.status = "Cancelled";
+  1520→      audit({ action: "Sales travel cancelled", resource: `${t.destination} — ${t.purpose}`, context: "Plan cancelled — linked visits unaffected" });
+  1521→      return { ok: true, message: "Travel plan cancelled." };
+  1522→    }
+  1523→
+  1524→    // ---------- whatsapp ----------
+  1525→    case "whatsapp.assign": {
+  1526→      const c = s.conversations.find((x) => x.id === str(action.input, "id"));
+  1527→      if (!c) return { ok: false, status: 404, code: "not_found", message: "Conversation not found." };
+  1528→      const to = str(action.input, "ownerId");
+  1529→      if (!to || !SALES_OWNERS.some((o) => o.id === to)) return { ok: false, status: 422, code: "owner_required", message: "Choose a valid salesperson." };
+  1530→      const from = c.ownerId;
+  1531→      if (scope === "own" && from !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own conversations can be reassigned." };
+  1532→      c.ownerId = to;
+  1533→      audit({ action: "WhatsApp conversation assigned", resource: `${c.contactName} (${c.waNumber})`, context: `${nameOf(from)} → ${nameOf(to)}` });
+  1534→      return { ok: true, message: `Conversation assigned to ${nameOf(to)}.` };
+  1535→    }
+  1536→    case "whatsapp.link": {
+  1537→      const c = s.conversations.find((x) => x.id === str(action.input, "id"));
+  1538→      if (!c) return { ok: false, status: 404, code: "not_found", message: "Conversation not found." };
+  1539→      const leadId = str(action.input, "leadId");
+  1540→      const accountId = str(action.input, "accountId");
+  1541→      const opportunityId = str(action.input, "opportunityId");
+  1542→      if (!leadId && !accountId && !opportunityId) return { ok: false, status: 422, code: "link_required", message: "Choose a lead, account or opportunity to link." };
+  1543→      if (leadId) { const l = s.leads.find((x) => x.id === leadId); if (!l) return { ok: false, status: 422, code: "unknown_lead", message: "That lead does not exist." }; c.leadId = leadId; }
+  1544→      if (accountId) { const a = s.accounts.find((x) => x.id === accountId); if (!a) return { ok: false, status: 422, code: "unknown_account", message: "That account does not exist." }; c.accountId = accountId; }
+  1545→      if (opportunityId) { const o = s.opportunities.find((x) => x.id === opportunityId); if (!o) return { ok: false, status: 422, code: "unknown_opportunity", message: "That opportunity does not exist." }; c.opportunityId = opportunityId; }
+  1546→      c.status = c.status === "Open" ? "Pending" : c.status;
+  1547→      audit({ action: "WhatsApp conversation linked", resource: c.contactName, context: [leadId && `lead ${leadId}`, accountId && `account ${accountId}`, opportunityId && `opportunity ${opportunityId}`].filter(Boolean).join(" · ") });
+  1548→      return { ok: true, message: "Conversation linked — future messages land on the linked records." };
+  1549→    }
+  1550→    case "whatsapp.reply": {
+  1551→      const c = s.conversations.find((x) => x.id === str(action.input, "id"));
+  1552→      if (!c) return { ok: false, status: 404, code: "not_found", message: "Conversation not found." };
+  1553→      if (scope === "own" && c.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only the assigned salesperson replies from this boundary." };
+  1554→      const body = str(action.input, "body");
+  1555→      const template = str(action.input, "template");
+  1556→      if (!body && !template) return { ok: false, status: 422, code: "body_required", message: "Write a message or pick a template." };
+  1557→      const ct = s.contacts.find((x) => x.phone.replace(/\D/g, "").endsWith(c.waNumber.replace(/\D/g, "").slice(-10)));
+  1558→      if (ct && !ct.consent.whatsapp) {
+  1559→        audit({ action: "WhatsApp reply blocked", resource: c.contactName, result: "Blocked", severity: "Warning", context: "Customer has not granted WhatsApp consent (communication policy)" });
+  1560→        return { ok: false, status: 403, code: "no_consent", message: "This customer has not consented to WhatsApp communication — use email or a call." };
+  1561→      }
+  1562→      const msg = { id: nextId("wm"), at: now(), direction: "out" as const, body: body ?? `Template: ${template}`, template: template ?? undefined, state: "sent" as const };
+  1563→      c.messages.push(msg);
+  1564→      c.lastMessageAt = now();
+  1565→      c.unread = 0;
+  1566→      if (c.status === "Resolved") c.status = "Pending";
+  1567→      if (c.leadId) addActivity({ at: now(), type: "WhatsApp", actorId: SESSION_USER_ID, entity: { kind: "lead", id: c.leadId }, summary: `Reply sent via WhatsApp Business${template ? ` (${template})` : ""}`, source: "WhatsApp Business" });
+  1568→      audit({ action: "WhatsApp message sent", resource: `${c.contactName} (${c.waNumber})`, context: `${template ? `Template ${template}` : "Free-text reply"} · API-based, consent verified` });
+  1569→      return { ok: true, message: "Message sent through the WhatsApp Business API.", conversationId: c.id };
+  1570→    }
+  1571→    case "whatsapp.note": {
+  1572→      const c = s.conversations.find((x) => x.id === str(action.input, "id"));
+  1573→      if (!c) return { ok: false, status: 404, code: "not_found", message: "Conversation not found." };
+  1574→      const body = str(action.input, "body");
+  1575→      if (!body) return { ok: false, status: 422, code: "note_required", message: "Write the note first." };
+  1576→      if (c.leadId) addActivity({ at: now(), type: "Note", actorId: SESSION_USER_ID, entity: { kind: "lead", id: c.leadId }, summary: `WhatsApp note — ${body}` });
+  1577→      audit({ action: "WhatsApp conversation note", resource: c.contactName, context: body.slice(0, 120) });
+  1578→      return { ok: true, message: "Note recorded." };
+  1579→    }
+  1580→    case "whatsapp.lead": {
+  1581→      const c = s.conversations.find((x) => x.id === str(action.input, "id"));
+  1582→      if (!c) return { ok: false, status: 404, code: "not_found", message: "Conversation not found." };
+  1583→      if (c.leadId) return { ok: false, status: 409, code: "already_linked", message: "This conversation is already linked to a lead." };
+  1584→      const dup = findDuplicates({ phone: c.waNumber, name: c.contactName.split(" (")[0] });
+  1585→      if (dup.length > 0 && !bool(action.input, "force")) {
+  1586→        return { ok: false, status: 409, code: "possible_duplicates", message: "An existing lead/contact matches this number — link it instead of creating a duplicate.", matches: dup };
+  1587→      }
+  1588→      const lead: SalesLead = {
+  1589→        id: nextId("lead"),
+  1590→        name: c.contactName.split(" (")[0] ?? c.contactName,
+  1591→        company: c.contactName.match(/\(([^)]+)\)/)?.[1] ?? "Unknown company",
+  1592→        contactPerson: c.contactName.split(" (")[0] ?? c.contactName,
+  1593→        phone: c.waNumber,
+  1594→        email: `${c.waNumber.replace(/\D/g, "").slice(-10)}@wa.leads.qubitone.in`,
+  1595→        source: "WhatsApp Campaign",
+  1596→        industry: "Other",
+  1597→        location: "—",
+  1598→        ownerId: c.ownerId,
+  1599→        status: "New",
+  1600→        priority: "Warm",
+  1601→        score: 55,
+  1602→        estimatedValueCr: 0,
+  1603→        nextFollowUpAt: now() + 86_400_000,
+  1604→        createdAt: now(),
+  1605→        lastActivityAt: now(),
+  1606→        tags: ["whatsapp"],
+  1607→        notes: "Created from a WhatsApp Business conversation — consent verified at receipt.",
+  1608→      };
+  1609→      s.leads.unshift(lead);
+  1610→      c.leadId = lead.id;
+  1611→      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: "Lead created from WhatsApp conversation", source: "WhatsApp Business" });
+  1612→      audit({ action: "Lead created from WhatsApp", resource: `${lead.name} (${lead.phone})`, context: "Conversation linked; source WhatsApp Business API" });
+  1613→      return { ok: true, message: `Lead created from the conversation and linked.`, leadId: lead.id };
+  1614→    }
+  1615→
+  1616→    // ---------- settings & targets ----------
+  1617→    case "settings.update": {
+  1618→      if (role !== "administrator") {
+  1619→        audit({ action: "Sales settings change denied", resource: "Sales settings", result: "Blocked", severity: "Warning", context: `Role boundary "${role}" holds no configuration authority` });
+  1620→        return { ok: false, status: 403, code: "admin_required", message: "Sales configuration is restricted to the administrator boundary — changes are validated and audited." };
+  1621→      }
+  1622→      const area = str(action.input, "area");
+  1623→      const value = action.input.value;
+  1624→      if (!area) return { ok: false, status: 422, code: "area_required", message: "Name the configuration area you are changing." };
+  1625→      const st = s.settings as unknown as Record<string, unknown>;
+  1626→      if (!(area in st)) return { ok: false, status: 422, code: "unknown_area", message: "That configuration area does not exist." };
+  1627→      if (area === "stages" && Array.isArray(value)) {
+  1628→        // stages cannot be removed while opportunities reference them
+  1629→        const names = (value as { name: OpportunityStage }[]).map((v) => v.name);
+  1630→        const inUse = s.opportunities.filter((o) => !["Won", "Lost"].includes(o.stage)).map((o) => o.stage);
+  1631→        const missing = inUse.filter((stg) => !names.includes(stg));
+  1632→        if (missing.length > 0) return { ok: false, status: 409, code: "stage_in_use", message: `Cannot remove stage(s) ${[...new Set(missing)].join(", ")} — open opportunities still use them. Re-map those opportunities first.` };
+  1633→      }
+  1634→      const before = JSON.stringify(st[area]);
+  1635→      st[area] = structuredClone(value);
+  1636→      const after = JSON.stringify(st[area]);
+  1637→      if (before === after) return { ok: false, status: 422, code: "no_changes", message: "Nothing changed in that area." };
+  1638→      audit({ action: "Sales settings updated", resource: `Sales settings · ${area}`, severity: "High", context: `Change validated and applied; previous value recoverable from the audit trail` });
+  1639→      return { ok: true, message: `${area} updated — the change is audited and recoverable.`, settings: s.settings };
+  1640→    }
+  1641→
+  1642→    case "target.update": {
+  1643→      if (role !== "administrator") return { ok: false, status: 403, code: "admin_required", message: "Targets are configured by the administrator boundary — managers see team performance, not quota editing." };
+  1644→      const id = str(action.input, "id");
+  1645→      const quotaCr = num(action.input, "quotaCr");
+  1646→      const t = SALES_TARGETS.find((x) => x.id === id);
+  1647→      if (!t) return { ok: false, status: 404, code: "not_found", message: "Target row not found." };
+  1648→      if (quotaCr === undefined || quotaCr < 0) return { ok: false, status: 422, code: "invalid_quota", message: "Enter a non-negative quota." };
+  1649→      const prev = t.quotaCr;
+  1650→      t.quotaCr = quotaCr;
+  1651→      audit({ action: "Sales target updated", resource: `${t.label} (${t.kind})`, severity: "High", context: `Q3 FY27 quota ₹${prev} Cr → ₹${quotaCr} Cr` });
+  1652→      return { ok: true, message: `${t.label} quota updated to ₹${quotaCr} Cr — change audited.` };
+  1653→    }
+  1654→
+  1655→    default:
+  1656→      return { ok: false, status: 400, code: "unknown_action", message: "Unsupported sales action." };
+  1657→  }
+  1658→}
+  1659→
+  1660→// helper types used only inside the server
+  1661→type QuoteItemIn = { productId: string; qty: number; discountPct?: number };
+  1662→type PaymentStateIn = SalesOrder["payment"];
+  1663→type FulfillmentStateIn = SalesOrder["fulfillment"];
+  1664→
+  1665→function today0End(): number {
+  1666→  const d = new Date();
+  1667→  d.setHours(23, 59, 59, 999);
+  1668→  return d.getTime();
+  1669→}
+  1670→
+  1671→// re-export for the API route
+  1672→export { SALES_TEAM_MEMBERS };
+  1673→

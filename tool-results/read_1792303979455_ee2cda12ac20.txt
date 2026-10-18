@@ -1,0 +1,902 @@
+     1→// ============================================================
+     2→// Qubit One — Sales enforcement store (SERVER ONLY)
+     3→// ============================================================
+     4→// Phase 6: the operational Sales module follows the Phase 3/4/5
+     5→// pattern — the frontend is NOT the source of truth. Scoping
+     6→// (company / team / own), lifecycle rules, duplicate guards,
+     7→// state transitions, approval routing and audit are enforced
+     8→// here, behind /api/sales route handlers.
+     9→//
+    10→// Integrations (all REUSED, none duplicated):
+    11→//  · Audit  → security-server.writeAudit (ONE enterprise trail)
+    12→//  · Approvals → workspace-server.pushApproval (My Approvals 46,
+    13→//    routed by the enterprise Approval Matrix 09)
+    14→//  · Identity → data.ts employees (owner names resolve there)
+    15→//  · Executive aggregates → executive-data SALES block (never
+    16→//    re-derived here)
+    17→// ============================================================
+    18→
+    19→import { writeAudit } from "./security-server";
+    20→import { pushApproval, SESSION_USER_ID, type WorkspaceRole } from "./workspace-server";
+    21→import { employees } from "./data";
+    22→import {
+    23→  SALES_ACTIVITIES,
+    24→  SALES_ACCOUNTS,
+    25→  SALES_CONTACTS,
+    26→  SALES_EXPENSES,
+    27→  SALES_FOLLOWUPS,
+    28→  SALES_LEADS,
+    29→  SALES_LEADERBOARD,
+    30→  SALES_MEETINGS,
+    31→  SALES_ORDERS,
+    32→  SALES_OPPORTUNITIES,
+    33→  SALES_OWNERS,
+    34→  SALES_PERIOD,
+    35→  SALES_PRODUCTS,
+    36→  SALES_QUOTATIONS,
+    37→  SALES_REPORT_CATALOG,
+    38→  SALES_SETTINGS,
+    39→  SALES_TARGETS,
+    40→  SALES_TEAMS,
+    41→  SALES_TEAM_MEMBERS,
+    42→  SALES_TRAVEL,
+    43→  SALES_VISITS,
+    44→  WA_CONVERSATIONS,
+    45→  computeForecast,
+    46→  SALES_FUNNEL_HISTORY,
+    47→  type ActivityType,
+    48→  type LeadPriority,
+    49→  type LeadStatus,
+    50→  type OpportunityStage,
+    51→  type QuotationStatus,
+    52→  type SalesAccount,
+    53→  type SalesActivity,
+    54→  type SalesContact,
+    55→  type SalesExpense,
+    56→  type SalesFollowUp,
+    57→  type SalesLead,
+    58→  type SalesMeeting,
+    59→  type SalesOpportunity,
+    60→  type SalesOrder,
+    61→  type SalesQuotation,
+    62→  type SalesSettings,
+    63→  type SalesVisit,
+    64→  type TravelPlan,
+    65→  type WaConversation,
+    66→} from "./sales-data";
+    67→
+    68→// ---------- role model ----------
+    69→// administrator → Sales Admin (+ company-wide visibility)
+    70→// dept-head     → Sales Manager (team scope)
+    71→// sales-exec    → Sales Employee (own records)
+    72→// employee / hr-manager → no sales authorization (403, audited)
+    73→
+    74→export type SalesScope = "company" | "team" | "own";
+    75→
+    76→export function requireSalesAccess(
+    77→  role: WorkspaceRole,
+    78→  screen: string,
+    79→): { ok: true; scope: SalesScope } | { ok: false; status: number; code: string; message: string } {
+    80→  if (role === "administrator") return { ok: true, scope: "company" };
+    81→  if (role === "dept-head") return { ok: true, scope: "team" };
+    82→  if (role === "sales-exec") return { ok: true, scope: "own" };
+    83→  writeAudit({
+    84→    actorId: SESSION_USER_ID,
+    85→    action: "Sales access denied",
+    86→    resource: screen,
+    87→    result: "Blocked",
+    88→    severity: "Warning",
+    89→    context: `Role boundary "${role}" holds no authorization for the Sales Operating System`,
+    90→  });
+    91→  return {
+    92→    ok: false,
+    93→    status: 403,
+    94→    code: "sales_access_required",
+    95→    message: "The Sales Operating System requires a sales role. You are previewing a boundary without sales authorization, and the server enforces this restriction.",
+    96→  };
+    97→}
+    98→
+    99→/** Manager boundary: the session user's teams (demo: Sales Head sees all teams). */
+   100→function visibleTeamMemberIds(scope: SalesScope): Set<string> {
+   101→  if (scope === "company") return new Set([...SALES_TEAM_MEMBERS, "sagar"]);
+   102→  if (scope === "team") return new Set([...SALES_TEAM_MEMBERS]); // Sales Head preview: all sales teams
+   103→  // own → session identity only
+   104→  return new Set([SESSION_USER_ID]);
+   105→}
+   106→
+   107→function canSee(scope: SalesScope, ownerId: string | undefined): boolean {
+   108→  if (!ownerId) return true; // unassigned pool is visible for triage at every sales role
+   109→  return visibleTeamMemberIds(scope).has(ownerId);
+   110→}
+   111→
+   112→const nameOf = (id: string | undefined) => (id ? (employees.find((e) => e.id === id)?.name ?? id) : "Unassigned");
+   113→
+   114→// ---------- mutable demo store ----------
+   115→interface SalesStore {
+   116→  seq: number;
+   117→  leads: SalesLead[];
+   118→  contacts: SalesContact[];
+   119→  accounts: SalesAccount[];
+   120→  opportunities: SalesOpportunity[];
+   121→  followups: SalesFollowUp[];
+   122→  meetings: SalesMeeting[];
+   123→  quotations: SalesQuotation[];
+   124→  orders: SalesOrder[];
+   125→  activities: SalesActivity[];
+   126→  conversations: WaConversation[];
+   127→  visits: SalesVisit[];
+   128→  travel: TravelPlan[];
+   129→  expenses: SalesExpense[];
+   130→  settings: SalesSettings;
+   131→}
+   132→
+   133→let _store: SalesStore | null = null;
+   134→
+   135→function store(): SalesStore {
+   136→  if (!_store) {
+   137→    _store = {
+   138→      seq: 1000,
+   139→      leads: SALES_LEADS.map((x) => structuredClone(x)),
+   140→      contacts: SALES_CONTACTS.map((x) => structuredClone(x)),
+   141→      accounts: SALES_ACCOUNTS.map((x) => structuredClone(x)),
+   142→      opportunities: SALES_OPPORTUNITIES.map((x) => structuredClone(x)),
+   143→      followups: SALES_FOLLOWUPS.map((x) => structuredClone(x)),
+   144→      meetings: SALES_MEETINGS.map((x) => structuredClone(x)),
+   145→      quotations: SALES_QUOTATIONS.map((x) => structuredClone(x)),
+   146→      orders: SALES_ORDERS as SalesOrder[],
+   147→      activities: SALES_ACTIVITIES.map((x) => structuredClone(x)),
+   148→      conversations: WA_CONVERSATIONS.map((x) => structuredClone(x)),
+   149→      visits: SALES_VISITS.map((x) => structuredClone(x)),
+   150→      travel: SALES_TRAVEL.map((x) => structuredClone(x)),
+   151→      expenses: SALES_EXPENSES.map((x) => structuredClone(x)),
+   152→      settings: structuredClone(SALES_SETTINGS),
+   153→    };
+   154→  }
+   155→  return _store;
+   156→}
+   157→
+   158→function nextId(prefix: string): string {
+   159→  const s = store();
+   160→  s.seq += 1;
+   161→  return `${prefix}-${s.seq}`;
+   162→}
+   163→
+   164→function addActivity(a: Omit<SalesActivity, "id">) {
+   165→  const s = store();
+   166→  const act: SalesActivity = { id: nextId("act"), ...a };
+   167→  s.activities.unshift(act);
+   168→  return act;
+   169→}
+   170→
+   171→// ---------- shared math ----------
+   172→
+   173→export function quoteSubtotal(q: Pick<SalesQuotation, "items">): number {
+   174→  return q.items.reduce((sum, i) => sum + i.qty * i.unitPrice * (1 - i.discountPct / 100), 0);
+   175→}
+   176→export function quoteTax(q: Pick<SalesQuotation, "items" | "taxPct">): number {
+   177→  return Math.round(quoteSubtotal(q) * (q.taxPct / 100));
+   178→}
+   179→export function quoteTotal(q: Pick<SalesQuotation, "items" | "taxPct">): number {
+   180→  return quoteSubtotal(q) + quoteTax(q);
+   181→}
+   182→export function quoteOverallDiscountPct(q: Pick<SalesQuotation, "items">): number {
+   183→  const gross = q.items.reduce((s, i) => s + i.qty * i.unitPrice, 0);
+   184→  if (gross <= 0) return 0;
+   185→  return ((gross - quoteSubtotal(q)) / gross) * 100;
+   186→}
+   187→
+   188→const rupees = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+   189→
+   190→// ---------- derived payloads ----------
+   191→
+   192→function leadWithRefs(l: SalesLead, scope: SalesScope) {
+   193→  const s = store();
+   194→  return {
+   195→    ...l,
+   196→    ownerName: nameOf(l.ownerId),
+   197→    isMine: l.ownerId === SESSION_USER_ID,
+   198→    activity: s.activities.filter((a) => a.entity.kind === "lead" && a.entity.id === l.id).slice(0, 8),
+   199→    relatedOpportunity: l.convertedTo?.opportunityId
+   200→      ? s.opportunities.find((o) => o.id === l.convertedTo?.opportunityId) ?? null
+   201→      : null,
+   202→    scopeNote: scope === "own" && l.ownerId !== SESSION_USER_ID ? undefined : undefined,
+   203→  };
+   204→}
+   205→
+   206→function oppWithRefs(o: SalesOpportunity) {
+   207→  const s = store();
+   208→  return {
+   209→    ...o,
+   210→    ownerName: nameOf(o.ownerId),
+   211→    account: s.accounts.find((a) => a.id === o.accountId) ?? null,
+   212→    contact: s.contacts.find((c) => c.id === o.contactId) ?? null,
+   213→    quotation: o.quotationId ? s.quotations.find((q) => q.id === o.quotationId) ?? null : null,
+   214→    followups: s.followups.filter((f) => f.opportunityId === o.id),
+   215→    meetings: s.meetings.filter((m) => m.opportunityId === o.id),
+   216→    visits: s.visits.filter((v) => v.opportunityId === o.id),
+   217→    activity: s.activities.filter((a) => a.entity.kind === "opportunity" && a.entity.id === o.id).slice(0, 12),
+   218→    isMine: o.ownerId === SESSION_USER_ID,
+   219→  };
+   220→}
+   221→
+   222→function accountWithRefs(a: SalesAccount) {
+   223→  const s = store();
+   224→  return {
+   225→    ...a,
+   226→    ownerName: nameOf(a.ownerId),
+   227→    contacts: s.contacts.filter((c) => c.accountId === a.id),
+   228→    opportunities: s.opportunities.filter((o) => o.accountId === a.id && o.stage !== "Won" && o.stage !== "Lost"),
+   229→    quotations: s.quotations.filter((q) => q.accountId === a.id),
+   230→    orders: s.orders.filter((o) => o.accountId === a.id),
+   231→    visits: s.visits.filter((v) => v.accountId === a.id),
+   232→    meetings: s.meetings.filter((m) => m.accountId === a.id),
+   233→    activity: s.activities
+   234→      .filter((act) =>
+   235→        (act.entity.kind === "account" && act.entity.id === a.id) ||
+   236→        (act.entity.kind === "opportunity" && s.opportunities.some((o) => o.id === act.entity.id && o.accountId === a.id)) ||
+   237→        (act.entity.kind === "quotation" && s.quotations.some((q) => q.id === act.entity.id && q.accountId === a.id)) ||
+   238→        (act.entity.kind === "order" && s.orders.some((o) => o.id === act.entity.id && o.accountId === a.id)) ||
+   239→        (act.entity.kind === "contact" && s.contacts.some((c) => c.id === act.entity.id && c.accountId === a.id)),
+   240→      )
+   241→      .slice(0, 14),
+   242→  };
+   243→}
+   244→
+   245→function contactWithRefs(c: SalesContact) {
+   246→  const s = store();
+   247→  const account = s.accounts.find((a) => a.id === c.accountId) ?? null;
+   248→  return {
+   249→    ...c,
+   250→    ownerName: nameOf(c.ownerId),
+   251→    account,
+   252→    leads: s.leads.filter((l) => l.company === account?.name),
+   253→    opportunities: s.opportunities.filter((o) => o.contactId === c.id),
+   254→    meetings: s.meetings.filter((m) => m.contactId === c.id),
+   255→    visits: s.visits.filter((v) => v.contactId === c.id),
+   256→    quotations: s.quotations.filter((q) => q.contactId === c.id),
+   257→    activity: s.activities
+   258→      .filter((a) =>
+   259→        (a.entity.kind === "contact" && a.entity.id === c.id) ||
+   260→        (a.entity.kind === "opportunity" && s.opportunities.some((o) => o.id === a.entity.id && o.contactId === c.id)) ||
+   261→        (a.entity.kind === "lead" && s.leads.some((l) => l.id === a.entity.id && l.contactPerson === c.name)),
+   262→      )
+   263→      .slice(0, 12),
+   264→  };
+   265→}
+   266→
+   267→function quotationWithRefs(q: SalesQuotation) {
+   268→  const s = store();
+   269→  return {
+   270→    ...q,
+   271→    ownerName: nameOf(q.ownerId),
+   272→    account: s.accounts.find((a) => a.id === q.accountId) ?? null,
+   273→    contact: q.contactId ? s.contacts.find((c) => c.id === q.contactId) ?? null : null,
+   274→    opportunity: q.opportunityId ? s.opportunities.find((o) => o.id === q.opportunityId) ?? null : null,
+   275→    order: q.status === "Accepted" ? s.orders.find((o) => o.quotationId === q.id) ?? null : null,
+   276→    subtotal: quoteSubtotal(q),
+   277→    taxAmount: quoteTax(q),
+   278→    total: quoteTotal(q),
+   279→    overallDiscountPct: Math.round(quoteOverallDiscountPct(q) * 10) / 10,
+   280→  };
+   281→}
+   282→
+   283→function orderWithRefs(o: SalesOrder) {
+   284→  const s = store();
+   285→  return {
+   286→    ...o,
+   287→    ownerName: nameOf(o.ownerId),
+   288→    account: s.accounts.find((a) => a.id === o.accountId) ?? null,
+   289→    quotation: o.quotationId ? s.quotations.find((q) => q.id === o.quotationId) ?? null : null,
+   290→    opportunity: o.opportunityId ? s.opportunities.find((op) => op.id === o.opportunityId) ?? null : null,
+   291→    activity: s.activities.filter((a) => a.entity.kind === "order" && a.entity.id === o.id),
+   292→  };
+   293→}
+   294→
+   295→function visitWithRefs(v: SalesVisit) {
+   296→  const s = store();
+   297→  return {
+   298→    ...v,
+   299→    ownerName: nameOf(v.ownerId),
+   300→    account: s.accounts.find((a) => a.id === v.accountId) ?? null,
+   301→    contact: v.contactId ? s.contacts.find((c) => c.id === v.contactId) ?? null : null,
+   302→    opportunity: v.opportunityId ? s.opportunities.find((o) => o.id === v.opportunityId) ?? null : null,
+   303→    travel: s.travel.find((t) => t.visitIds.includes(v.id)) ?? null,
+   304→    expenses: s.expenses.filter((e) => e.visitId === v.id),
+   305→    activity: s.activities.filter((a) => a.entity.kind === "visit" && a.entity.id === v.id),
+   306→  };
+   307→}
+   308→
+   309→function pipelinePayload(scope: SalesScope) {
+   310→  const s = store();
+   311→  const open = s.opportunities.filter((o) => canSee(scope, o.ownerId) && o.stage !== "Won" && o.stage !== "Lost");
+   312→  const stages = ["New", "Qualification", "Discovery", "Proposal", "Negotiation", "Contracting"] as OpportunityStage[];
+   313→  const columns = stages.map((st) => {
+   314→    const cards = open.filter((o) => o.stage === st);
+   315→    return {
+   316→      stage: st,
+   317→      count: cards.length,
+   318→      value: cards.reduce((sum, o) => sum + o.valueCr, 0),
+   319→      weighted: cards.reduce((sum, o) => sum + (o.valueCr * o.probability) / 100, 0),
+   320→      cards: cards.map((o) => ({
+   321→        id: o.id,
+   322→        name: o.name,
+   323→        accountId: o.accountId,
+   324→        accountName: s.accounts.find((a) => a.id === o.accountId)?.name ?? "—",
+   325→        ownerName: nameOf(o.ownerId),
+   326→        ownerId: o.ownerId,
+   327→        valueCr: o.valueCr,
+   328→        probability: o.probability,
+   329→        expectedClose: o.expectedClose,
+   330→        nextAction: o.nextAction,
+   331→        riskNote: o.riskNote,
+   332→        isMine: o.ownerId === SESSION_USER_ID,
+   333→      })),
+   334→    };
+   335→  });
+   336→  const won = s.opportunities.filter((o) => canSee(scope, o.ownerId) && o.stage === "Won");
+   337→  const lost = s.opportunities.filter((o) => canSee(scope, o.ownerId) && o.stage === "Lost");
+   338→  const gross = open.reduce((sum, o) => sum + o.valueCr, 0);
+   339→  return {
+   340→    columns,
+   341→    won: { count: won.length, value: won.reduce((s2, o) => s2 + o.valueCr, 0), cards: won.map((o) => ({ id: o.id, name: o.name, accountName: s.accounts.find((a) => a.id === o.accountId)?.name ?? "—", valueCr: o.valueCr, closedAt: o.closedAt, ownerName: nameOf(o.ownerId) })) },
+   342→    lost: { count: lost.length, cards: lost.map((o) => ({ id: o.id, name: o.name, lossReason: o.lossReason ?? "—", ownerName: nameOf(o.ownerId) })) },
+   343→    totals: { gross, weighted: open.reduce((sum, o) => sum + (o.valueCr * o.probability) / 100, 0), count: open.length },
+   344→  };
+   345→}
+   346→
+   347→function forecastPayload(scope: SalesScope) {
+   348→  const rows = SALES_TARGETS.filter((r) => (scope === "own" ? r.kind === "employee" && r.refId === SESSION_USER_ID : true));
+   349→  const summary = computeForecast(rows);
+   350→  return { rows, summary, history: SALES_FUNNEL_HISTORY, period: SALES_PERIOD };
+   351→}
+   352→
+   353→function homePayload(scope: SalesScope) {
+   354→  const s = store();
+   355→  const mine = (o: { ownerId: string }) => canSee(scope, o.ownerId);
+   356→  const myOpps = s.opportunities.filter((o) => mine(o) && o.stage !== "Won" && o.stage !== "Lost");
+   357→  const now = Date.now();
+   358→  const todays = s.followups.filter((f) => mine(f) && (f.state === "Overdue" || f.state === "Due Today"));
+   359→  const upcoming = s.followups
+   360→    .filter((f) => mine(f) && f.state === "Upcoming")
+   361→    .sort((a, b) => a.dueAt - b.dueAt)
+   362→    .slice(0, 4);
+   363→  const meetings = s.meetings
+   364→    .filter((m) => mine(m) && m.status === "Scheduled" && m.startAt >= now - 12 * 3_600_000)
+   365→    .sort((a, b) => a.startAt - b.startAt)
+   366→    .slice(0, 4);
+   367→  const recentLeads = s.leads.filter((l) => mine(l)).sort((a, b) => b.createdAt - a.createdAt).slice(0, 4);
+   368→  const recentActivity = s.activities.filter((a) => {
+   369→    if (a.entity.kind === "opportunity") return s.opportunities.some((o) => o.id === a.entity.id && mine(o));
+   370→    if (a.entity.kind === "lead") return s.leads.some((l) => l.id === a.entity.id && mine(l));
+   371→    if (a.entity.kind === "quotation") return s.quotations.some((q) => q.id === a.entity.id && mine(q));
+   372→    if (a.entity.kind === "order") return s.orders.some((o) => o.id === a.entity.id && mine(o));
+   373→    return false;
+   374→  }).slice(0, 6);
+   375→  const pendingQuotes = s.quotations.filter((q) => mine(q) && ["Draft", "Pending Approval", "Sent", "Viewed", "Negotiation"].includes(q.status));
+   376→  const target = SALES_TARGETS.find((t) => t.kind === "employee" && t.refId === SESSION_USER_ID) ?? null;
+   377→  const teamTarget = scope !== "own" ? SALES_TARGETS.filter((t) => t.kind === "team") : [];
+   378→  return {
+   379→    scope,
+   380→    myOpps: myOpps.slice(0, 5).map((o) => ({ id: o.id, name: o.name, accountName: s.accounts.find((a) => a.id === o.accountId)?.name ?? "—", stage: o.stage, valueCr: o.valueCr, probability: o.probability, expectedClose: o.expectedClose, riskNote: o.riskNote, nextAction: o.nextAction })),
+   381→    pipeline: pipelinePayload(scope).totals,
+   382→    followups: { today: todays.slice(0, 5), upcoming },
+   383→    meetings,
+   384→    recentLeads,
+   385→    recentActivity,
+   386→    pendingQuotations: pendingQuotes.slice(0, 4).map((q) => ({ id: q.id, number: q.number, status: q.status, accountId: q.accountId, accountName: s.accounts.find((a) => a.id === q.accountId)?.name ?? "—", total: quoteTotal(q), ownerName: nameOf(q.ownerId) })),
+   387→    target: target ? { quotaCr: target.quotaCr, achievedCr: target.achievedCr, pipelineCr: target.pipelineCr, forecastCr: target.forecastCr } : null,
+   388→    teamTargets: teamTarget,
+   389→    counts: {
+   390→      myOpenOpps: myOpps.length,
+   391→      dueFollowups: todays.length,
+   392→      unreadWhatsApp: s.conversations.filter((c) => mine(c) && c.unread > 0).length,
+   393→      visitsPlanned: s.visits.filter((v) => mine(v) && v.status === "Planned").length,
+   394→    },
+   395→  };
+   396→}
+   397→
+   398→function teamPayload(scope: SalesScope) {
+   399→  const s = store();
+   400→  if (scope === "own") {
+   401→    return { ok: false as const, status: 403, code: "manager_required", message: "The team dashboard requires a manager boundary. Sales executives see their own workspace on Sales Home." };
+   402→  }
+   403→  const teams = SALES_TEAMS.map((t) => {
+   404→    const target = SALES_TARGETS.find((r) => r.kind === "team" && r.refId === t.id)!;
+   405→    const members = t.memberIds.map((m) => {
+   406→      const empTarget = SALES_TARGETS.find((r) => r.kind === "employee" && r.refId === m);
+   407→      const opps = s.opportunities.filter((o) => o.ownerId === m && o.stage !== "Won" && o.stage !== "Lost");
+   408→      const overdue = s.followups.filter((f) => f.ownerId === m && f.state === "Overdue");
+   409→      const lb = SALES_LEADERBOARD.find((l) => l.employeeId === m);
+   410→      return {
+   411→        employeeId: m,
+   412→        name: nameOf(m),
+   413→        quotaCr: empTarget?.quotaCr ?? 0,
+   414→        achievedCr: empTarget?.achievedCr ?? 0,
+   415→        pipelineCr: opps.reduce((sum, o) => sum + o.valueCr, 0),
+   416→        openOpps: opps.length,
+   417→        overdueFollowups: overdue.length,
+   418→        conversionPct: lb?.conversionPct ?? 0,
+   419→        attention:
+   420→          overdue.length >= 2 ? "Overdue follow-ups piling up"
+   421→          : (empTarget && empTarget.quotaCr > 0 && empTarget.achievedCr / empTarget.quotaCr < 0.2) ? "Achievement below pace"
+   422→          : (lb && lb.followupCompletionPct < 70) ? "Follow-up completion needs coaching"
+   423→          : null,
+   424→      };
+   425→    });
+   426→    const teamOpps = s.opportunities.filter((o) => t.memberIds.includes(o.ownerId) && o.stage !== "Won" && o.stage !== "Lost");
+   427→    const risks = teamOpps.filter((o) => o.riskNote);
+   428→    return { id: t.id, name: t.name, region: t.region, head: nameOf(t.headId), target, members, risks: risks.map((o) => ({ id: o.id, name: o.name, riskNote: o.riskNote!, ownerName: nameOf(o.ownerId), valueCr: o.valueCr })), openOpps: teamOpps.length, quotations: s.quotations.filter((q) => t.memberIds.includes(q.ownerId) && ["Draft", "Pending Approval", "Sent", "Viewed", "Negotiation"].includes(q.status)).length };
+   429→  });
+   430→  const totals = {
+   431→    quotaCr: teams.reduce((s2, t) => s2 + t.target.quotaCr, 0),
+   432→    achievedCr: teams.reduce((s2, t) => s2 + t.target.achievedCr, 0),
+   433→    pipelineCr: teams.reduce((s2, t) => s2 + t.target.pipelineCr, 0),
+   434→    forecastCr: teams.reduce((s2, t) => s2 + t.target.forecastCr, 0),
+   435→  };
+   436→  return { ok: true as const, teams, totals, overdueTotal: s.followups.filter((f) => f.state === "Overdue").length };
+   437→}
+   438→
+   439→// ============================================================
+   440→// GET sections
+   441→// ============================================================
+   442→
+   443→export type SalesSection =
+   444→  | "home" | "leads" | "lead" | "contacts" | "contact" | "accounts" | "account"
+   445→  | "opportunities" | "opportunity" | "pipeline" | "forecast" | "targets" | "leaderboard"
+   446→  | "followups" | "meetings" | "quotations" | "quotation" | "orders" | "order"
+   447→  | "activity" | "whatsapp" | "whatsapp-conversation" | "visits" | "visit" | "travel"
+   448→  | "expenses" | "reports" | "team" | "settings" | "form-refs";
+   449→
+   450→export function sectionAllowed(s: string | null): s is SalesSection {
+   451→  return !!s && [
+   452→    "home", "leads", "lead", "contacts", "contact", "accounts", "account",
+   453→    "opportunities", "opportunity", "pipeline", "forecast", "targets", "leaderboard",
+   454→    "followups", "meetings", "quotations", "quotation", "orders", "order",
+   455→    "activity", "whatsapp", "whatsapp-conversation", "visits", "visit", "travel",
+   456→    "expenses", "reports", "team", "settings", "form-refs",
+   457→  ].includes(s);
+   458→}
+   459→
+   460→type Result<T> = { ok: true; data: T } | { ok: false; status: number; code: string; message: string };
+   461→
+   462→export type SalesActionResult =
+   463→  | { ok: true; message: string; [k: string]: unknown }
+   464→  | { ok: false; status: number; code: string; message: string; matches?: { kind: string; id: string; label: string; reason: string }[] };
+   465→
+   466→export function salesGet(role: WorkspaceRole, section: SalesSection, params: URLSearchParams): Result<Record<string, unknown>> {
+   467→  const gate = requireSalesAccess(role, `Sales · ${section}`);
+   468→  if (!gate.ok) return gate;
+   469→  const { scope } = gate;
+   470→  const s = store();
+   471→  const id = params.get("id");
+   472→  const entityId = params.get("entityId");
+   473→
+   474→  const deny = (): Result<never> => ({ ok: false, status: 404, code: "not_found", message: "This record is outside your authorized scope — the server does not disclose it." });
+   475→  const deny404 = (): Result<never> => ({ ok: false, status: 404, code: "not_found", message: "Record not found." });
+   476→
+   477→  switch (section) {
+   478→    case "home":
+   479→      return { ok: true, data: { period: SALES_PERIOD, ...homePayload(scope) } };
+   480→    case "leads": {
+   481→      const rows = s.leads.filter((l) => canSee(scope, l.ownerId)).map((l) => leadWithRefs(l, scope));
+   482→      return { ok: true, data: { rows, scope, owners: SALES_OWNERS, sources: s.settings.leadSources, savedViews: defaultLeadViews(scope) } };
+   483→    }
+   484→    case "lead": {
+   485→      const l = s.leads.find((x) => x.id === id);
+   486→      if (!l || !canSee(scope, l.ownerId)) return l ? deny() : deny404();
+   487→      return { ok: true, data: { lead: leadWithRefs(l, scope), scope } };
+   488→    }
+   489→    case "contacts": {
+   490→      const rows = s.contacts.filter((c) => canSee(scope, c.ownerId)).map(contactWithRefs);
+   491→      return { ok: true, data: { rows } };
+   492→    }
+   493→    case "contact": {
+   494→      const c = s.contacts.find((x) => x.id === id);
+   495→      if (!c || !canSee(scope, c.ownerId)) return c ? deny() : deny404();
+   496→      return { ok: true, data: { contact: contactWithRefs(c) } };
+   497→    }
+   498→    case "accounts": {
+   499→      const rows = s.accounts.filter((a) => canSee(scope, a.ownerId)).map(accountWithRefs);
+   500→      return { ok: true, data: { rows } };
+   501→    }
+   502→    case "account": {
+   503→      const a = s.accounts.find((x) => x.id === id);
+   504→      if (!a || !canSee(scope, a.ownerId)) return a ? deny() : deny404();
+   505→      return { ok: true, data: { account: accountWithRefs(a) } };
+   506→    }
+   507→    case "opportunities": {
+   508→      const rows = s.opportunities.filter((o) => canSee(scope, o.ownerId)).map(oppWithRefs);
+   509→      return { ok: true, data: { rows, scope } };
+   510→    }
+   511→    case "opportunity": {
+   512→      const o = s.opportunities.find((x) => x.id === id);
+   513→      if (!o || !canSee(scope, o.ownerId)) return o ? deny() : deny404();
+   514→      return { ok: true, data: { opportunity: oppWithRefs(o) } };
+   515→    }
+   516→    case "pipeline":
+   517→      return { ok: true, data: { period: SALES_PERIOD, ...pipelinePayload(scope) } };
+   518→    case "forecast":
+   519→      return { ok: true, data: forecastPayload(scope) };
+   520→    case "targets": {
+   521→      const rows = SALES_TARGETS.filter((r) => (scope === "own" ? r.kind === "employee" && r.refId === SESSION_USER_ID : true));
+   522→      return { ok: true, data: { rows, scope, canEdit: role === "administrator", period: SALES_PERIOD } };
+   523→    }
+   524→    case "leaderboard": {
+   525→      const rows = SALES_LEADERBOARD.filter((r) => canSee(scope, r.employeeId));
+   526→      return { ok: true, data: { rows, scope, teams: SALES_TEAMS, period: SALES_PERIOD } };
+   527→    }
+   528→    case "followups": {
+   529→      const rows = s.followups.filter((f) => canSee(scope, f.ownerId));
+   530→      return { ok: true, data: { rows, scope } };
+   531→    }
+   532→    case "meetings": {
+   533→      const rows = s.meetings.filter((m) => canSee(scope, m.ownerId)).map((m) => ({
+   534→        ...m,
+   535→        ownerName: nameOf(m.ownerId),
+   536→        account: s.accounts.find((a) => a.id === m.accountId) ?? null,
+   537→        contact: m.contactId ? s.contacts.find((c) => c.id === m.contactId) ?? null : null,
+   538→        opportunity: m.opportunityId ? s.opportunities.find((o) => o.id === m.opportunityId) ?? null : null,
+   539→      }));
+   540→      return { ok: true, data: { rows, scope } };
+   541→    }
+   542→    case "quotations": {
+   543→      const rows = s.quotations.filter((q) => canSee(scope, q.ownerId)).map(quotationWithRefs);
+   544→      return { ok: true, data: { rows, scope } };
+   545→    }
+   546→    case "quotation": {
+   547→      const q = s.quotations.find((x) => x.id === id);
+   548→      if (!q || !canSee(scope, q.ownerId)) return q ? deny() : deny404();
+   549→      return { ok: true, data: { quotation: quotationWithRefs(q) } };
+   550→    }
+   551→    case "orders": {
+   552→      const rows = s.orders.filter((o) => canSee(scope, o.ownerId)).map(orderWithRefs);
+   553→      return { ok: true, data: { rows, scope } };
+   554→    }
+   555→    case "order": {
+   556→      const o = s.orders.find((x) => x.id === id);
+   557→      if (!o || !canSee(scope, o.ownerId)) return o ? deny() : deny404();
+   558→      return { ok: true, data: { order: orderWithRefs(o) } };
+   559→    }
+   560→    case "activity": {
+   561→      let rows = s.activities.filter((a) => {
+   562→        const resolveOwner = (): string | undefined => {
+   563→          if (a.entity.kind === "lead") return s.leads.find((l) => l.id === a.entity.id)?.ownerId;
+   564→          if (a.entity.kind === "account") return s.accounts.find((x) => x.id === a.entity.id)?.ownerId;
+   565→          if (a.entity.kind === "contact") return s.contacts.find((c) => c.id === a.entity.id)?.ownerId;
+   566→          if (a.entity.kind === "opportunity") return s.opportunities.find((o) => o.id === a.entity.id)?.ownerId;
+   567→          if (a.entity.kind === "quotation") return s.quotations.find((q) => q.id === a.entity.id)?.ownerId;
+   568→          if (a.entity.kind === "order") return s.orders.find((o) => o.id === a.entity.id)?.ownerId;
+   569→          if (a.entity.kind === "visit") return s.visits.find((v) => v.id === a.entity.id)?.ownerId;
+   570→          return undefined;
+   571→        };
+   572→        return canSee(scope, resolveOwner()) && (!entityId || a.entity.id === entityId);
+   573→      });
+   574→      if (entityId) rows = rows.slice(0, 30);
+   575→      const refs = {
+   576→        accounts: Object.fromEntries(s.accounts.map((a) => [a.id, a.name])),
+   577→        opportunities: Object.fromEntries(s.opportunities.map((o) => [o.id, o.name])),
+   578→        leads: Object.fromEntries(s.leads.map((l) => [l.id, l.name])),
+   579→        quotations: Object.fromEntries(s.quotations.map((q) => [q.id, q.number])),
+   580→        orders: Object.fromEntries(s.orders.map((o) => [o.id, o.number])),
+   581→      };
+   582→      return { ok: true, data: { rows, refs, scope } };
+   583→    }
+   584→    case "whatsapp": {
+   585→      const rows = s.conversations.filter((c) => canSee(scope, c.ownerId)).map((c) => ({
+   586→        ...c,
+   587→        ownerName: nameOf(c.ownerId),
+   588→        account: c.accountId ? s.accounts.find((a) => a.id === c.accountId) ?? null : null,
+   589→        lead: c.leadId ? s.leads.find((l) => l.id === c.leadId) ?? null : null,
+   590→        opportunity: c.opportunityId ? s.opportunities.find((o) => o.id === c.opportunityId) ?? null : null,
+   591→        followup: s.followups.find((f) => f.leadId === c.leadId && f.type === "WhatsApp" && f.state !== "Completed") ?? null,
+   592→      }));
+   593→      return { ok: true, data: { rows, scope, connected: true } };
+   594→    }
+   595→    case "whatsapp-conversation": {
+   596→      const c = s.conversations.find((x) => x.id === id);
+   597→      if (!c || !canSee(scope, c.ownerId)) return c ? deny() : deny404();
+   598→      return {
+   599→        ok: true,
+   600→        data: {
+   601→          conversation: {
+   602→            ...c,
+   603→            ownerName: nameOf(c.ownerId),
+   604→            account: c.accountId ? s.accounts.find((a) => a.id === c.accountId) ?? null : null,
+   605→            lead: c.leadId ? s.leads.find((l) => l.id === c.leadId) ?? null : null,
+   606→            opportunity: c.opportunityId ? s.opportunities.find((o) => o.id === c.opportunityId) ?? null : null,
+   607→          },
+   608→        },
+   609→      };
+   610→    }
+   611→    case "visits": {
+   612→      const rows = s.visits.filter((v) => canSee(scope, v.ownerId)).map(visitWithRefs);
+   613→      return { ok: true, data: { rows, scope } };
+   614→    }
+   615→    case "visit": {
+   616→      const v = s.visits.find((x) => x.id === id);
+   617→      if (!v || !canSee(scope, v.ownerId)) return v ? deny() : deny404();
+   618→      return { ok: true, data: { visit: visitWithRefs(v) } };
+   619→    }
+   620→    case "travel": {
+   621→      const rows = s.travel.filter((t) => canSee(scope, t.ownerId)).map((t) => ({
+   622→        ...t,
+   623→        ownerName: nameOf(t.ownerId),
+   624→        visits: t.visitIds.map((vid) => s.visits.find((v) => v.id === vid) ?? null).filter(Boolean),
+   625→        expenses: s.expenses.filter((e) => e.travelId === t.id),
+   626→      }));
+   627→      return { ok: true, data: { rows, scope } };
+   628→    }
+   629→    case "expenses": {
+   630→      const rows = s.expenses.filter((e) => (scope === "own" ? e.employeeId === SESSION_USER_ID : true)).map((e) => ({
+   631→        ...e,
+   632→        employeeName: nameOf(e.employeeId),
+   633→        opportunity: e.opportunityId ? s.opportunities.find((o) => o.id === e.opportunityId) ?? null : null,
+   634→        visit: e.visitId ? s.visits.find((v) => v.id === e.visitId) ?? null : null,
+   635→        travel: e.travelId ? s.travel.find((t) => t.id === e.travelId) ?? null : null,
+   636→      }));
+   637→      return { ok: true, data: { rows, scope, canDecide: role === "administrator" || role === "dept-head" } };
+   638→    }
+   639→    case "reports": {
+   640→      const metrics = {
+   641→        pipeline: pipelinePayload(scope).totals,
+   642→        forecast: forecastPayload(scope).summary,
+   643→        conversion: {
+   644→          leads: s.leads.length,
+   645→          qualified: s.leads.filter((l) => ["Qualified", "Converted"].includes(l.status)).length,
+   646→          converted: s.leads.filter((l) => l.status === "Converted").length,
+   647→          bySource: Object.entries(
+   648→            s.leads.reduce<Record<string, { total: number; converted: number }>>((acc, l) => {
+   649→              acc[l.source] = acc[l.source] ?? { total: 0, converted: 0 };
+   650→              acc[l.source].total += 1;
+   651→              if (l.status === "Converted") acc[l.source].converted += 1;
+   652→              return acc;
+   653→            }, {}),
+   654→          ).map(([source, v]) => ({ source, ...v })),
+   655→        },
+   656→        winloss: {
+   657→          won: s.opportunities.filter((o) => o.stage === "Won").map((o) => ({ id: o.id, name: o.name, valueCr: o.valueCr, ownerName: nameOf(o.ownerId), closedAt: o.closedAt })),
+   658→          lost: s.opportunities.filter((o) => o.stage === "Lost").map((o) => ({ id: o.id, name: o.name, lossReason: o.lossReason ?? "—" })),
+   659→          lossReasons: s.settings.lossReasons,
+   660→        },
+   661→        quotation: {
+   662→          total: s.quotations.length,
+   663→          accepted: s.quotations.filter((q) => q.status === "Accepted").length,
+   664→          pending: s.quotations.filter((q) => q.status === "Pending Approval").length,
+   665→          avgDiscountPct: Math.round((s.quotations.reduce((sum, q) => sum + quoteOverallDiscountPct(q), 0) / Math.max(1, s.quotations.length)) * 10) / 10,
+   666→        },
+   667→        aging: s.opportunities
+   668→          .filter((o) => canSee(scope, o.ownerId) && o.stage !== "Won" && o.stage !== "Lost")
+   669→          .map((o) => ({ id: o.id, name: o.name, stage: o.stage, daysInStage: Math.floor((Date.now() - o.lastStageChangeAt) / 86_400_000), ownerName: nameOf(o.ownerId), valueCr: o.valueCr, riskNote: o.riskNote }))
+   670→          .sort((a, b) => b.daysInStage - a.daysInStage),
+   671→      };
+   672→      return { ok: true, data: { catalog: SALES_REPORT_CATALOG, metrics, scope, canExport: role === "administrator" || role === "dept-head" } };
+   673→    }
+   674→    case "team": {
+   675→      const t = teamPayload(scope);
+   676→      return t.ok ? { ok: true, data: { ...t, scope } as unknown as Record<string, unknown> } : { ok: false, status: t.status, code: t.code, message: t.message };
+   677→    }
+   678→    case "settings":
+   679→      return { ok: true, data: { settings: s.settings, canEdit: role === "administrator" } };
+   680→    case "form-refs":
+   681→      return {
+   682→        ok: true,
+   683→        data: {
+   684→          owners: SALES_OWNERS,
+   685→          accounts: s.accounts.map((a) => ({ id: a.id, name: a.name, ownerId: a.ownerId })),
+   686→          contacts: s.contacts.map((c) => ({ id: c.id, name: c.name, accountId: c.accountId })),
+   687→          opportunities: s.opportunities.filter((o) => canSee(scope, o.ownerId)).map((o) => ({ id: o.id, name: o.name, accountId: o.accountId })),
+   688→          leads: s.leads.filter((l) => canSee(scope, l.ownerId)).map((l) => ({ id: l.id, name: l.name, company: l.company })),
+   689→          products: s.settings && SALES_PRODUCTS,
+   690→          sources: s.settings.leadSources,
+   691→          industries: ["Manufacturing", "Retail", "Logistics", "Banking", "Healthcare", "Textiles", "Media", "Energy", "Pharmaceuticals", "Food Processing", "Automotive", "EdTech", "Other"],
+   692→        },
+   693→      };
+   694→    default:
+   695→      return { ok: false, status: 400, code: "bad_section", message: "Unknown sales section." };
+   696→  }
+   697→}
+   698→
+   699→function defaultLeadViews(scope: SalesScope) {
+   700→  const base = [
+   701→    { id: "view-hot", label: "Hot leads", filter: { priority: "Hot" } },
+   702→    { id: "view-new", label: "New this week", filter: { status: "New" } },
+   703→    { id: "view-unassigned", label: "Unassigned", filter: { unassigned: true } },
+   704→    { id: "view-today", label: "Follow-up today", filter: { followup: "today" } },
+   705→  ];
+   706→  return scope === "own" ? base.slice(0, 3) : base;
+   707→}
+   708→
+   709→// ============================================================
+   710→// POST actions — validation, lifecycle rules, audit
+   711→// ============================================================
+   712→
+   713→const emailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+   714→const phoneOk = (v: string) => /^\+?[0-9 ()-]{8,18}$/.test(v);
+   715→const now = () => Date.now();
+   716→
+   717→function findDuplicates(input: { name?: string; email?: string; phone?: string; company?: string }) {
+   718→  const s = store();
+   719→  const matches: { kind: string; id: string; label: string; reason: string }[] = [];
+   720→  for (const l of s.leads) {
+   721→    if (input.email && l.email.toLowerCase() === input.email.toLowerCase()) matches.push({ kind: "lead", id: l.id, label: `${l.name} — ${l.contactPerson}`, reason: "Same email" });
+   722→    else if (input.phone && l.phone.replace(/\D/g, "").endsWith(input.phone.replace(/\D/g, "").slice(-10))) matches.push({ kind: "lead", id: l.id, label: `${l.name} — ${l.contactPerson}`, reason: "Similar phone" });
+   723→    else if (input.name && l.name.toLowerCase() === input.name.toLowerCase()) matches.push({ kind: "lead", id: l.id, label: `${l.name} — ${l.contactPerson}`, reason: "Same lead name" });
+   724→  }
+   725→  for (const c of s.contacts) {
+   726→    if (input.email && c.email.toLowerCase() === input.email.toLowerCase()) matches.push({ kind: "contact", id: c.id, label: `${c.name} (${c.designation})`, reason: "Same email as existing contact" });
+   727→    else if (input.phone && c.phone.replace(/\D/g, "").endsWith(input.phone.replace(/\D/g, "").slice(-10))) matches.push({ kind: "contact", id: c.id, label: `${c.name} (${c.designation})`, reason: "Similar phone to existing contact" });
+   728→  }
+   729→  for (const a of s.accounts) {
+   730→    if (input.company && a.name.toLowerCase() === input.company.toLowerCase()) matches.push({ kind: "account", id: a.id, label: a.name, reason: "Account already exists" });
+   731→  }
+   732→  return matches;
+   733→}
+   734→
+   735→export type Action =
+   736→  | { type: "lead.create"; input: Record<string, unknown> }
+   737→  | { type: "lead.assign"; input: Record<string, unknown> }
+   738→  | { type: "lead.status"; input: Record<string, unknown> }
+   739→  | { type: "lead.note"; input: Record<string, unknown> }
+   740→  | { type: "lead.followup"; input: Record<string, unknown> }
+   741→  | { type: "lead.convert"; input: Record<string, unknown> }
+   742→  | { type: "opportunity.stage"; input: Record<string, unknown> }
+   743→  | { type: "opportunity.update"; input: Record<string, unknown> }
+   744→  | { type: "followup.complete"; input: Record<string, unknown> }
+   745→  | { type: "followup.reschedule"; input: Record<string, unknown> }
+   746→  | { type: "meeting.create"; input: Record<string, unknown> }
+   747→  | { type: "meeting.reschedule"; input: Record<string, unknown> }
+   748→  | { type: "meeting.cancel"; input: Record<string, unknown> }
+   749→  | { type: "meeting.notes"; input: Record<string, unknown> }
+   750→  | { type: "quotation.create"; input: Record<string, unknown> }
+   751→  | { type: "quotation.update"; input: Record<string, unknown> }
+   752→  | { type: "quotation.submit"; input: Record<string, unknown> }
+   753→  | { type: "quotation.decide"; input: Record<string, unknown> }
+   754→  | { type: "quotation.send"; input: Record<string, unknown> }
+   755→  | { type: "quotation.cancel"; input: Record<string, unknown> }
+   756→  | { type: "quotation.revise"; input: Record<string, unknown> }
+   757→  | { type: "order.create"; input: Record<string, unknown> }
+   758→  | { type: "order.update"; input: Record<string, unknown> }
+   759→  | { type: "order.cancel"; input: Record<string, unknown> }
+   760→  | { type: "expense.create"; input: Record<string, unknown> }
+   761→  | { type: "expense.submit"; input: Record<string, unknown> }
+   762→  | { type: "expense.delete"; input: Record<string, unknown> }
+   763→  | { type: "visit.create"; input: Record<string, unknown> }
+   764→  | { type: "visit.reschedule"; input: Record<string, unknown> }
+   765→  | { type: "visit.cancel"; input: Record<string, unknown> }
+   766→  | { type: "visit.start"; input: Record<string, unknown> }
+   767→  | { type: "visit.complete"; input: Record<string, unknown> }
+   768→  | { type: "travel.create"; input: Record<string, unknown> }
+   769→  | { type: "travel.cancel"; input: Record<string, unknown> }
+   770→  | { type: "whatsapp.assign"; input: Record<string, unknown> }
+   771→  | { type: "whatsapp.link"; input: Record<string, unknown> }
+   772→  | { type: "whatsapp.reply"; input: Record<string, unknown> }
+   773→  | { type: "whatsapp.note"; input: Record<string, unknown> }
+   774→  | { type: "whatsapp.lead"; input: Record<string, unknown> }
+   775→  | { type: "settings.update"; input: Record<string, unknown> }
+   776→  | { type: "target.update"; input: Record<string, unknown> };
+   777→
+   778→const str = (o: Record<string, unknown>, k: string): string | undefined => (typeof o[k] === "string" ? (o[k] as string).trim() : undefined);
+   779→const num = (o: Record<string, unknown>, k: string): number | undefined => (typeof o[k] === "number" && Number.isFinite(o[k] as number) ? (o[k] as number) : undefined);
+   780→const bool = (o: Record<string, unknown>, k: string): boolean | undefined => (typeof o[k] === "boolean" ? (o[k] as boolean) : undefined);
+   781→
+   782→export function salesPost(role: WorkspaceRole, action: Action): SalesActionResult {
+   783→  const s = store();
+   784→  const gate = requireSalesAccess(role, `Sales · ${action.type}`);
+   785→  if (!gate.ok) return gate;
+   786→  const { scope } = gate;
+   787→  const audit = (args: { action: string; resource: string; severity?: "Info" | "Warning" | "High"; context: string; result?: "Success" | "Blocked" }) =>
+   788→    writeAudit({ actorId: SESSION_USER_ID, action: args.action, resource: args.resource, result: args.result ?? "Success", severity: args.severity ?? "Info", source: "Sales OS", context: args.context });
+   789→
+   790→  const ownOnly = (ownerId: string | undefined): SalesActionResult | null => {
+   791→    if (scope === "company") return null;
+   792→    if (ownerId && canSee(scope, ownerId)) return null;
+   793→    return { ok: false, status: 403, code: "scope_denied", message: scope === "own" ? "Only records you own can be changed from this boundary." : "Only records inside your team scope can be changed." };
+   794→  };
+   795→
+   796→  switch (action.type) {
+   797→    // ---------- leads ----------
+   798→    case "lead.create": {
+   799→      const i = action.input;
+   800→      const name = str(i, "name");
+   801→      const company = str(i, "company");
+   802→      const email = str(i, "email");
+   803→      const phone = str(i, "phone");
+   804→      if (!name || !company || !email || !phone) return { ok: false, status: 422, code: "required", message: "Lead name, company, email and phone are required." };
+   805→      if (!emailOk(email)) return { ok: false, status: 422, code: "invalid_email", message: "Enter a valid email address." };
+   806→      if (!phoneOk(phone)) return { ok: false, status: 422, code: "invalid_phone", message: "Enter a valid phone number." };
+   807→      if (!str(i, "ownerId")) return { ok: false, status: 422, code: "owner_required", message: "Choose an owner — leads are never created unowned." };
+   808→      const matches = findDuplicates({ name, email, phone, company });
+   809→      if (matches.length > 0 && !bool(i, "force")) {
+   810→        return { ok: false, status: 409, code: "possible_duplicates", message: "Possible existing matches were found — review them before creating a duplicate.", matches };
+   811→      }
+   812→      const lead: SalesLead = {
+   813→        id: nextId("lead"),
+   814→        name, company,
+   815→        contactPerson: str(i, "contactPerson") ?? name,
+   816→        phone, email,
+   817→        source: str(i, "source") ?? "Website",
+   818→        industry: str(i, "industry") ?? "Other",
+   819→        location: str(i, "location") ?? "—",
+   820→        ownerId: str(i, "ownerId")!,
+   821→        status: "New",
+   822→        priority: (str(i, "priority") as LeadPriority) ?? "Warm",
+   823→        score: num(i, "score") ?? 50,
+   824→        estimatedValueCr: num(i, "estimatedValueCr") ?? 0,
+   825→        expectedClose: str(i, "expectedClose"),
+   826→        nextFollowUpAt: num(i, "nextFollowUpAt"),
+   827→        createdAt: now(),
+   828→        lastActivityAt: now(),
+   829→        tags: Array.isArray(i.tags) ? (i.tags as string[]).slice(0, 6) : [],
+   830→        notes: str(i, "notes"),
+   831→      };
+   832→      s.leads.unshift(lead);
+   833→      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: "Lead created", outcome: `Source ${lead.source}` });
+   834→      if (lead.nextFollowUpAt) {
+   835→        s.followups.unshift({ id: nextId("fu"), type: "Call", subject: `First follow-up — ${lead.name}`, ownerId: lead.ownerId, leadId: lead.id, dueAt: lead.nextFollowUpAt, state: "Upcoming", priority: lead.priority === "Hot" ? "High" : "Medium" });
+   836→      }
+   837→      audit({ action: "Lead created", resource: `${lead.name} — ${lead.company}`, context: `Owner ${nameOf(lead.ownerId)} · source ${lead.source}${lead.nextFollowUpAt ? " · follow-up scheduled" : ""}` });
+   838→      return { ok: true, message: `Lead created and assigned to ${nameOf(lead.ownerId)}. An initial activity was recorded.`, lead: leadWithRefs(lead, scope) };
+   839→    }
+   840→
+   841→    case "lead.assign": {
+   842→      const lead = s.leads.find((l) => l.id === str(action.input, "id"));
+   843→      if (!lead) return { ok: false, status: 404, code: "not_found", message: "Lead not found." };
+   844→      if (!canSee(scope, lead.ownerId)) return { ok: false, status: 403, code: "scope_denied", message: "This lead is outside your authorized scope." };
+   845→      if (scope === "own") return { ok: false, status: 403, code: "manager_required", message: "Reassignment is a manager action — ask your sales manager, or use Convert to move the lead forward." };
+   846→      const to = str(action.input, "ownerId");
+   847→      if (!to || !SALES_OWNERS.some((o) => o.id === to)) return { ok: false, status: 422, code: "owner_required", message: "Choose a valid owner from the sales team." };
+   848→      if (to === lead.ownerId) return { ok: false, status: 422, code: "same_owner", message: "This lead already belongs to that owner." };
+   849→      const from = lead.ownerId;
+   850→      lead.ownerId = to;
+   851→      lead.lastActivityAt = now();
+   852→      s.followups.filter((f) => f.leadId === lead.id && f.state !== "Completed").forEach((f) => (f.ownerId = to));
+   853→      addActivity({ at: now(), type: "Lead assigned", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: `Ownership moved ${nameOf(from)} → ${nameOf(to)}` });
+   854→      audit({ action: "Lead ownership changed", resource: `${lead.name} — ${lead.company}`, context: `${nameOf(from)} → ${nameOf(to)}; open follow-ups reassigned` });
+   855→      return { ok: true, message: `Lead reassigned to ${nameOf(to)}. Open follow-ups moved with it.`, lead: leadWithRefs(lead, scope) };
+   856→    }
+   857→
+   858→    case "lead.status": {
+   859→      const lead = s.leads.find((l) => l.id === str(action.input, "id"));
+   860→      if (!lead) return { ok: false, status: 404, code: "not_found", message: "Lead not found." };
+   861→      if (scope === "own" && lead.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only records you own can be changed from this boundary." };
+   862→      const status = str(action.input, "status") as LeadStatus | undefined;
+   863→      if (!status || !["Working", "Qualified", "Unqualified"].includes(status)) return { ok: false, status: 422, code: "invalid_status", message: "Status must be Working, Qualified or Unqualified — use Convert for the full lifecycle." };
+   864→      if (status === "Unqualified" && !str(action.input, "reason")) return { ok: false, status: 422, code: "reason_required", message: "A disqualification reason is required — it is kept on the lead and in the audit trail." };
+   865→      const prev = lead.status;
+   866→      lead.status = status;
+   867→      if (status === "Unqualified") lead.disqualifiedReason = str(action.input, "reason");
+   868→      lead.lastActivityAt = now();
+   869→      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: `Lead ${prev} → ${status}`, outcome: status === "Unqualified" ? lead.disqualifiedReason : undefined });
+   870→      audit({ action: `Lead marked ${status.toLowerCase()}`, resource: `${lead.name} — ${lead.company}`, context: `${prev} → ${status}${status === "Unqualified" ? ` · reason: ${lead.disqualifiedReason}` : ""}` });
+   871→      return { ok: true, message: `Lead marked ${status}.`, lead: leadWithRefs(lead, scope) };
+   872→    }
+   873→
+   874→    case "lead.note": {
+   875→      const lead = s.leads.find((l) => l.id === str(action.input, "id"));
+   876→      if (!lead) return { ok: false, status: 404, code: "not_found", message: "Lead not found." };
+   877→      if (!canSee(scope, lead.ownerId)) return { ok: false, status: 403, code: "scope_denied", message: "This lead is outside your authorized scope." };
+   878→      const body = str(action.input, "body");
+   879→      if (!body || body.length < 3) return { ok: false, status: 422, code: "note_required", message: "Write the note before saving." };
+   880→      lead.lastActivityAt = now();
+   881→      addActivity({ at: now(), type: "Note", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: body });
+   882→      audit({ action: "Note added to lead", resource: `${lead.name} — ${lead.company}`, context: body.slice(0, 120) });
+   883→      return { ok: true, message: "Note recorded on the lead timeline." };
+   884→    }
+   885→
+   886→    case "lead.followup": {
+   887→      const lead = s.leads.find((l) => l.id === str(action.input, "id"));
+   888→      if (!lead) return { ok: false, status: 404, code: "not_found", message: "Lead not found." };
+   889→      if (!canSee(scope, lead.ownerId)) return { ok: false, status: 403, code: "scope_denied", message: "This lead is outside your authorized scope." };
+   890→      const dueAt = num(action.input, "dueAt");
+   891→      const type = (str(action.input, "type") ?? "Call") as SalesFollowUp["type"];
+   892→      if (!dueAt || dueAt < now() - 60_000) return { ok: false, status: 422, code: "invalid_date", message: "Schedule the follow-up for a future date and time." };
+   893→      const fu: SalesFollowUp = { id: nextId("fu"), type, subject: str(action.input, "subject") ?? `Follow-up — ${lead.name}`, ownerId: lead.ownerId, leadId: lead.id, dueAt, state: dueAt < today0End() ? "Due Today" : "Upcoming", priority: (str(action.input, "priority") as "High" | "Medium" | "Low") ?? "Medium" };
+   894→      s.followups.unshift(fu);
+   895→      lead.nextFollowUpAt = dueAt;
+   896→      addActivity({ at: now(), type: "Follow-up", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: `${fu.type} follow-up scheduled — ${new Date(dueAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}` });
+   897→      audit({ action: "Follow-up scheduled", resource: `${lead.name} — ${lead.company}`, context: `${fu.type} · due ${new Date(dueAt).toLocaleString("en-IN")}` });
+   898→      return { ok: true, message: "Follow-up scheduled and visible in the Follow-up Queue." };
+   899→    }
+   900→
+
+[showing lines 1-900 of 1673; use offset=901 with limit to continue reading]

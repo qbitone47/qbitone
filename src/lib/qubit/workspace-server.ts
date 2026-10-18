@@ -81,6 +81,48 @@ export function listApprovals(role: WorkspaceRole) {
   return { queue, history, note: null };
 }
 
+// ============================================================
+// pushApproval — the cross-module entry point for the ONE
+// enterprise approval queue (Screen 46 · routed by the Approval
+// Matrix, Screen 09). Phase 6 Sales routes quotation-discount and
+// expense-claim approvals here instead of building a second
+// approval engine.
+// ============================================================
+export function pushApproval(input: {
+  kind: ApprovalRequest["kind"];
+  title: string;
+  requesterId: string;
+  department: string;
+  amount?: number;
+  priority?: ApprovalRequest["priority"];
+  rule: string;
+  sla: string;
+  stepUpRequired?: boolean;
+  detail: string;
+  history?: ApprovalRequest["history"];
+}): ApprovalRequest {
+  const s = store();
+  const seq = s.approvals.length + 1;
+  const req: ApprovalRequest = {
+    id: `req-s${seq}`,
+    kind: input.kind,
+    title: input.title,
+    requesterId: input.requesterId,
+    department: input.department,
+    amount: input.amount,
+    submitted: Date.now(),
+    priority: input.priority ?? "Medium",
+    status: "Pending",
+    rule: input.rule,
+    sla: input.sla,
+    stepUpRequired: input.stepUpRequired,
+    detail: input.detail,
+    history: input.history ?? [{ at: Date.now(), actor: "System", event: "Submitted through the enterprise workflow layer" }],
+  };
+  s.approvals.unshift(req);
+  return req;
+}
+
 export function decideApproval(
   role: WorkspaceRole,
   input: { id: string; decision: "Approved" | "Rejected" | "Changes requested"; note?: string; stepUpPassword?: string },

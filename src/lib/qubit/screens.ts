@@ -4,6 +4,7 @@
 // Phase 3: Authentication & Security (screens 31–40)
 // Phase 4: Core Employee Workspace (screens 41–58)
 // Phase 5: CEO Command Center (screens 59–72)
+// Phase 6: Sales Operating System (screens 73–102)
 
 export type ScreenId =
   | "org-structure"
@@ -77,9 +78,39 @@ export type ScreenId =
   | "executive-approvals"
   | "ceo-ai-insights"
   | "kpi-drilldown"
-  | "executive-reports";
+  | "executive-reports"
+  | "sales-home"
+  | "lead-inbox"
+  | "lead-detail"
+  | "lead-create"
+  | "contact-detail"
+  | "account-detail"
+  | "opportunity-detail"
+  | "sales-pipeline"
+  | "sales-forecast"
+  | "sales-targets"
+  | "sales-leaderboard"
+  | "followup-queue"
+  | "customer-meetings"
+  | "quotation-list"
+  | "quotation-builder"
+  | "quotation-detail"
+  | "order-list"
+  | "order-detail"
+  | "customer-activity"
+  | "whatsapp-inbox"
+  | "whatsapp-conversation"
+  | "whatsapp-convert"
+  | "sales-visiting-card"
+  | "sales-travel"
+  | "visit-planner"
+  | "visit-detail"
+  | "sales-expenses"
+  | "sales-reports"
+  | "team-sales-dashboard"
+  | "sales-settings";
 
-export type ScreenModule = "enterprise" | "design-system" | "security" | "workspace" | "people" | "mail" | "executive";
+export type ScreenModule = "enterprise" | "design-system" | "security" | "workspace" | "people" | "mail" | "executive" | "sales";
 
 /** Screens rendered without the app shell (standalone authentication) */
 export const AUTH_SCREENS: ScreenId[] = ["login", "mfa-verification", "sso-provider-selection"];
@@ -171,6 +202,37 @@ export const SCREENS: ScreenMeta[] = [
   { id: "ceo-ai-insights", num: "70", title: "CEO AI Insights", shortTitle: "AI Insights", description: "Evidence-based AI interpretation of authorized company data — never invented.", module: "executive" },
   { id: "kpi-drilldown", num: "71", title: "Company KPI Drilldown", shortTitle: "KPI Drilldown", description: "Focused investigation behind every executive KPI — definition to underlying records.", module: "executive" },
   { id: "executive-reports", num: "72", title: "Executive Reports", shortTitle: "Executive Reports", description: "Executive reporting library — generate, schedule and share authorized reports.", module: "executive" },
+  // ——— Phase 6 · Sales Operating System ———
+  { id: "sales-home", num: "73", title: "Sales Home", shortTitle: "Sales Home", description: "Your daily sales operating center — follow-ups, pipeline, meetings and alerts.", module: "sales" },
+  { id: "lead-inbox", num: "74", title: "Lead Inbox", shortTitle: "Lead Inbox", description: "The central lead workspace — triage, assign and convert with duplicate guards.", module: "sales" },
+  { id: "lead-detail", num: "75", title: "Lead Detail", shortTitle: "Lead Detail", description: "The complete lead workspace — qualification, timeline and conversion path.", module: "sales" },
+  { id: "lead-create", num: "76", title: "Lead Creation", shortTitle: "New Lead", description: "Enterprise lead creation with duplicate detection before anything is saved.", module: "sales" },
+  { id: "contact-detail", num: "77", title: "Contact Detail", shortTitle: "Contact Detail", description: "Contact-centric workspace with consent-aware communication and history.", module: "sales" },
+  { id: "account-detail", num: "78", title: "Account Detail", shortTitle: "Account Detail", description: "Customer 360 — contacts, opportunities, quotations, orders and full activity.", module: "sales" },
+  { id: "opportunity-detail", num: "79", title: "Opportunity Detail", shortTitle: "Opportunity Detail", description: "Deal workspace — controlled stage progression, quotations and negotiation history.", module: "sales" },
+  { id: "sales-pipeline", num: "80", title: "Sales Pipeline", shortTitle: "Pipeline", description: "Enterprise Kanban pipeline with stage rules, values and risk indicators.", module: "sales" },
+  { id: "sales-forecast", num: "81", title: "Sales Forecast", shortTitle: "Forecast", description: "Commit, best case and weighted pipeline — Actual, Forecast and Target never mixed.", module: "sales" },
+  { id: "sales-targets", num: "82", title: "Sales Targets", shortTitle: "Targets", description: "Targets by employee, team and region with controlled, audited editing.", module: "sales" },
+  { id: "sales-leaderboard", num: "83", title: "Sales Leaderboard", shortTitle: "Leaderboard", description: "Performance visibility — achievement, conversion and pipeline, never gamified.", module: "sales" },
+  { id: "followup-queue", num: "84", title: "Follow-up Queue", shortTitle: "Follow-ups", description: "Due today, overdue and upcoming — complete, reschedule and record outcomes.", module: "sales" },
+  { id: "customer-meetings", num: "85", title: "Customer Meetings", shortTitle: "Meetings", description: "Sales meeting workspace connected to the enterprise Meetings module.", module: "sales" },
+  { id: "quotation-list", num: "86", title: "Quotation List", shortTitle: "Quotations", description: "Quotation lifecycle — draft to accepted, with approvals routed by the matrix.", module: "sales" },
+  { id: "quotation-builder", num: "87", title: "Quotation Builder", shortTitle: "Quote Builder", description: "Catalog-driven quotation creation with server-side pricing and discount rules.", module: "sales" },
+  { id: "quotation-detail", num: "88", title: "Quotation Detail", shortTitle: "Quotation Detail", description: "Quotation lifecycle view — items, approvals, versions and state-aware actions.", module: "sales" },
+  { id: "order-list", num: "89", title: "Order List", shortTitle: "Orders", description: "Sales orders connected to Finance, Inventory and Dispatch — never disconnected.", module: "sales" },
+  { id: "order-detail", num: "90", title: "Order Detail", shortTitle: "Order Detail", description: "Order fulfillment view — payment, dispatch and delivery with valid transitions only.", module: "sales" },
+  { id: "customer-activity", num: "91", title: "Customer Activity", shortTitle: "Customer Activity", description: "One unified timeline across every customer touchpoint — consent respected.", module: "sales" },
+  { id: "whatsapp-inbox", num: "92", title: "WhatsApp Lead Inbox", shortTitle: "WhatsApp Inbox", description: "WhatsApp Business API inbox — legitimate, consent-checked, fully auditable.", module: "sales" },
+  { id: "whatsapp-conversation", num: "93", title: "WhatsApp Conversation", shortTitle: "WhatsApp Chat", description: "Business conversation workspace — templates, linking and lead creation.", module: "sales" },
+  { id: "whatsapp-convert", num: "94", title: "WhatsApp Lead Conversion", shortTitle: "Lead Conversion", description: "Lead → Contact → Account → Opportunity with a review step and duplicate guard.", module: "sales" },
+  { id: "sales-visiting-card", num: "95", title: "Digital Visiting Card", shortTitle: "Visiting Card", description: "The sales identity card — customer-facing, built on the Phase 4 architecture.", module: "sales" },
+  { id: "sales-travel", num: "96", title: "Sales Travel", shortTitle: "Travel", description: "Travel planning connected to visits, meetings, expenses and opportunities.", module: "sales" },
+  { id: "visit-planner", num: "97", title: "Field Visit Planner", shortTitle: "Visit Planner", description: "Plan and assign customer visits — calendar and list, no covert tracking.", module: "sales" },
+  { id: "visit-detail", num: "98", title: "Field Visit Detail", shortTitle: "Visit Detail", description: "Visit execution — checklist, evidence, outcome and the follow-up it creates.", module: "sales" },
+  { id: "sales-expenses", num: "99", title: "Sales Expenses", shortTitle: "Expenses", description: "Sales expense claims — Finance remains the financial source of truth.", module: "sales" },
+  { id: "sales-reports", num: "100", title: "Sales Reports", shortTitle: "Sales Reports", description: "Operational sales reporting — pipeline, conversion, win/loss and aging.", module: "sales" },
+  { id: "team-sales-dashboard", num: "101", title: "Team Sales Dashboard", shortTitle: "Team Sales", description: "Manager workspace — what is happening, what is at risk, who needs attention.", module: "sales" },
+  { id: "sales-settings", num: "102", title: "Sales Settings", shortTitle: "Settings", description: "Sales configuration — stages, sources, rules. Admin-only, validated, audited.", module: "sales" },
 ];
 
 export const screenMeta = (id: ScreenId): ScreenMeta =>
@@ -206,4 +268,15 @@ export interface ScreenParams {
   reportId?: string;
   insightId?: string;
   region?: string;
+  /** Sales deep links (Phase 6) */
+  leadId?: string;
+  contactId?: string;
+  accountId?: string;
+  opportunityId?: string;
+  quotationId?: string;
+  orderId?: string;
+  waId?: string;
+  visitId?: string;
+  expenseId?: string;
+  travelId?: string;
 }

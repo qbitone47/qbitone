@@ -1,0 +1,1934 @@
+You are continuing development of the existing Qubit One Enterprise Business Operating System.
+
+THIS IS NOT A NEW PROJECT.
+
+You MUST first understand and preserve the existing Qubit One architecture, design system, navigation, authentication, authorization, database models, APIs, workflows, components, naming conventions, and completed screens from previous phases.
+
+============================================================
+CRITICAL VISUAL SOURCE OF TRUTH
+============================================================
+
+A current approved Qubit One UI reference image is attached to this prompt.
+
+STRICTLY FOLLOW THE ATTACHED QUBIT ONE UI REFERENCE IMAGE.
+
+The attached UI is the current visual and UX source of truth.
+
+Match its:
+
+- overall layout
+- sidebar structure
+- top navigation
+- breadcrumb behavior
+- page hierarchy
+- typography
+- spacing
+- colors
+- card treatment
+- table density
+- borders
+- shadows
+- radius
+- buttons
+- inputs
+- filters
+- tabs
+- drawers
+- modals
+- badges
+- empty states
+- loading states
+- responsive behavior
+- information density
+- interaction patterns
+
+You may improve polish, usability, spacing, hierarchy, accessibility and enterprise quality.
+
+DO NOT redesign Qubit One into another visual language.
+
+DO NOT introduce:
+- neon
+- cyberpunk
+- excessive gradients
+- glowing cards
+- excessive glassmorphism
+- gaming UI
+- oversized decorative illustrations
+- excessive animations
+- random floating widgets
+- visually noisy dashboards
+- unnecessary cards
+- orange as a primary design color
+
+The final result must feel like a mature enterprise product inspired by the usability principles of Apple, Microsoft and Google enterprise products, while remaining uniquely Qubit One.
+
+============================================================
+PROJECT GOVERNANCE
+============================================================
+
+Apply the permanent:
+
+"QUBIT — PERSISTENT ENTERPRISE PRODUCT INTELLIGENCE & GOVERNANCE INSTRUCTION"
+
+to every implementation decision.
+
+The system must behave as one connected enterprise operating system.
+
+Do NOT build Sales as an isolated CRM application.
+
+Sales must connect with:
+
+Employee Identity
+→ Organization
+→ Roles & Permissions
+→ Customers
+→ Contacts
+→ Leads
+→ Communication
+→ Meetings
+→ Visits
+→ Follow-ups
+→ Opportunities
+→ Quotations
+→ Negotiation
+→ Orders
+→ Revenue
+→ Finance
+→ Customer History
+→ Tasks
+→ Notifications
+→ Approvals
+→ Analytics
+→ AI
+
+============================================================
+PHASE 6 OBJECTIVE
+============================================================
+
+Build the Qubit One Sales Operating System.
+
+The Sales module must support the complete enterprise sales lifecycle:
+
+Lead
+→ Contact
+→ Communication
+→ Visit
+→ Follow-up
+→ Opportunity
+→ Proposal / Quotation
+→ Negotiation
+→ Won / Lost
+→ Order
+→ Revenue
+→ Customer History
+
+The Sales experience must allow sales employees and managers to perform their daily work without constantly leaving Qubit One.
+
+The system must support:
+
+- lead management
+- contact management
+- account/customer management
+- opportunity management
+- pipeline management
+- sales forecasting
+- targets
+- leaderboards
+- follow-ups
+- meetings
+- quotations
+- orders
+- customer activity
+- WhatsApp integration
+- field sales
+- visits
+- travel
+- expenses
+- sales reporting
+- team management
+- sales configuration
+
+Phase 7 will contain the dedicated Sales AI workspace.
+
+Therefore:
+
+DO NOT turn Phase 6 into an AI-heavy interface.
+
+Use only subtle contextual AI assistance where it genuinely improves workflow.
+
+Major Sales AI capabilities belong to Phase 7.
+
+============================================================
+CORE SALES DATA PRINCIPLE
+============================================================
+
+There must be ONE source of truth for every business entity.
+
+Do NOT create duplicate:
+
+- Lead systems
+- Customer systems
+- Contact systems
+- Opportunity systems
+- Quotation systems
+- Order systems
+- Sales pipelines
+- Employee identities
+- Permissions
+- Notifications
+- Activity timelines
+
+Reuse existing entities and extend them when necessary.
+
+Every Sales entity must have:
+
+- stable unique ID
+- ownership
+- department/team relationship
+- created by
+- created at
+- updated by
+- updated at
+- status
+- audit history where appropriate
+- permission-aware visibility
+- lifecycle history
+
+Use proper relational relationships and server-side validation.
+
+Never rely on frontend-only validation or authorization.
+
+============================================================
+SALES WORKFLOW PRINCIPLE
+============================================================
+
+Every screen must answer:
+
+1. What is this?
+2. What is its current state?
+3. What needs attention?
+4. What can the user do next?
+5. What happens after the action?
+
+Prioritize:
+
+SIGNAL → CONTEXT → ACTION → HISTORY → NEXT STEP
+
+Avoid unnecessary complexity.
+
+============================================================
+ROLE-BASED EXPERIENCE
+============================================================
+
+Sales Employee:
+
+- own leads
+- own customers
+- own opportunities
+- follow-ups
+- visits
+- meetings
+- quotations
+- expenses
+- tasks
+- performance
+
+Sales Manager:
+
+- team pipeline
+- team targets
+- forecasting
+- assignments
+- performance
+- approvals
+- risk
+- coaching visibility
+
+Sales Admin:
+
+- configuration
+- assignment rules
+- sales settings
+- pipeline configuration
+- permissions
+
+CEO / Executive:
+
+- high-level sales visibility
+- approved metrics
+- strategic drilldowns
+
+Do not expose unauthorized data.
+
+Backend authorization must independently enforce access.
+
+============================================================
+SCREENS TO IMPLEMENT
+============================================================
+
+Create EXACTLY these 30 core screens.
+
+DO NOT skip any.
+
+DO NOT rename any.
+
+DO NOT duplicate any.
+
+DO NOT merge multiple numbered screens into one.
+
+============================================================
+73. SALES HOME
+============================================================
+
+Create the main Sales workspace.
+
+Purpose:
+
+Give a salesperson or sales manager a clear daily operating center.
+
+Include:
+
+- sales performance snapshot
+- today's follow-ups
+- upcoming meetings
+- overdue activities
+- active opportunities
+- pipeline summary
+- target progress
+- recent leads
+- recent customer activity
+- pending quotations
+- important alerts
+- quick actions
+
+Quick actions may include:
+
+- Create Lead
+- Add Customer
+- Add Contact
+- Create Opportunity
+- Schedule Follow-up
+- Create Visit
+- Create Quotation
+- Record Activity
+
+Use role-aware content.
+
+For a salesperson, prioritize personal work.
+
+For managers, prioritize team performance.
+
+Do not create a giant dashboard.
+
+============================================================
+74. LEAD INBOX
+============================================================
+
+Create the central lead management workspace.
+
+Include:
+
+- lead list/table
+- lead name
+- company
+- contact
+- source
+- owner
+- status
+- priority
+- score
+- last activity
+- next follow-up
+- created date
+- expected value where available
+
+Filters:
+
+- status
+- owner
+- source
+- priority
+- date
+- department/team
+- assigned/unassigned
+
+Actions:
+
+- create lead
+- assign
+- reassign
+- bulk actions
+- open lead
+- convert
+- schedule follow-up
+- add note
+- contact
+- import where authorized
+
+Include saved views if supported by the existing system.
+
+Prevent duplicate leads where possible.
+
+============================================================
+75. LEAD DETAIL
+============================================================
+
+Create a complete lead workspace.
+
+Show:
+
+- lead identity
+- company
+- contact information
+- source
+- owner
+- status
+- priority
+- qualification information
+- estimated value
+- expected close information
+- next action
+- next follow-up
+- timeline
+- communication history
+- notes
+- meetings
+- visits
+- tasks
+- related opportunities
+- conversion information
+
+Actions:
+
+- edit
+- assign
+- contact
+- schedule follow-up
+- create opportunity
+- convert lead
+- mark qualified
+- mark disqualified
+- close lead
+
+Make the timeline central.
+
+Show clear lifecycle progression.
+
+============================================================
+76. LEAD CREATION
+============================================================
+
+Create a clean enterprise lead creation form.
+
+Fields should include:
+
+- lead name
+- company
+- contact person
+- phone
+- email
+- source
+- industry
+- location
+- owner
+- priority
+- estimated value
+- notes
+- next follow-up
+- tags where appropriate
+
+Support duplicate detection.
+
+Show possible existing matches before creating duplicates.
+
+Validate:
+
+- email
+- phone
+- required fields
+- ownership
+- permissions
+
+After successful creation:
+
+- create lead
+- create initial activity
+- optionally schedule follow-up
+- notify assigned owner where configured
+
+============================================================
+77. CONTACT DETAIL
+============================================================
+
+Create a contact-centric workspace.
+
+Show:
+
+- name
+- profile
+- designation
+- company/account
+- phone
+- email
+- communication preferences
+- owner
+- relationship status
+- related leads
+- opportunities
+- meetings
+- visits
+- quotations
+- orders
+- notes
+- activity timeline
+
+Provide actions:
+
+- call
+- email
+- WhatsApp where authorized
+- schedule meeting
+- create follow-up
+- create opportunity
+- add note
+
+Respect communication permissions and consent.
+
+============================================================
+78. ACCOUNT DETAIL
+============================================================
+
+Create the complete customer/account workspace.
+
+An Account represents the business/customer organization.
+
+Show:
+
+- company identity
+- industry
+- location
+- account owner
+- customer status
+- customer value
+- contacts
+- active opportunities
+- quotations
+- orders
+- revenue
+- service relationship where authorized
+- recent communications
+- visits
+- tasks
+- notes
+- documents
+- complete customer activity timeline
+
+This becomes a central Customer 360 entry point.
+
+Do not duplicate Employee 360 or Service customer systems.
+
+Reuse connected enterprise entities.
+
+============================================================
+79. OPPORTUNITY DETAIL
+============================================================
+
+Create the detailed opportunity workspace.
+
+Show:
+
+- opportunity name
+- account
+- primary contact
+- owner
+- stage
+- probability
+- expected value
+- expected close date
+- source
+- products/services
+- competitors where applicable
+- next action
+- next follow-up
+- quotation
+- negotiation history
+- activities
+- meetings
+- visits
+- notes
+- timeline
+
+Pipeline stage progression should be visible.
+
+Example:
+
+Qualification
+→ Discovery
+→ Proposal
+→ Negotiation
+→ Won / Lost
+
+Support:
+
+- stage changes
+- probability
+- amount
+- close date
+- owner
+- loss reason
+- next action
+
+Important changes must be audited.
+
+============================================================
+80. SALES PIPELINE
+============================================================
+
+Create the primary visual sales pipeline.
+
+Use a professional enterprise Kanban-style pipeline.
+
+Columns may represent:
+
+- New
+- Qualification
+- Discovery
+- Proposal
+- Negotiation
+- Won
+- Lost
+
+Each opportunity card should show:
+
+- opportunity
+- customer
+- owner
+- value
+- probability
+- expected close
+- next action
+- risk indicator where appropriate
+
+Include:
+
+- pipeline value
+- weighted pipeline
+- stage totals
+- filters
+- owner
+- team
+- date range
+- product/category
+
+Support controlled drag-and-drop only where appropriate.
+
+Every stage transition must respect business rules and permissions.
+
+Do not use excessive colorful cards.
+
+============================================================
+81. SALES FORECAST
+============================================================
+
+Create a professional sales forecasting workspace.
+
+Show:
+
+- target
+- committed forecast
+- best case
+- pipeline
+- weighted pipeline
+- closed won
+- variance
+- expected close
+- forecast by salesperson
+- forecast by team
+- forecast by period
+
+Include:
+
+- forecast period
+- confidence
+- stage distribution
+- forecast movement
+- risk indicators
+- historical comparison
+
+Clearly distinguish:
+
+Actual
+vs
+Forecast
+vs
+Target
+
+Never mix these values.
+
+============================================================
+82. SALES TARGETS
+============================================================
+
+Create the sales target management screen.
+
+Support targets by:
+
+- employee
+- team
+- department
+- region
+- product
+- period
+
+Metrics:
+
+- target
+- achieved
+- remaining
+- percentage
+- forecast
+- variance
+
+Include target assignment and controlled editing based on permissions.
+
+Show target history.
+
+Manager/admin users can configure targets.
+
+Sales employees see their authorized target information.
+
+============================================================
+83. SALES LEADERBOARD
+============================================================
+
+Create an enterprise sales performance leaderboard.
+
+Metrics can include:
+
+- revenue
+- achievement %
+- opportunities won
+- conversion rate
+- average deal size
+- pipeline
+- follow-up completion
+- customer acquisition
+
+Allow filtering by:
+
+- period
+- team
+- department
+- region
+
+Avoid creating a toxic gamification experience.
+
+This is a performance visibility tool, not a game.
+
+Respect privacy and role-based visibility.
+
+============================================================
+84. FOLLOW-UP QUEUE
+============================================================
+
+Create the operational follow-up workspace.
+
+Show:
+
+- due today
+- overdue
+- upcoming
+- customer
+- contact
+- opportunity
+- owner
+- follow-up type
+- due date
+- priority
+- last interaction
+- next action
+
+Actions:
+
+- complete
+- reschedule
+- call
+- email
+- WhatsApp
+- create task
+- add note
+
+Support reminders and automation through the existing workflow/notification architecture.
+
+Do not create a separate reminder engine.
+
+============================================================
+85. CUSTOMER MEETINGS
+============================================================
+
+Create the Sales meeting workspace.
+
+Show:
+
+- upcoming meetings
+- today's meetings
+- past meetings
+- customer
+- contact
+- opportunity
+- date/time
+- location or meeting link
+- owner
+- status
+
+Actions:
+
+- create
+- reschedule
+- cancel
+- join
+- add notes
+- create follow-up
+
+Connect to the existing Meetings & Collaboration module.
+
+Do NOT build a second calendar/meeting backend.
+
+============================================================
+86. QUOTATION LIST
+============================================================
+
+Create quotation management.
+
+Show:
+
+- quotation number
+- customer
+- opportunity
+- owner
+- amount
+- status
+- created date
+- validity
+- approval status
+- last updated
+
+Statuses may include:
+
+Draft
+Pending Approval
+Approved
+Sent
+Viewed
+Negotiation
+Accepted
+Rejected
+Expired
+Cancelled
+
+Filters and search should be available.
+
+Actions:
+
+- create
+- open
+- duplicate where permitted
+- submit approval
+- send
+- cancel
+
+============================================================
+87. QUOTATION BUILDER
+============================================================
+
+Create a professional quotation creation interface.
+
+Include:
+
+- customer
+- contact
+- opportunity
+- quotation number
+- quotation date
+- validity
+- products/services
+- quantities
+- unit prices
+- discounts
+- taxes
+- subtotal
+- total
+- payment terms
+- delivery terms
+- notes
+- attachments
+
+Use existing Product Catalog / Inventory data.
+
+Do not manually duplicate product master data.
+
+Support:
+
+- draft autosave where appropriate
+- validation
+- approval workflow
+- preview
+- send
+
+Critical pricing/discount rules must be server-side.
+
+============================================================
+88. QUOTATION DETAIL
+============================================================
+
+Create quotation detail and lifecycle view.
+
+Show:
+
+- quotation summary
+- customer
+- opportunity
+- items
+- pricing
+- discount
+- taxes
+- total
+- terms
+- approval status
+- communication history
+- version history
+- timeline
+
+Actions depend on role/state:
+
+- edit
+- submit approval
+- approve
+- reject
+- send
+- download
+- duplicate
+- revise
+- cancel
+
+Never allow unauthorized editing of approved/sent documents.
+
+Maintain version/history where required.
+
+============================================================
+89. ORDER LIST
+============================================================
+
+Create the sales order workspace.
+
+Show:
+
+- order number
+- customer
+- quotation
+- opportunity
+- owner
+- amount
+- status
+- payment state
+- fulfillment state
+- created date
+
+Statuses should integrate with downstream business workflows.
+
+Actions:
+
+- open
+- create where authorized
+- search
+- filter
+- export where authorized
+
+Orders must connect with:
+
+Sales
+→ Finance
+→ Inventory
+→ Dispatch
+
+Do not create disconnected order data.
+
+============================================================
+90. ORDER DETAIL
+============================================================
+
+Create complete order detail.
+
+Show:
+
+- customer
+- quotation
+- order items
+- quantities
+- prices
+- discounts
+- taxes
+- total
+- payment status
+- fulfillment status
+- dispatch status
+- delivery information
+- related invoice
+- related opportunity
+- activity timeline
+
+Actions should be state-aware.
+
+For example:
+
+- cancel
+- update where permitted
+- view invoice
+- view dispatch
+- contact customer
+
+Do not allow invalid state transitions.
+
+============================================================
+91. CUSTOMER ACTIVITY
+============================================================
+
+Create the unified customer activity timeline.
+
+Show chronological activity across:
+
+- calls
+- emails
+- WhatsApp interactions where authorized
+- meetings
+- visits
+- notes
+- tasks
+- follow-ups
+- quotations
+- orders
+- important status changes
+
+Allow filtering by activity type.
+
+Every activity must preserve:
+
+- timestamp
+- actor
+- source
+- related entity
+- outcome where applicable
+
+Do not expose private communications to unauthorized users.
+
+============================================================
+92. WHATSAPP LEAD INBOX
+============================================================
+
+Create an enterprise WhatsApp lead inbox.
+
+This must use legitimate WhatsApp Business/API integrations only.
+
+Show:
+
+- conversations
+- lead/customer
+- assigned owner
+- last message
+- unread state
+- conversation status
+- related opportunity
+- follow-up state
+
+Actions:
+
+- open conversation
+- assign
+- convert
+- create follow-up
+- link to customer
+- link to opportunity
+
+Do not scrape personal WhatsApp accounts.
+
+Respect:
+
+- consent
+- API rules
+- communication policies
+- retention rules
+- access permissions
+- audit requirements
+
+============================================================
+93. WHATSAPP CONVERSATION
+============================================================
+
+Create the detailed WhatsApp business conversation workspace.
+
+Show:
+
+- message timeline
+- customer identity
+- conversation status
+- assigned salesperson
+- linked lead/customer/opportunity
+- attachments where supported
+- relevant business context
+
+Allow authorized actions:
+
+- reply
+- template message
+- assign
+- add note
+- create task
+- schedule follow-up
+- convert lead
+
+Do not allow the UI to expose messages outside the user's authorization scope.
+
+Important business data extracted from communication must remain auditable.
+
+============================================================
+94. WHATSAPP LEAD CONVERSION
+============================================================
+
+Create the conversion workflow.
+
+When converting a lead, clearly show:
+
+Lead
+→ Contact
+→ Account
+→ Opportunity
+
+Allow the user to:
+
+- match existing account
+- create new account
+- match existing contact
+- create new contact
+- create opportunity
+- select opportunity owner
+- set opportunity value
+- set stage
+- set next follow-up
+
+Before final conversion:
+
+Show a clear review step.
+
+Prevent duplicate customer/contact creation.
+
+Record conversion history.
+
+============================================================
+95. DIGITAL VISITING CARD
+============================================================
+
+Create the Sales digital visiting card experience.
+
+Reuse the employee identity and Digital Visiting Card architecture from Phase 4.
+
+Show:
+
+- employee name
+- designation
+- company
+- phone
+- email
+- website
+- business information
+- QR code
+- share action
+
+Allow authorized sales employees to use it as a professional customer-facing identity.
+
+Do not create a separate employee identity system.
+
+============================================================
+96. SALES TRAVEL
+============================================================
+
+Create a sales travel planning workspace.
+
+Show:
+
+- upcoming travel
+- customer visits
+- location
+- date
+- purpose
+- estimated travel cost
+- status
+- related opportunity/customer
+
+Actions:
+
+- create travel plan
+- add visit
+- update
+- cancel
+- view expenses
+
+Connect travel with:
+
+Visits
+→ Meetings
+→ Expenses
+→ Customer
+→ Opportunity
+
+Do not create a separate employee travel identity system.
+
+============================================================
+97. FIELD VISIT PLANNER
+============================================================
+
+Create field visit planning.
+
+Show:
+
+- calendar/list
+- customer
+- contact
+- location
+- salesperson
+- opportunity
+- visit purpose
+- planned time
+- status
+
+Support:
+
+- create visit
+- assign salesperson
+- reschedule
+- cancel
+- open detail
+
+Use location services only when legitimately required and permitted.
+
+Avoid unnecessary location tracking.
+
+============================================================
+98. FIELD VISIT DETAIL
+============================================================
+
+Create complete field visit workspace.
+
+Show:
+
+- customer
+- contact
+- location
+- salesperson
+- date/time
+- purpose
+- opportunity
+- checklist
+- notes
+- outcome
+- next action
+- follow-up
+- evidence where applicable
+
+Support:
+
+- start visit
+- complete visit
+- add notes
+- add evidence
+- create follow-up
+- update opportunity
+
+If location verification is used, clearly communicate it and respect permissions/privacy.
+
+============================================================
+99. SALES EXPENSES
+============================================================
+
+Create the sales expense workspace.
+
+Show:
+
+- expense list
+- date
+- employee
+- category
+- amount
+- customer/opportunity
+- travel/visit
+- receipt
+- approval status
+- payment/reimbursement state
+
+Support:
+
+- create expense
+- upload receipt
+- submit
+- edit before submission
+- view status
+
+Integrate with the existing Finance expense architecture.
+
+DO NOT create another expense database.
+
+Finance remains the financial source of truth.
+
+============================================================
+100. SALES REPORTS
+============================================================
+
+Create a Sales reporting workspace.
+
+Reports may include:
+
+- sales performance
+- revenue
+- target achievement
+- pipeline
+- forecast
+- conversion
+- win/loss
+- sales cycle
+- salesperson performance
+- customer acquisition
+- lead source performance
+- quotation conversion
+- opportunity aging
+
+Allow:
+
+- filters
+- date ranges
+- drilldown
+- saved views
+- export where authorized
+
+Reuse the enterprise Analytics/Reports architecture.
+
+Do not build a separate reporting engine.
+
+============================================================
+101. TEAM SALES DASHBOARD
+============================================================
+
+Create a manager-focused team sales workspace.
+
+Show:
+
+- team target
+- achievement
+- pipeline
+- forecast
+- active opportunities
+- overdue follow-ups
+- conversion
+- individual performance
+- customer activity
+- quotation status
+- risks
+
+Provide drilldown:
+
+Team
+→ Salesperson
+→ Opportunity
+→ Customer
+
+Make this operational rather than decorative.
+
+Managers should immediately understand:
+
+What is happening?
+What is at risk?
+Who needs attention?
+What action is required?
+
+============================================================
+102. SALES SETTINGS
+============================================================
+
+Create the Sales configuration workspace.
+
+Configuration areas may include:
+
+- pipeline stages
+- lead sources
+- lead statuses
+- opportunity statuses
+- loss reasons
+- sales teams
+- assignment rules
+- territory/region
+- target configuration
+- quotation settings
+- approval rules
+- notification rules
+- sales activity types
+
+Every configuration must respect the existing enterprise permission system.
+
+Do not create a separate authorization framework.
+
+Sensitive configuration changes must be:
+
+- authorized
+- validated
+- audited
+- recoverable where appropriate
+
+============================================================
+CROSS-SCREEN REQUIREMENTS
+============================================================
+
+All 30 screens must behave as ONE Sales Operating System.
+
+A user must be able to move naturally through:
+
+Lead
+→ Contact
+→ Account
+→ Opportunity
+→ Follow-up
+→ Meeting
+→ Visit
+→ Quotation
+→ Negotiation
+→ Order
+→ Revenue
+→ Customer History
+
+Every relevant entity should expose contextual links to related entities.
+
+Examples:
+
+Lead → Account
+Lead → Contact
+Lead → Opportunity
+
+Opportunity → Account
+Opportunity → Contact
+Opportunity → Quotation
+Opportunity → Meeting
+Opportunity → Visit
+
+Quotation → Opportunity
+Quotation → Customer
+Quotation → Order
+
+Order → Customer
+Order → Finance
+Order → Inventory
+Order → Dispatch
+
+Customer → Contacts
+Customer → Opportunities
+Customer → Quotations
+Customer → Orders
+Customer → Activities
+Customer → Service
+
+============================================================
+GLOBAL SEARCH
+============================================================
+
+Sales entities must be discoverable through the existing global Qubit search.
+
+Search should support authorized:
+
+- leads
+- customers
+- contacts
+- opportunities
+- quotations
+- orders
+- activities
+
+Do NOT create a second Sales-only global search system.
+
+============================================================
+NOTIFICATIONS
+============================================================
+
+Reuse the existing enterprise notification architecture.
+
+Examples:
+
+- new lead assigned
+- lead reassigned
+- follow-up overdue
+- opportunity stage changed
+- quotation approval required
+- quotation approved
+- quotation rejected
+- customer response
+- meeting reminder
+- visit reminder
+- order status change
+- target milestone
+
+Avoid notification spam.
+
+============================================================
+APPROVALS
+============================================================
+
+Sales approvals must reuse the enterprise Approval Matrix and My Approvals system.
+
+Potential approval scenarios:
+
+- quotation discount
+- special pricing
+- quotation approval
+- cancellation
+- exceptional commercial terms
+
+Do not create a separate approval engine.
+
+============================================================
+AUDIT
+============================================================
+
+Important Sales events must be auditable.
+
+Examples:
+
+- lead ownership change
+- opportunity stage change
+- amount change
+- forecast change
+- quotation creation
+- quotation modification
+- discount change
+- quotation approval
+- quotation rejection
+- order creation
+- order cancellation
+- customer ownership change
+- configuration changes
+
+Reuse the enterprise Audit Log.
+
+============================================================
+SECURITY
+============================================================
+
+Sales data is business-sensitive.
+
+Implement:
+
+- RBAC
+- ABAC where required
+- ownership rules
+- team-level access
+- department-level access
+- field-level protection where necessary
+- backend authorization
+- secure APIs
+- input validation
+- rate limiting where applicable
+- secure file handling
+- audit logging
+- tenant/company isolation
+- secure exports
+
+Never trust frontend permissions.
+
+Never expose unauthorized customer, revenue, communication or employee information.
+
+============================================================
+DATA INTEGRITY
+============================================================
+
+Use:
+
+- foreign keys
+- unique constraints
+- transactions
+- server-side validation
+- idempotency
+- safe state transitions
+- concurrency protection
+- indexed queries
+- pagination
+- versioned migrations
+- soft delete where appropriate
+- audit history
+
+Prevent:
+
+- duplicate leads
+- duplicate customers
+- duplicate contacts
+- invalid opportunity transitions
+- invalid quotation states
+- duplicate orders
+- accidental double submissions
+
+============================================================
+FAILURE STATES
+============================================================
+
+Every screen must have appropriate:
+
+- loading state
+- empty state
+- error state
+- permission denied state
+- partial data state
+- retry state
+- validation state
+- success confirmation
+
+Third-party failures must not crash unrelated Sales functionality.
+
+For example:
+
+If WhatsApp is unavailable:
+
+Core CRM must continue working.
+
+If Finance is unavailable:
+
+Sales data should remain usable while clearly showing downstream synchronization status.
+
+If Analytics is temporarily unavailable:
+
+Operational Sales screens must continue working.
+
+============================================================
+PERFORMANCE
+============================================================
+
+Design for large enterprise datasets.
+
+Assume:
+
+- thousands of employees
+- hundreds of thousands/millions of leads
+- large customer databases
+- large activity timelines
+- large opportunity pipelines
+- large quotation/order histories
+
+Use:
+
+- server-side pagination
+- indexed queries
+- efficient filtering
+- debounced search
+- lazy loading where useful
+- virtualization for very large tables
+- caching where appropriate
+- asynchronous processing for heavy operations
+
+Never load an entire enterprise dataset into the browser.
+
+============================================================
+RESPONSIVE DESIGN
+============================================================
+
+Desktop is the primary enterprise experience.
+
+Mobile must remain usable for:
+
+- sales employees
+- field sales
+- managers
+
+On mobile:
+
+- prioritize daily actions
+- follow-ups
+- customer information
+- calls
+- WhatsApp
+- meetings
+- visits
+- opportunities
+- approvals
+
+Do not simply shrink the desktop layout.
+
+Reuse the Phase 18 mobile architecture when implemented.
+
+============================================================
+ACCESSIBILITY
+============================================================
+
+Follow enterprise accessibility practices.
+
+Ensure:
+
+- keyboard navigation
+- visible focus
+- sufficient contrast
+- semantic controls
+- accessible labels
+- meaningful status indicators
+- screen-reader support
+- no color-only meaning
+- accessible tables
+- accessible dialogs
+- accessible forms
+
+============================================================
+AI BOUNDARY
+============================================================
+
+Phase 7 is the dedicated Sales AI phase.
+
+Therefore Phase 6 should NOT become an AI dashboard.
+
+However, small contextual AI affordances may appear when useful, such as:
+
+- suggested next action
+- concise customer summary
+- follow-up drafting
+- opportunity risk hint
+
+These must:
+
+- respect permissions
+- clearly indicate AI-generated content
+- never fabricate facts
+- never silently change business data
+- require confirmation for consequential actions
+
+Major AI capabilities must remain in Phase 7.
+
+============================================================
+DESIGN SYSTEM CONTINUITY
+============================================================
+
+Reuse the existing Qubit One design system from Phase 2.
+
+Do not create:
+
+- another button system
+- another table system
+- another modal system
+- another badge system
+- another notification system
+- another filter system
+- another form system
+
+If an existing component needs improvement:
+
+IMPROVE THE SHARED COMPONENT.
+
+Do not create an isolated Sales-only replacement.
+
+============================================================
+UX QUALITY BAR
+============================================================
+
+The Sales module must feel:
+
+- premium
+- calm
+- fast
+- professional
+- trustworthy
+- data-rich
+- highly usable
+- enterprise-grade
+
+Avoid dashboard overload.
+
+Avoid unnecessary charts.
+
+Avoid excessive cards.
+
+Prefer:
+
+clear tables
+strong hierarchy
+contextual actions
+progressive disclosure
+clean detail pages
+useful timelines
+smart filters
+meaningful status indicators
+
+============================================================
+IMPLEMENTATION QUALITY
+============================================================
+
+Do not treat visual rendering as completion.
+
+For every workflow, verify:
+
+- UI
+- frontend state
+- API
+- backend logic
+- database
+- authorization
+- validation
+- error handling
+- audit
+- integration
+- loading
+- empty state
+- failure state
+- success state
+
+Test critical workflows such as:
+
+Lead creation
+→ Assignment
+→ Follow-up
+→ Qualification
+→ Opportunity
+→ Quotation
+→ Approval
+→ Order
+
+Also test:
+
+Lead conversion
+Duplicate detection
+Opportunity stage changes
+Quotation approval
+Order creation
+Sales expense submission
+WhatsApp linking
+Field visit completion
+
+============================================================
+DO NOT BREAK EXISTING QUBIT ONE
+============================================================
+
+Before changing anything:
+
+Analyze existing implementation.
+
+If functionality already exists:
+
+KEEP or IMPROVE it.
+
+Do not duplicate it.
+
+If a new feature conflicts with existing architecture:
+
+STOP and resolve the architectural conflict before implementation.
+
+Do not silently introduce:
+
+- duplicate models
+- duplicate APIs
+- duplicate permissions
+- duplicate notifications
+- duplicate workflows
+- duplicate reporting
+- duplicate customer records
+- duplicate employee records
+
+============================================================
+EXACT SCREEN COUNT
+============================================================
+
+This phase contains EXACTLY:
+
+30 screens
+
+73 through 102.
+
+You MUST implement all 30.
+
+No missing screens.
+
+No extra core screens.
+
+No renamed screens.
+
+No duplicated screens.
+
+Do not replace a numbered screen with a generic dashboard.
+
+============================================================
+OPTIONAL ENTERPRISE EXTENSIONS
+============================================================
+
+If you identify useful advanced capabilities during implementation, DO NOT silently add them to the 30-screen core scope.
+
+Instead classify them separately as:
+
+"Recommended Enterprise Extension"
+
+Examples:
+
+- advanced territory intelligence
+- sales compensation
+- partner/channel management
+- advanced CPQ
+- account scoring
+- revenue intelligence
+- sales coaching
+- predictive forecasting
+- advanced customer health
+- sales sequence automation
+
+These must remain outside the core 73–102 screen count unless explicitly approved later.
+
+============================================================
+FINAL ACCEPTANCE CRITERIA
+============================================================
+
+Phase 6 is complete only when:
+
+1. All 30 screens exist.
+2. Screens 73–102 match the approved Qubit One visual system.
+3. Sales workflows are connected end-to-end.
+4. Existing Qubit entities are reused.
+5. No duplicate systems are created.
+6. Role-based access works.
+7. Backend authorization exists.
+8. Sales data is auditable.
+9. Lead/customer/contact duplication is controlled.
+10. Opportunities have controlled lifecycle transitions.
+11. Quotations connect to approvals.
+12. Orders connect to Finance, Inventory and Dispatch.
+13. Sales expenses connect to Finance.
+14. Meetings connect to the existing Meetings system.
+15. Notifications connect to the existing notification system.
+16. Search connects to the global search architecture.
+17. Audit connects to the enterprise Audit Log.
+18. Loading/empty/error/permission states exist.
+19. Large datasets are handled efficiently.
+20. Mobile behavior is considered.
+21. Accessibility is implemented.
+22. No AI permission bypass exists.
+23. No security shortcuts exist.
+24. No fake/mock production success states are presented as real functionality.
+25. Critical workflows are tested.
+26. Existing Qubit One functionality remains intact.
+
+============================================================
+EXECUTION INSTRUCTION
+============================================================
+
+Do not stop after generating a few screens.
+
+Do not ask me which screen to build next.
+
+Do not ask for confirmation after every screen.
+
+Analyze the existing Qubit One project first.
+
+Then implement Phase 6 completely.
+
+Preserve everything already working.
+
+Use the attached Qubit One UI reference image as the strict visual source of truth.
+
+Build all 30 Sales Operating System screens:
+
+73–102.
+
+Complete the phase as one coherent enterprise Sales Operating System.

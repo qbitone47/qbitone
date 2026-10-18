@@ -37,6 +37,18 @@ const STATUS_TONE: Record<string, Tone> = {
   Live: "emerald", Delayed: "amber", Stale: "amber", Unavailable: "red", Dismissed: "slate",
   Assigned: "blue", Ready: "emerald", Forecast: "violet", Estimated: "violet", Finalized: "emerald",
   Attention: "amber", Investigating: "blue", Reopened: "blue",
+  // Phase 6 — Sales Operating System vocabulary (one status system, not a sales-only one)
+  Working: "blue", Qualified: "emerald", Unqualified: "slate", Converted: "violet",
+  Hot: "red", Warm: "amber", Cold: "slate",
+  Qualification: "blue", Discovery: "violet", Proposal: "blue", Negotiation: "amber", Contracting: "emerald", Won: "emerald", Lost: "red",
+  Sent: "blue", Viewed: "violet", Accepted: "emerald", Cancelled: "slate",
+  Confirmed: "emerald", "In Fulfillment": "blue", Dispatched: "violet", Delivered: "emerald", Closed: "slate",
+  Unpaid: "red", "Partially Paid": "amber", Paid: "emerald",
+  Packed: "blue", Reimbursed: "emerald",
+  Planned: "blue", Ongoing: "blue",
+  Open: "blue",
+  "Due Today": "amber", Upcoming: "blue", Overdue: "red",
+  Customer: "emerald", Prospect: "blue", Churned: "slate",
 };
 
 export function StatusBadge({
