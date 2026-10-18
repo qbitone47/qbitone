@@ -366,7 +366,7 @@ export function KpiCard({ kpi, onDrill }: { kpi: Kpi; onDrill?: () => void }) {
     <article className="qubit-card qubit-card-hover flex h-full flex-col p-4 text-left">
       <div className="flex items-center justify-between gap-2">
         <h3 className="flex min-w-0 items-center gap-1 text-[13px] font-medium text-slate-500">
-          <span className="truncate">{kpi.name}</span>
+          <span className="leading-snug">{kpi.name}</span>
           <KpiInfo definition={kpi.definition} calc={kpi.calc} source={kpi.source} period={kpi.period} kind={kpi.kind} />
         </h3>
         <StatusBadge status={kpi.status} size="sm" />

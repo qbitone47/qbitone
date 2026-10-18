@@ -96,7 +96,12 @@ export function FormDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn("sm:max-w-md", wide && "sm:max-w-lg")}>
+      {/* Radix warns when no description is rendered — suppress it intentionally for
+          description-less forms (the documented `aria-describedby={undefined}` remedy). */}
+      <DialogContent
+        className={cn("sm:max-w-md", wide && "sm:max-w-lg")}
+        {...(description ? {} : { "aria-describedby": undefined })}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}

@@ -568,7 +568,7 @@ function FinanceTile({
     <article className="qubit-card qubit-card-hover flex h-full flex-col p-4">
       <div className="flex items-center justify-between gap-2">
         <h3 className="flex min-w-0 items-center gap-1 text-[13px] font-medium text-slate-500">
-          <span className="truncate">{name}</span>
+          <span className="leading-snug">{name}</span>
           {definition && <KpiInfo definition={definition} calc={calc} source={source} kind={kind} />}
         </h3>
         <StatusBadge status={status} size="sm" />
