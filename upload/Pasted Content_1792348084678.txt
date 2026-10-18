@@ -1,0 +1,2177 @@
+# QUBIT ONE — PHASE 10
+# DIGITAL MARKETING OPERATING SYSTEM
+# SCREENS 151–174 OF 308
+
+You are continuing the existing Qubit One Enterprise Business Operating System.
+
+This is NOT a new project.
+
+The existing Qubit One architecture, database model, authentication, authorization, enterprise navigation, design system, employee identity, workflow engine, approval system, notification system, audit system, reporting architecture, AI platform, Sales Operating System, Finance system, and Inventory system already exist or are being implemented in the previous phases.
+
+Your job is to implement ONLY PHASE 10:
+DIGITAL MARKETING OPERATING SYSTEM.
+
+This phase contains EXACTLY 24 CORE SCREENS:
+151–174.
+
+Do not skip, rename, merge, duplicate, or silently remove any of these screens.
+
+--------------------------------------------------
+# 1. CRITICAL UI INSTRUCTION
+--------------------------------------------------
+
+A CURRENT APPROVED QUBIT ONE UI REFERENCE IMAGE IS ATTACHED TO THIS PROMPT.
+
+STRICTLY FOLLOW THE ATTACHED QUBIT ONE UI/UX DESIGN.
+
+The attached image is the PRIMARY VISUAL SOURCE OF TRUTH.
+
+Match its:
+
+- overall layout
+- left navigation/sidebar
+- top navigation/header
+- page hierarchy
+- breadcrumb behavior
+- search placement
+- spacing system
+- typography
+- card structure
+- table styling
+- buttons
+- inputs
+- filters
+- tabs
+- badges
+- modal/drawer behavior
+- borders
+- shadows
+- radius
+- page background
+- content density
+- alignment
+- interaction patterns
+- responsive behavior
+- visual hierarchy
+
+The implementation should feel like it belongs to the SAME Qubit One product.
+
+Do NOT redesign Qubit One.
+
+Do NOT create a separate marketing product.
+
+Do NOT introduce a different color system.
+
+Do NOT introduce a different navigation system.
+
+Do NOT introduce a different component system.
+
+You may improve visual polish, spacing precision, hierarchy, accessibility and usability, but the result must remain unmistakably Qubit One.
+
+--------------------------------------------------
+# 2. VISUAL DIRECTION
+--------------------------------------------------
+
+Qubit One is a serious enterprise product.
+
+Use:
+
+- clean light workspace
+- deep navy navigation
+- restrained professional blue
+- white surfaces
+- subtle gray borders
+- muted secondary text
+- clear dark text
+- moderate corner radius
+- subtle shadows
+- professional enterprise density
+- generous but efficient spacing
+- Inter/system sans-serif typography
+- restrained icons
+- subtle transitions
+
+Do NOT use:
+
+- neon
+- cyberpunk
+- gaming UI
+- excessive gradients
+- glowing cards
+- excessive glassmorphism
+- oversized decorative graphics
+- excessive animations
+- giant marketing-style hero sections
+- rainbow charts
+- excessive floating elements
+- random colors
+- orange as a primary UI color
+- visually noisy dashboards
+
+Marketing should feel like an enterprise operating system, not a consumer social-media app.
+
+--------------------------------------------------
+# 3. PRODUCT PURPOSE
+--------------------------------------------------
+
+Phase 10 creates the CORE DIGITAL MARKETING OPERATING SYSTEM.
+
+The purpose is to allow the company to plan, create, approve, publish, monitor and analyze marketing activities from one connected system.
+
+The marketing lifecycle should be:
+
+STRATEGY
+→ CONTENT PLANNING
+→ CREATIVE BRIEF
+→ CONTENT CREATION
+→ REVIEW
+→ APPROVAL
+→ PUBLISHING
+→ CAMPAIGN
+→ AUDIENCE
+→ ENGAGEMENT
+→ LEAD CAPTURE
+→ SALES
+→ REVENUE
+→ ANALYTICS
+→ OPTIMIZATION
+
+Marketing must NOT exist as an isolated module.
+
+It must connect with:
+
+Marketing
+↓
+Campaigns
+↓
+Content
+↓
+Social / SEO / Paid Channels
+↓
+Leads
+↓
+Sales CRM
+↓
+Opportunities
+↓
+Orders / Revenue
+↓
+Finance
+↓
+Executive Analytics
+
+The existing Sales Operating System remains the source of truth for:
+
+- Leads
+- Contacts
+- Accounts
+- Opportunities
+- Pipeline
+- Sales activity
+- Revenue-related sales data
+
+Do NOT create duplicate lead/customer/opportunity databases inside Marketing.
+
+--------------------------------------------------
+# 4. IMPORTANT ARCHITECTURAL RULE
+--------------------------------------------------
+
+Reuse existing Qubit One architecture.
+
+DO NOT create:
+
+- a second authentication system
+- a second employee system
+- a second customer database
+- a second lead database
+- a second approval engine
+- a second notification engine
+- a second audit system
+- a second reporting system
+- a second global search system
+- a second file/document permission system
+- a second workflow engine
+- a second AI platform
+- a second design system
+
+Marketing should consume and extend the existing enterprise architecture.
+
+--------------------------------------------------
+# 5. MARKETING DATA MODEL PRINCIPLE
+--------------------------------------------------
+
+Create clear relationships between:
+
+Marketing Workspace
+Campaign
+Channel
+Social Account
+Content
+Creative
+Creative Brief
+Approval
+Publishing Job
+SEO Asset
+Keyword
+Paid Campaign
+Audience
+Lead Source
+Lead
+Conversion
+Revenue Attribution
+Analytics
+
+However:
+
+Do not duplicate Sales entities.
+
+For example:
+
+A marketing-generated lead must reference the existing Lead entity.
+
+A customer must reference the existing Account/Customer entity.
+
+An opportunity must reference the existing Opportunity entity.
+
+Revenue attribution must reference the existing financial/sales records.
+
+--------------------------------------------------
+# 6. EXACT SCREEN INVENTORY
+--------------------------------------------------
+
+Implement exactly these 24 screens:
+
+151. Marketing Home
+152. Social Media Overview
+153. Social Accounts
+154. Content Calendar
+155. Content Planner
+156. Post Composer
+157. Post Review
+158. Post Approval
+159. Publishing Queue
+160. Social Analytics
+161. Graphic Design Studio
+162. Design Library
+163. Brand Assets
+164. Creative Brief
+165. Video Studio
+166. Video Library
+167. SEO Overview
+168. Keyword Workspace
+169. SEO Content Planner
+170. Technical SEO
+171. Organic Analytics
+172. Paid Campaigns
+173. Marketing Reports
+174. Marketing Settings
+
+These are the CORE Phase 10 screens.
+
+--------------------------------------------------
+# 7. SCREEN 151 — MARKETING HOME
+--------------------------------------------------
+
+Create the primary Marketing workspace.
+
+Purpose:
+
+Give the marketing team a clear operational overview.
+
+Show:
+
+- active campaigns
+- scheduled content
+- pending approvals
+- publishing queue
+- social performance
+- website/organic performance
+- paid campaign performance
+- leads generated
+- marketing contribution to pipeline
+- top-performing content
+- upcoming content
+- important marketing alerts
+- tasks requiring action
+
+Use meaningful KPI cards.
+
+Possible KPIs:
+
+- Active Campaigns
+- Scheduled Posts
+- Leads Generated
+- Qualified Leads
+- Marketing Pipeline
+- Conversion Rate
+- Organic Traffic
+- Paid Spend
+- ROAS
+- Engagement Rate
+
+Do NOT turn this into a giant dashboard.
+
+Prioritize:
+
+SIGNAL
+→ CONTEXT
+→ ACTION
+
+Include:
+
+- quick actions
+- recent activity
+- upcoming publishing
+- approval queue
+- campaign summary
+
+Role-aware experience:
+
+Marketing Executive:
+focus on execution.
+
+Marketing Manager:
+focus on campaigns, approvals and performance.
+
+Marketing Head:
+focus on performance, pipeline and ROI.
+
+CEO:
+may see executive marketing information from Phase 5.
+
+--------------------------------------------------
+# 8. SCREEN 152 — SOCIAL MEDIA OVERVIEW
+--------------------------------------------------
+
+Create an enterprise social-media command overview.
+
+Show:
+
+- connected channels
+- publishing status
+- scheduled posts
+- published posts
+- failed posts
+- engagement
+- reach
+- impressions
+- clicks
+- follower trends
+- top-performing posts
+- channel comparison
+
+Support channels where legitimate APIs/integrations exist.
+
+Examples:
+
+- Instagram
+- Facebook
+- LinkedIn
+- YouTube
+- X or other supported platforms
+
+Do not fake unsupported integrations.
+
+Show connection state:
+
+Connected
+Connecting
+Attention Required
+Disconnected
+Permission Expired
+Rate Limited
+Provider Error
+
+Provide channel-level drilldown.
+
+--------------------------------------------------
+# 9. SCREEN 153 — SOCIAL ACCOUNTS
+--------------------------------------------------
+
+Create the centralized social account management screen.
+
+Each account should show:
+
+- platform
+- account/page name
+- account owner
+- connection status
+- permissions
+- last synchronization
+- token/authentication status
+- publishing capability
+- analytics capability
+- connected campaign count
+- last error if applicable
+
+Actions:
+
+- Connect Account
+- Reconnect
+- Disconnect
+- Refresh Permissions
+- View Account
+- Test Connection
+
+OAuth should be used where required.
+
+Never ask users to paste secret tokens into ordinary UI fields when OAuth is the appropriate provider mechanism.
+
+Never expose access tokens or secrets.
+
+Support permission-aware connection management.
+
+--------------------------------------------------
+# 10. SCREEN 154 — CONTENT CALENDAR
+--------------------------------------------------
+
+Create the master marketing content calendar.
+
+Views:
+
+- Month
+- Week
+- Day
+- List
+
+Content should display:
+
+- title
+- content type
+- channel
+- campaign
+- owner
+- status
+- approval state
+- scheduled time
+- publishing status
+
+Filters:
+
+- channel
+- campaign
+- content type
+- owner
+- status
+- approval
+- date
+- campaign
+
+Statuses:
+
+Draft
+In Review
+Approved
+Scheduled
+Publishing
+Published
+Failed
+Archived
+
+Actions:
+
+- Create Content
+- Open Content
+- Reschedule
+- Duplicate
+- Submit Review
+- Submit Approval
+
+Do not create a second scheduling engine.
+
+Use the existing workflow/automation architecture where applicable.
+
+--------------------------------------------------
+# 11. SCREEN 155 — CONTENT PLANNER
+--------------------------------------------------
+
+Create the strategic content planning workspace.
+
+Allow marketers to plan:
+
+- content themes
+- campaigns
+- content pillars
+- audience
+- channels
+- objectives
+- publishing windows
+- owners
+- dependencies
+
+Each planned item should contain:
+
+- objective
+- target audience
+- funnel stage
+- campaign
+- channel
+- content type
+- owner
+- target date
+- status
+
+Support:
+
+- drag/reorder where useful
+- filters
+- search
+- saved views
+- bulk planning
+
+The planner should connect directly to the Content Calendar.
+
+Do not duplicate content records.
+
+--------------------------------------------------
+# 12. SCREEN 156 — POST COMPOSER
+--------------------------------------------------
+
+Create a professional multi-channel post composer.
+
+Support:
+
+- caption/text
+- media
+- links
+- hashtags
+- mentions
+- CTA
+- campaign
+- channel
+- scheduled time
+- UTM parameters where applicable
+
+Provide channel-specific previews.
+
+Examples:
+
+LinkedIn preview
+Instagram preview
+Facebook preview
+
+Do not claim every platform supports every field.
+
+Channel capabilities must come from provider configuration.
+
+Show validation before publishing.
+
+Examples:
+
+- character limits
+- media requirements
+- unsupported formats
+- missing permissions
+- scheduling restrictions
+
+Actions:
+
+Save Draft
+Preview
+Submit Review
+Submit Approval
+Schedule
+
+Publishing must happen through legitimate provider APIs.
+
+--------------------------------------------------
+# 13. SCREEN 157 — POST REVIEW
+--------------------------------------------------
+
+Create the content review workspace.
+
+Purpose:
+
+Allow internal marketing review before approval.
+
+Show:
+
+- content
+- creative
+- caption
+- channel
+- campaign
+- owner
+- reviewer
+- comments
+- version
+- previous versions
+- change history
+
+Actions:
+
+Approve Review
+Request Changes
+Add Comment
+Compare Versions
+Return to Draft
+
+Do not silently overwrite content.
+
+Maintain version history.
+
+--------------------------------------------------
+# 14. SCREEN 158 — POST APPROVAL
+--------------------------------------------------
+
+Create the formal approval workspace.
+
+This must reuse the existing Qubit One Approval Matrix and workflow system.
+
+Show:
+
+- content
+- campaign
+- channel
+- creator
+- reviewer
+- approver
+- approval stage
+- SLA
+- status
+- comments
+- history
+
+Statuses:
+
+Pending
+Approved
+Rejected
+Changes Requested
+Expired
+Cancelled
+
+Actions must be permission-controlled.
+
+Approval events must be auditable.
+
+Sensitive publishing actions must not bypass approval rules.
+
+--------------------------------------------------
+# 15. SCREEN 159 — PUBLISHING QUEUE
+--------------------------------------------------
+
+Create the centralized publishing operations screen.
+
+Show:
+
+- scheduled items
+- publishing now
+- published
+- failed
+- retry required
+- provider errors
+- permission errors
+- rate-limit errors
+
+Columns:
+
+Content
+Channel
+Campaign
+Scheduled Time
+Owner
+Status
+Provider
+Last Attempt
+Next Attempt
+
+Failure handling:
+
+- retry with safe backoff
+- do not create duplicates
+- idempotent publishing
+- show provider response status
+- allow manual intervention
+
+Never show fake "Published" if the provider did not confirm publication.
+
+A successful publish must have a provider-confirmed result where supported.
+
+--------------------------------------------------
+# 16. SCREEN 160 — SOCIAL ANALYTICS
+--------------------------------------------------
+
+Create the social analytics workspace.
+
+Metrics:
+
+- reach
+- impressions
+- engagement
+- engagement rate
+- clicks
+- CTR
+- followers
+- follower growth
+- video views
+- shares
+- comments
+- saves where supported
+- top content
+- channel performance
+
+Provide:
+
+- date filters
+- channel filters
+- campaign filters
+- content filters
+
+Views:
+
+Overview
+Channels
+Content
+Campaigns
+Trends
+
+Use charts sparingly.
+
+Every metric must have:
+
+- definition
+- time period
+- data freshness
+- source where meaningful
+
+Do not mix incompatible platform metrics without explaining the calculation.
+
+--------------------------------------------------
+# 17. SCREEN 161 — GRAPHIC DESIGN STUDIO
+--------------------------------------------------
+
+Create a controlled enterprise creative workspace.
+
+Purpose:
+
+Allow marketing users to create or prepare marketing graphics.
+
+Support:
+
+- templates
+- canvas/workspace
+- image placement
+- text
+- brand colors
+- brand typography
+- logos
+- basic shapes
+- export
+- versioning
+
+The studio should integrate with:
+
+Brand Assets
+Design Library
+Creative Brief
+Content Composer
+
+Do not create an entirely separate file management system.
+
+Respect file permissions and storage architecture.
+
+If external design providers are integrated, use legitimate APIs.
+
+--------------------------------------------------
+# 18. SCREEN 162 — DESIGN LIBRARY
+--------------------------------------------------
+
+Create the centralized marketing design library.
+
+Categories:
+
+- social creatives
+- banners
+- advertisements
+- thumbnails
+- templates
+- campaign creatives
+- reusable designs
+
+Each asset should show:
+
+- preview
+- name
+- type
+- campaign
+- owner
+- version
+- status
+- created date
+- updated date
+
+Features:
+
+- search
+- filters
+- tags
+- folders/collections
+- preview
+- duplicate
+- version history
+- archive
+
+Avoid creating a second global file system.
+
+Use Qubit One's existing document/object storage and permission architecture.
+
+--------------------------------------------------
+# 19. SCREEN 163 — BRAND ASSETS
+--------------------------------------------------
+
+Create the centralized brand asset governance screen.
+
+Manage:
+
+- logos
+- logo variants
+- brand colors
+- typography
+- icons
+- approved imagery
+- templates
+- brand guidelines
+- campaign-specific assets
+
+Show:
+
+- asset
+- category
+- version
+- owner
+- approval status
+- usage restrictions
+- last updated
+
+Support:
+
+- upload
+- replace version
+- archive
+- preview
+- copy asset reference
+
+Important:
+
+Brand assets should have controlled permissions.
+
+Marketing users should not accidentally overwrite the organization's master brand assets.
+
+--------------------------------------------------
+# 20. SCREEN 164 — CREATIVE BRIEF
+--------------------------------------------------
+
+Create a structured Creative Brief workspace.
+
+A brief should include:
+
+- title
+- campaign
+- objective
+- business goal
+- target audience
+- customer segment
+- funnel stage
+- key message
+- CTA
+- channel
+- deliverables
+- dimensions
+- deadlines
+- references
+- brand requirements
+- legal/compliance requirements
+- owner
+- approver
+
+Workflow:
+
+Brief Draft
+→ Review
+→ Approved
+→ Creative Production
+→ Review
+→ Final Approval
+
+Connect this with:
+
+Content Planner
+Graphic Design Studio
+Video Studio
+Post Review
+Post Approval
+
+--------------------------------------------------
+# 21. SCREEN 165 — VIDEO STUDIO
+--------------------------------------------------
+
+Create the marketing video creation workspace.
+
+Support:
+
+- video projects
+- scenes
+- media assets
+- timeline
+- text overlays
+- captions/subtitles
+- thumbnails
+- aspect ratios
+- basic editing
+- preview
+- export
+- versioning
+
+Support common marketing formats where technically appropriate:
+
+- landscape
+- square
+- vertical
+
+Show project status:
+
+Draft
+Editing
+Review
+Approved
+Exporting
+Ready
+Archived
+
+Do not create fake rendering progress.
+
+If rendering is asynchronous:
+
+show actual job state.
+
+--------------------------------------------------
+# 22. SCREEN 166 — VIDEO LIBRARY
+--------------------------------------------------
+
+Create centralized marketing video asset management.
+
+Show:
+
+- thumbnail
+- title
+- campaign
+- duration
+- format
+- resolution
+- owner
+- status
+- version
+- usage
+
+Features:
+
+- search
+- filters
+- tags
+- preview
+- version history
+- archive
+- reuse
+
+Connect with:
+
+Creative Brief
+Content Calendar
+Post Composer
+Campaigns
+
+Use existing storage/security architecture.
+
+--------------------------------------------------
+# 23. SCREEN 167 — SEO OVERVIEW
+--------------------------------------------------
+
+Create the SEO command workspace.
+
+Show:
+
+- organic traffic
+- organic conversions
+- ranking trend
+- indexed pages
+- crawl issues
+- top landing pages
+- top keywords
+- CTR
+- impressions
+- clicks
+- technical health
+- content opportunities
+
+Clearly distinguish:
+
+SEO data
+from
+Sales/Revenue data.
+
+Where conversion data is available, connect it to the existing Sales/Analytics architecture.
+
+Do not create a separate customer/lead system.
+
+--------------------------------------------------
+# 24. SCREEN 168 — KEYWORD WORKSPACE
+--------------------------------------------------
+
+Create centralized keyword management.
+
+Fields:
+
+- keyword
+- search intent
+- topic
+- priority
+- ranking
+- ranking change
+- search volume where provider data exists
+- difficulty where provider data exists
+- target URL
+- content status
+- owner
+
+Views:
+
+- tracked keywords
+- opportunities
+- declining keywords
+- high-value keywords
+- content gaps
+
+Features:
+
+- search
+- filters
+- sorting
+- tags
+- keyword grouping
+- assignment
+
+Do not fabricate search volume or ranking data.
+
+Show provider and data freshness when external SEO data is used.
+
+--------------------------------------------------
+# 25. SCREEN 169 — SEO CONTENT PLANNER
+--------------------------------------------------
+
+Create the SEO content planning workspace.
+
+Connect:
+
+Keyword
+→ Search Intent
+→ Topic
+→ Content
+→ Landing Page
+→ Organic Traffic
+→ Conversion
+→ Business Result
+
+Fields:
+
+- topic
+- primary keyword
+- secondary keywords
+- intent
+- target audience
+- funnel stage
+- target URL
+- content type
+- owner
+- deadline
+- status
+
+Statuses:
+
+Idea
+Planned
+Brief Ready
+Writing
+Review
+Published
+Optimizing
+
+Do not create a second content system.
+
+Reuse the core marketing content model.
+
+--------------------------------------------------
+# 26. SCREEN 170 — TECHNICAL SEO
+--------------------------------------------------
+
+Create the technical SEO monitoring workspace.
+
+Monitor where data is available:
+
+- crawlability
+- indexability
+- broken links
+- redirects
+- canonical issues
+- metadata issues
+- sitemap status
+- robots configuration
+- page performance
+- structured data issues
+- duplicate content indicators
+- HTTPS/security status
+
+Use severity:
+
+Info
+Warning
+High
+Critical
+
+Each issue should provide:
+
+- affected URL/page
+- issue
+- severity
+- detected time
+- source
+- recommendation
+- status
+- owner
+
+Actions:
+
+Assign
+Ignore with reason
+Resolve
+Recheck
+
+Do not pretend that an issue is fixed until the system verifies it.
+
+--------------------------------------------------
+# 27. SCREEN 171 — ORGANIC ANALYTICS
+--------------------------------------------------
+
+Create detailed organic search analytics.
+
+Metrics:
+
+- clicks
+- impressions
+- CTR
+- average position
+- organic sessions
+- landing pages
+- keyword performance
+- conversion rate
+- organic conversions
+
+Dimensions:
+
+- page
+- keyword
+- country
+- device
+- date
+
+Provide:
+
+- trend analysis
+- comparison periods
+- top winners
+- declining pages
+- opportunity pages
+
+Clearly show:
+
+Data Source
+Last Updated
+Date Range
+
+Never mix incompatible sources without labeling them.
+
+--------------------------------------------------
+# 28. SCREEN 172 — PAID CAMPAIGNS
+--------------------------------------------------
+
+Create the paid advertising management workspace.
+
+Support campaigns from legitimate connected providers where available.
+
+Possible channels:
+
+- Google Ads
+- Meta Ads
+- LinkedIn Ads
+- other supported providers
+
+Show:
+
+- campaign
+- platform
+- objective
+- budget
+- spend
+- impressions
+- clicks
+- CTR
+- CPC
+- conversions
+- CPA
+- ROAS
+- status
+
+Campaign lifecycle:
+
+Draft
+Active
+Paused
+Completed
+Failed
+Archived
+
+Connect paid campaigns to:
+
+Marketing
+→ Leads
+→ Sales
+→ Opportunities
+→ Revenue
+
+Do not create duplicate lead records.
+
+Paid spend should be connected to Finance where appropriate.
+
+Never fabricate live campaign data.
+
+Provider sync status must be visible.
+
+--------------------------------------------------
+# 29. SCREEN 173 — MARKETING REPORTS
+--------------------------------------------------
+
+Create the central marketing reporting workspace.
+
+Reports may include:
+
+- campaign performance
+- social performance
+- content performance
+- SEO performance
+- paid campaign performance
+- lead generation
+- marketing-to-sales contribution
+- channel performance
+- ROI
+- ROAS
+- conversion funnel
+- executive marketing summary
+
+Features:
+
+- date range
+- filters
+- saved reports
+- export
+- schedule
+- share
+- drilldown
+
+Use the existing enterprise reporting architecture.
+
+Do not create a second report engine.
+
+Exports must respect permissions.
+
+Sensitive data exports must be audited.
+
+--------------------------------------------------
+# 30. SCREEN 174 — MARKETING SETTINGS
+--------------------------------------------------
+
+Create centralized Marketing configuration.
+
+Sections:
+
+Social Integrations
+SEO Integrations
+Advertising Integrations
+Content Defaults
+Publishing Rules
+Approval Rules
+UTM Defaults
+Campaign Defaults
+Brand Defaults
+Notification Preferences
+Marketing Permissions
+Data Retention
+Analytics Settings
+
+Do not expose secrets.
+
+Sensitive integration credentials must use the enterprise secrets/configuration architecture.
+
+Settings must be permission-controlled.
+
+Show:
+
+- current configuration
+- status
+- last updated
+- updated by
+- validation state
+
+High-impact configuration changes should require appropriate authorization and audit.
+
+--------------------------------------------------
+# 31. SOCIAL API / INTEGRATION GOVERNANCE
+--------------------------------------------------
+
+All social platforms must use legitimate APIs and supported authentication methods.
+
+Respect:
+
+- OAuth
+- provider permissions
+- access scopes
+- rate limits
+- provider policies
+- content restrictions
+- API versioning
+- token expiration
+- publishing restrictions
+- analytics limitations
+- user consent
+- organization authorization
+
+Never scrape private social accounts.
+
+Never bypass platform restrictions.
+
+Never store unnecessary access tokens.
+
+Never expose credentials in frontend code.
+
+When provider APIs fail:
+
+Marketing must continue functioning for unrelated features.
+
+Show:
+
+- provider status
+- last successful sync
+- last error
+- retry availability
+
+Use safe retries with backoff.
+
+--------------------------------------------------
+# 32. CONTENT APPROVAL GOVERNANCE
+--------------------------------------------------
+
+Marketing publishing should support configurable approval workflows.
+
+Examples:
+
+Standard Social Post:
+Creator → Marketing Reviewer → Publish
+
+Campaign:
+Creator → Marketing Manager → Final Approver → Publish
+
+Paid Campaign:
+Marketing → Manager → Finance/Budget Approval where required → Publish
+
+Approval rules must come from the existing enterprise Approval Matrix / Workflow architecture.
+
+Do not hard-code approval logic into individual screens.
+
+--------------------------------------------------
+# 33. CAMPAIGN → SALES CONNECTION
+--------------------------------------------------
+
+This is extremely important.
+
+Marketing-generated activity should be measurable through the existing Sales system.
+
+Example:
+
+Campaign
+↓
+Landing Page / Social / Advertisement
+↓
+Lead Source
+↓
+Existing Lead
+↓
+Existing Contact
+↓
+Existing Account
+↓
+Existing Opportunity
+↓
+Existing Sales Pipeline
+↓
+Existing Revenue
+
+Marketing should be able to answer:
+
+"How much business did this marketing activity generate?"
+
+But attribution must be based on actual available data.
+
+Do not invent attribution.
+
+Clearly distinguish:
+
+- leads generated
+- qualified leads
+- opportunities influenced
+- opportunities sourced
+- revenue attributed
+- revenue influenced
+
+--------------------------------------------------
+# 34. MARKETING ANALYTICS GOVERNANCE
+--------------------------------------------------
+
+Every major metric must have a clear definition.
+
+For example:
+
+LEADS:
+Number of lead records attributed to the marketing source.
+
+QUALIFIED LEADS:
+Number of leads meeting the organization's qualification definition.
+
+PIPELINE:
+Existing Sales opportunity value associated with marketing attribution.
+
+REVENUE:
+Actual revenue from authoritative Sales/Finance records.
+
+ROAS:
+Revenue attribution / advertising spend according to the organization's defined methodology.
+
+Do not allow inconsistent KPI definitions across screens.
+
+--------------------------------------------------
+# 35. DATA FRESHNESS
+--------------------------------------------------
+
+For external integrations display appropriate freshness information.
+
+Examples:
+
+Live
+Updated 5 minutes ago
+Synced 1 hour ago
+Last successful sync yesterday
+Connection requires attention
+
+Do not claim real-time data unless the integration actually provides real-time data.
+
+--------------------------------------------------
+# 36. FILE / MEDIA GOVERNANCE
+--------------------------------------------------
+
+All:
+
+images
+videos
+documents
+creative assets
+brand assets
+
+must use Qubit One's existing secure storage architecture.
+
+Requirements:
+
+- file type validation
+- file size limits
+- malware/security scanning where available
+- authorization
+- access control
+- safe filenames
+- metadata validation
+- audit logging
+- versioning
+- controlled deletion/archive
+
+Never trust frontend file metadata.
+
+--------------------------------------------------
+# 37. SECURITY
+--------------------------------------------------
+
+Marketing must use the existing Qubit authentication and authorization architecture.
+
+Enforce:
+
+- RBAC/ABAC where appropriate
+- least privilege
+- organization-level access
+- department-level access
+- campaign permissions
+- content permissions
+- publishing permissions
+- integration permissions
+- export permissions
+- audit logging
+
+Backend must independently enforce permissions.
+
+Do not rely on hidden buttons or frontend checks.
+
+Users must never access data simply because it exists in the database.
+
+--------------------------------------------------
+# 38. AI BOUNDARY
+--------------------------------------------------
+
+Phase 11 is the dedicated Marketing AI phase.
+
+Therefore:
+
+DO NOT turn Phase 10 into an AI-heavy product.
+
+Phase 10 may expose lightweight integration points such as:
+
+"Generate with AI"
+"Suggest Content"
+"Analyze"
+
+but major AI capabilities belong to:
+
+SCREENS 175–182.
+
+Any AI functionality implemented here must:
+
+- respect permissions
+- use authorized data
+- avoid hallucinated metrics
+- show generated content as draft
+- require human review where appropriate
+- never automatically publish consequential content without configured authorization
+
+Do not create a second AI system.
+
+--------------------------------------------------
+# 39. WORKFLOW / AUTOMATION
+--------------------------------------------------
+
+Marketing should integrate with the existing Automation Engine.
+
+Potential examples:
+
+New Campaign Created
+→ Create Content Tasks
+
+Content Approved
+→ Schedule Publishing
+
+Post Published
+→ Record Analytics Sync Job
+
+Campaign Generates Lead
+→ Existing Lead Assignment Workflow
+
+Campaign Completed
+→ Generate Marketing Report
+
+Do not create another automation engine.
+
+--------------------------------------------------
+# 40. NOTIFICATIONS
+--------------------------------------------------
+
+Reuse the enterprise notification system.
+
+Possible notifications:
+
+- content assigned
+- review requested
+- changes requested
+- approval required
+- approval completed
+- publishing failed
+- provider disconnected
+- campaign budget threshold
+- campaign completed
+- SEO issue detected
+- report ready
+
+Users should not receive duplicate notifications from multiple systems.
+
+--------------------------------------------------
+# 41. AUDITABILITY
+--------------------------------------------------
+
+Marketing actions that materially affect company operations must be auditable.
+
+Examples:
+
+- connecting social account
+- disconnecting social account
+- changing publishing permissions
+- approving content
+- rejecting content
+- publishing
+- deleting/archiving major assets
+- changing campaign budget
+- changing integrations
+- exporting sensitive reports
+
+Audit should reuse the enterprise Audit Log.
+
+Do not create a separate audit database.
+
+--------------------------------------------------
+# 42. ERROR / FAILURE STATES
+--------------------------------------------------
+
+Every important screen must handle:
+
+- loading
+- empty state
+- permission denied
+- provider unavailable
+- API failure
+- validation error
+- network failure
+- timeout
+- stale data
+- rate limit
+- unauthorized integration
+- expired token
+- publishing failure
+- partial analytics failure
+
+Errors should be:
+
+clear
+specific
+actionable
+professional
+
+Never show raw stack traces to users.
+
+--------------------------------------------------
+# 43. PERFORMANCE
+--------------------------------------------------
+
+Marketing can contain:
+
+- large media libraries
+- large content calendars
+- analytics datasets
+- many campaigns
+- many social posts
+
+Therefore implement appropriate:
+
+- pagination
+- virtualization where needed
+- lazy loading
+- optimized images
+- caching
+- server-side filtering
+- server-side sorting
+- asynchronous jobs
+- background processing
+- incremental loading
+
+Do not load the entire marketing database into the browser.
+
+--------------------------------------------------
+# 44. RESPONSIVE DESIGN
+--------------------------------------------------
+
+Desktop is the primary enterprise workspace.
+
+But the system must also work on:
+
+tablet
+mobile
+
+Do not simply shrink the desktop UI.
+
+On smaller screens:
+
+- simplify navigation
+- convert tables to useful mobile layouts
+- use drawers
+- prioritize actions
+- preserve readability
+- make content creation practical
+- keep approval workflows usable
+
+The dedicated mobile experiences are formally covered later in Phase 18.
+
+--------------------------------------------------
+# 45. ACCESSIBILITY
+--------------------------------------------------
+
+Follow enterprise accessibility principles.
+
+Support:
+
+- keyboard navigation
+- visible focus states
+- semantic HTML
+- accessible labels
+- adequate contrast
+- screen-reader compatibility
+- accessible tables
+- accessible forms
+- reduced motion
+- non-color-only status indicators
+
+Do not rely only on color to communicate:
+
+status
+approval
+failure
+success
+priority
+
+--------------------------------------------------
+# 46. DESIGN SYSTEM REUSE
+--------------------------------------------------
+
+Use the existing Qubit One Design System from Phase 2.
+
+Reuse shared:
+
+- buttons
+- inputs
+- tables
+- cards
+- tabs
+- badges
+- dropdowns
+- filters
+- drawers
+- modals
+- command/search patterns
+- charts
+- timelines
+- alerts
+- loading states
+- empty states
+- error states
+
+If a marketing-specific component is genuinely needed:
+
+add it to the shared design system in a reusable manner.
+
+Do not create one-off visual components unnecessarily.
+
+--------------------------------------------------
+# 47. GLOBAL SEARCH
+--------------------------------------------------
+
+Marketing entities must integrate with Qubit One global search.
+
+Search may include authorized:
+
+- campaigns
+- content
+- posts
+- creatives
+- keywords
+- reports
+- social accounts
+- SEO issues
+
+Do not create a separate marketing-only global search system.
+
+--------------------------------------------------
+# 48. ROLE-AWARE EXPERIENCE
+--------------------------------------------------
+
+Marketing Executive:
+
+Focus:
+- content
+- calendar
+- publishing
+- tasks
+- reviews
+
+Marketing Manager:
+
+Focus:
+- campaigns
+- approvals
+- team
+- performance
+- budget
+
+Marketing Head:
+
+Focus:
+- ROI
+- pipeline contribution
+- channel performance
+- strategic planning
+
+CEO:
+
+Focus:
+- marketing contribution
+- pipeline
+- revenue
+- strategic performance
+
+Permissions must determine what each user can see and perform.
+
+--------------------------------------------------
+# 49. DATABASE PRINCIPLES
+--------------------------------------------------
+
+Use transactional integrity.
+
+Important entities should have:
+
+- primary keys
+- foreign keys
+- unique constraints
+- indexes
+- validation
+- timestamps
+- versioning where appropriate
+- audit relationships
+- soft deletion/archive where appropriate
+
+Prevent:
+
+- duplicate publishing
+- duplicate campaign identifiers
+- duplicate social connections
+- duplicate keyword records where uniqueness applies
+- duplicate analytics ingestion
+- duplicate lead creation through marketing attribution
+
+Use idempotency for external publishing/sync operations.
+
+--------------------------------------------------
+# 50. ENTERPRISE RELIABILITY
+--------------------------------------------------
+
+External dependencies must not take down Qubit One.
+
+Examples:
+
+If LinkedIn API fails:
+
+Marketing Home should still work.
+
+If Google Ads API fails:
+
+Social content should still work.
+
+If SEO provider fails:
+
+Content planning should still work.
+
+If analytics sync fails:
+
+Existing marketing records remain accessible.
+
+Use:
+
+- timeouts
+- retries
+- exponential backoff
+- idempotency
+- queues/background jobs
+- circuit breaking where appropriate
+- graceful degradation
+
+--------------------------------------------------
+# 51. OBSERVABILITY
+--------------------------------------------------
+
+Marketing integrations and background jobs must be observable.
+
+Track:
+
+- sync success/failure
+- publishing success/failure
+- provider latency
+- API errors
+- queue status
+- background job failures
+- data freshness
+- storage failures
+- authorization failures
+
+Use the existing enterprise observability architecture.
+
+Do not create a separate monitoring system.
+
+--------------------------------------------------
+# 52. REPORTING / EXPORT
+--------------------------------------------------
+
+Reports and exports must respect:
+
+- user permissions
+- organization scope
+- campaign permissions
+- sensitive-data policies
+
+Export formats may include:
+
+- CSV
+- XLSX
+- PDF
+
+where supported by the existing reporting architecture.
+
+Large exports should use asynchronous jobs rather than blocking the browser.
+
+--------------------------------------------------
+# 53. UX PRINCIPLE
+--------------------------------------------------
+
+Every marketing screen should answer:
+
+WHAT IS HAPPENING?
+WHY DOES IT MATTER?
+WHAT NEEDS ACTION?
+WHAT HAPPENED BEFORE?
+WHAT HAPPENS NEXT?
+
+Avoid dashboards that only show numbers.
+
+The UI should help employees make decisions and execute work.
+
+--------------------------------------------------
+# 54. RECOMMENDED ENTERPRISE EXTENSIONS
+# DO NOT ADD THESE TO THE 24 CORE SCREENS
+--------------------------------------------------
+
+These are future capabilities and must NOT increase the Phase 10 screen count.
+
+Possible future extensions:
+
+- Social Listening
+- Influencer Management
+- Marketing Attribution Engine
+- Customer Journey Mapping
+- Advanced Marketing Automation
+- Media Mix Modeling
+- Marketing Budget Planning
+- Audience Segmentation
+- Lead Nurturing
+- Landing Page Builder
+- Email Marketing
+- SMS Marketing
+- A/B Testing
+- Experimentation Platform
+- Competitor Monitoring
+- Reputation Monitoring
+- Advanced Conversion Attribution
+- Marketing Data Warehouse
+- Customer Data Platform
+
+If useful, integrate them architecturally as future extensions.
+
+Do NOT randomly add their screens to Phase 10.
+
+--------------------------------------------------
+# 55. NO FEATURE COUNT INFLATION
+--------------------------------------------------
+
+The final Phase 10 implementation must contain:
+
+EXACTLY 24 CORE SCREENS.
+
+151–174.
+
+No additional numbered screens.
+
+No duplicate versions of existing screens.
+
+No alternate dashboard versions.
+
+No hidden "extra" pages presented as part of the official Phase 10 screen count.
+
+Optional enterprise capabilities may exist behind existing screens or be documented separately as future extensions.
+
+--------------------------------------------------
+# 56. IMPLEMENTATION QUALITY
+--------------------------------------------------
+
+Do not stop at visual mockups.
+
+The implementation must be architecturally ready for real production development.
+
+Use:
+
+- real component structure
+- reusable components
+- typed models
+- clear API boundaries
+- validation
+- permission checks
+- error handling
+- loading states
+- empty states
+- responsive behavior
+- accessibility
+- testable architecture
+
+Do not use fake hardcoded success states as if they were production functionality.
+
+Mock/demo data may be used only where the backend integration is not yet available, and it must be clearly structured so it can later be replaced with real APIs.
+
+--------------------------------------------------
+# 57. TECHNOLOGY COMPATIBILITY
+--------------------------------------------------
+
+Do not introduce obsolete frameworks or libraries.
+
+Preserve the existing Qubit One technology architecture.
+
+Do not perform unnecessary technology migration.
+
+Any new dependency must have a meaningful reason related to:
+
+- security
+- maintainability
+- performance
+- reliability
+- functionality
+- accessibility
+
+Do not introduce technology simply because it is trendy.
+
+--------------------------------------------------
+# 58. FINAL VALIDATION
+--------------------------------------------------
+
+Before considering Phase 10 complete, validate every screen:
+
+151 Marketing Home
+152 Social Media Overview
+153 Social Accounts
+154 Content Calendar
+155 Content Planner
+156 Post Composer
+157 Post Review
+158 Post Approval
+159 Publishing Queue
+160 Social Analytics
+161 Graphic Design Studio
+162 Design Library
+163 Brand Assets
+164 Creative Brief
+165 Video Studio
+166 Video Library
+167 SEO Overview
+168 Keyword Workspace
+169 SEO Content Planner
+170 Technical SEO
+171 Organic Analytics
+172 Paid Campaigns
+173 Marketing Reports
+174 Marketing Settings
+
+Verify:
+
+- no screen missing
+- no screen duplicated
+- correct navigation
+- correct permissions
+- correct data relationships
+- correct responsive behavior
+- correct loading states
+- correct empty states
+- correct error states
+- correct approval states
+- correct provider failure states
+- correct audit behavior
+- correct search integration
+- correct notification integration
+- correct workflow integration
+- correct reporting integration
+- correct storage integration
+- correct Sales integration
+- correct Finance integration
+- correct Analytics integration
+- no duplicate enterprise systems
+
+--------------------------------------------------
+# 59. FINAL DESIGN TEST
+--------------------------------------------------
+
+Open the attached Qubit One UI reference image again.
+
+Compare the Phase 10 result against it.
+
+The result should feel like:
+
+"Qubit One now has a complete enterprise Digital Marketing department."
+
+It should NOT feel like:
+
+"a separate social media SaaS product."
+
+Maintain the same Qubit One visual identity throughout all 24 screens.
+
+--------------------------------------------------
+# 60. FINAL INSTRUCTION
+--------------------------------------------------
+
+DO NOT ASK ME WHAT TO BUILD NEXT.
+
+DO NOT STOP AFTER GENERATING A FEW SCREENS.
+
+DO NOT SKIP COMPLEX SCREENS.
+
+DO NOT REDUCE THE 24-SCREEN REQUIREMENT.
+
+DO NOT CREATE PLACEHOLDER UI FOR IMPORTANT WORKFLOWS.
+
+DO NOT RESTART THE QUBIT ONE ARCHITECTURE.
+
+DO NOT CREATE DUPLICATE SYSTEMS.
+
+DO NOT CHANGE THE APPROVED QUBIT ONE DESIGN LANGUAGE.
+
+COMPLETE PHASE 10 AS A COHERENT ENTERPRISE DIGITAL MARKETING OPERATING SYSTEM.
+
+After implementation, perform an internal consistency check against:
+
+- existing Qubit One architecture
+- Phase 1 Enterprise Architecture
+- Phase 2 Design System
+- Phase 3 Security
+- Phase 4 Employee Workspace
+- Phase 5 CEO Command Center
+- Phase 6 Sales Operating System
+- Phase 7 Sales AI
+- Phase 8 Finance
+- Phase 9 Inventory & Dispatch
+- Qubit One persistent enterprise governance instruction
+
+Resolve conflicts in favor of:
+
+1. Data integrity
+2. Security
+3. Existing architecture
+4. Reusability
+5. Reliability
+6. Scalability
+7. Maintainability
+8. User experience
+9. Performance
+10. Feature completeness
+
+The final result must feel like one unified enterprise operating system.
+
+# END OF PHASE 10

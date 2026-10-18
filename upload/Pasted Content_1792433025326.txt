@@ -1,0 +1,1774 @@
+# QUBIT ONE — PHASE 16 IMPLEMENTATION MASTER PROMPT
+# ENTERPRISE AUTOMATION ENGINE
+# SCREENS 257–266
+# EXACTLY 10 SCREENS
+
+You are continuing an existing enterprise product called Qubit One.
+
+Qubit One is a serious Enterprise Business Operating System.
+
+This is an EXISTING product.
+
+This is NOT a new application.
+
+This is NOT a redesign.
+
+This phase introduces the centralized Qubit One Automation Engine.
+
+============================================================
+0. CURRENT PROJECT STATE
+============================================================
+
+Phases 1–15 have already been implemented/planned.
+
+Current completed screen scope:
+
+1–246 = existing Qubit One enterprise systems
+247–256 = Qubit AI Platform
+
+Current total:
+
+256 / 308 screens
+
+Phase 16 adds:
+
+257–266
+
+Exactly 10 screens.
+
+After Phase 16:
+
+266 / 308 screens
+
+Remaining:
+
+42 screens
+
+Preserve all existing functionality.
+
+DO NOT rebuild existing systems.
+
+============================================================
+1. CRITICAL PRODUCT PRINCIPLE
+============================================================
+
+Qubit One is ONE connected Enterprise Operating System.
+
+It contains multiple business domains, but those domains are NOT independent applications.
+
+Existing domains include:
+
+- Home
+- My Workspace
+- Enterprise
+- People / HR
+- Sales
+- Finance
+- Inventory
+- Marketing
+- Service
+- Meetings & Collaboration
+- AI
+- Analytics
+- Security
+- Administration
+
+These domains are separated internally for architecture and maintainability.
+
+However, the user experience must remain connected.
+
+Example:
+
+A Sales Executive working inside Sales may have authorized access to:
+
+- Mail
+- Meetings
+- Calendar
+- Tasks
+- Customers
+- CRM
+- Sales AI
+- Approvals
+- Notifications
+- My HR information
+
+without needing to treat each capability as a completely separate application.
+
+Therefore:
+
+MODULE STRUCTURE ≠ USER EXPERIENCE STRUCTURE.
+
+Do not turn Qubit One into a collection of disconnected portals.
+
+============================================================
+2. AUTOMATION ENGINE OBJECTIVE
+============================================================
+
+Build one centralized enterprise automation engine that can orchestrate workflows across Qubit One.
+
+Automation should connect:
+
+EVENT
+↓
+TRIGGER
+↓
+CONDITIONS
+↓
+DECISIONS
+↓
+ACTIONS
+↓
+APPROVALS
+↓
+NOTIFICATIONS
+↓
+AI / OPTIONAL INTELLIGENCE
+↓
+AUDIT
+↓
+RESULT
+
+Examples:
+
+Sales Won
+→ Create Customer Follow-up
+→ Notify Finance
+→ Create Onboarding Task
+→ Notify Service
+→ Update CRM
+→ Generate approved internal tasks
+
+Employee Joined
+→ Create Onboarding Tasks
+→ Notify Manager
+→ Notify HR
+→ Assign Documents
+→ Schedule Orientation
+→ Create Access Request
+
+Invoice Overdue
+→ Create Follow-up
+→ Notify Finance
+→ Escalate after SLA
+→ Update collection workflow
+
+Service Ticket Created
+→ Check priority
+→ Assign engineer
+→ Check parts
+→ Schedule visit
+→ Notify customer
+
+Meeting Completed
+→ Process notes
+→ Generate AI summary
+→ Create approved action items
+→ Notify owners
+
+The Automation Engine must orchestrate existing systems.
+
+It must NOT create duplicate business databases.
+
+============================================================
+3. EXACT SCREEN INVENTORY
+============================================================
+
+Implement EXACTLY these 10 screens:
+
+257. Automation Home
+258. Workflow Builder
+259. Workflow Detail
+260. Trigger Library
+261. Action Library
+262. Approval Workflow
+263. Notification Workflow
+264. Employee Onboarding Automation
+265. Sales Won Automation
+266. Dispatch Automation
+
+DO NOT create additional numbered screens.
+
+DO NOT remove any screen.
+
+DO NOT rename these screens.
+
+============================================================
+4. SCREEN 257 — AUTOMATION HOME
+============================================================
+
+Create the centralized Automation Engine dashboard.
+
+Purpose:
+
+Give authorized users a clear overview of automation activity.
+
+Show:
+
+- Active workflows
+- Paused workflows
+- Failed workflows
+- Pending approvals
+- Recent executions
+- Failed executions
+- Scheduled workflows
+- Automation health
+- Recent changes
+- High-impact workflows
+
+Summary metrics:
+
+- Active Automations
+- Running
+- Completed Today
+- Failed
+- Pending Approval
+- Scheduled
+
+Recent execution table:
+
+- Workflow
+- Trigger
+- Started
+- Duration
+- Status
+- Initiated By
+- Records Affected
+- Actions
+- Error if failed
+
+Statuses:
+
+- Active
+- Paused
+- Draft
+- Running
+- Completed
+- Failed
+- Disabled
+
+Quick actions:
+
+- Create Workflow
+- View Workflows
+- Trigger Library
+- Action Library
+- Failed Runs
+
+Show warnings when:
+
+- integrations are unavailable
+- workflows repeatedly fail
+- credentials expire
+- actions are unauthorized
+- configuration is incomplete
+
+Do not show fake success metrics.
+
+============================================================
+5. SCREEN 258 — WORKFLOW BUILDER
+============================================================
+
+Create the enterprise visual Workflow Builder.
+
+This is the central automation design experience.
+
+Workflow structure:
+
+TRIGGER
+↓
+CONDITION
+↓
+DECISION
+↓
+ACTION
+↓
+APPROVAL
+↓
+NOTIFICATION
+↓
+END
+
+Not every workflow requires every step.
+
+Builder must support:
+
+- Trigger
+- Condition
+- Branch
+- Action
+- Approval
+- Notification
+- Delay
+- Schedule
+- AI-assisted recommendation where authorized
+
+Use a clean enterprise visual builder.
+
+Do NOT make it look like a programming IDE.
+
+Do NOT create excessive visual clutter.
+
+Each node should show:
+
+- Type
+- Name
+- Configuration state
+- Status
+- Error state
+- Connection
+
+Example:
+
+Trigger:
+"Opportunity marked Won"
+
+Condition:
+"Order value > ₹100,000"
+
+Action:
+"Create Finance notification"
+
+Action:
+"Create onboarding task"
+
+Approval:
+"Finance Manager approval"
+
+Notification:
+"Notify Sales Manager"
+
+End.
+
+============================================================
+6. WORKFLOW BUILDER RULES
+============================================================
+
+The builder must prevent invalid workflows.
+
+Examples:
+
+- action without trigger
+- broken connection
+- missing required field
+- invalid condition
+- unauthorized action
+- missing approval
+- invalid target record
+- circular execution
+- impossible dependency
+
+Show inline validation.
+
+Do not allow publishing invalid workflows.
+
+Workflow lifecycle:
+
+Draft
+→ Validate
+→ Review
+→ Publish
+→ Active
+→ Pause
+→ Resume
+→ Archive
+
+Important:
+
+Editing an active workflow must support safe versioning.
+
+Do not silently change an executing workflow.
+
+============================================================
+7. SCREEN 259 — WORKFLOW DETAIL
+============================================================
+
+Create detailed workflow management.
+
+Header:
+
+- Workflow name
+- Status
+- Version
+- Owner
+- Department
+- Last modified
+- Last execution
+- Success rate
+
+Tabs/sections:
+
+1. Overview
+2. Workflow
+3. Trigger
+4. Conditions
+5. Actions
+6. Approvals
+7. Notifications
+8. Execution History
+9. Errors
+10. Audit
+
+Actions:
+
+- Edit
+- Duplicate
+- Validate
+- Publish
+- Pause
+- Resume
+- Test
+- View Runs
+- Archive
+
+Execution history:
+
+- Run ID
+- Started
+- Completed
+- Status
+- Trigger source
+- Duration
+- Actions executed
+- Error
+
+Workflow versions must be preserved.
+
+============================================================
+8. SCREEN 260 — TRIGGER LIBRARY
+============================================================
+
+Create centralized Trigger Library.
+
+Triggers represent events that can start automations.
+
+Categories:
+
+BUSINESS EVENTS
+
+- Lead Created
+- Opportunity Created
+- Opportunity Won
+- Opportunity Lost
+- Order Created
+- Payment Received
+- Invoice Created
+- Invoice Overdue
+- Expense Submitted
+- Purchase Order Created
+- Goods Received
+- Stock Below Threshold
+- Dispatch Created
+- Service Ticket Created
+- Ticket Resolved
+
+PEOPLE EVENTS
+
+- Employee Joined
+- Employee Transferred
+- Leave Approved
+- Leave Rejected
+- Employee Exit Started
+- Performance Review Due
+
+COLLABORATION EVENTS
+
+- Meeting Created
+- Meeting Completed
+- Action Item Created
+- Task Overdue
+- Announcement Published
+
+SYSTEM EVENTS
+
+- Schedule
+- Webhook
+- Integration Event
+- Manual Trigger
+
+Each trigger should show:
+
+- Name
+- Domain
+- Description
+- Required permissions
+- Available conditions
+- Event payload/context
+- Status
+
+Only expose triggers that the user is authorized to configure.
+
+============================================================
+9. SCREEN 261 — ACTION LIBRARY
+============================================================
+
+Create centralized Action Library.
+
+Actions are reusable operations performed by workflows.
+
+Categories:
+
+TASKS
+
+- Create Task
+- Assign Task
+- Update Task
+- Complete Task
+
+COMMUNICATION
+
+- Send Notification
+- Send Email
+- Send Internal Message
+- Send Approved External Communication
+
+CRM
+
+- Create Follow-up
+- Update Lead
+- Update Opportunity
+- Create Customer Activity
+
+CALENDAR
+
+- Create Meeting
+- Update Meeting
+- Create Reminder
+
+HR
+
+- Create Onboarding Task
+- Assign HR Task
+- Create Approval Request
+
+FINANCE
+
+- Create Finance Task
+- Create Approval Request
+- Create Collection Follow-up
+
+INVENTORY
+
+- Reserve Stock
+- Create Stock Task
+- Create Dispatch Task
+
+SERVICE
+
+- Assign Ticket
+- Create Visit Task
+- Create Service Follow-up
+
+AI
+
+- Request AI Summary
+- Generate Draft
+- Analyze Authorized Data
+
+SYSTEM
+
+- Delay
+- Branch
+- Webhook
+- Integration Action
+
+Each action must define:
+
+- Inputs
+- Outputs
+- Required permissions
+- Failure behavior
+- Idempotency requirements
+- Retry behavior
+- Risk level
+
+Never allow arbitrary unrestricted backend commands.
+
+Never allow arbitrary SQL.
+
+Never allow workflow authors to bypass authorization.
+
+============================================================
+10. SCREEN 262 — APPROVAL WORKFLOW
+============================================================
+
+Create the approval automation workspace.
+
+IMPORTANT:
+
+This does NOT replace the existing Enterprise Approval Matrix.
+
+It orchestrates existing approvals.
+
+Example:
+
+Expense > ₹50,000
+→ Manager Approval
+→ Finance Approval
+→ Completion
+
+Quotation Discount > configured threshold
+→ Sales Manager Approval
+→ Finance Approval
+
+AI-generated financial action
+→ Authorized Finance Approval
+
+Show:
+
+- Request Type
+- Trigger
+- Approval Levels
+- Approver
+- Backup Approver
+- Threshold
+- SLA
+- Escalation
+- Status
+
+Support:
+
+- sequential approval
+- parallel approval
+- conditional approval
+- escalation
+- delegation
+- rejection
+- timeout
+
+Approval states:
+
+- Pending
+- Approved
+- Rejected
+- Escalated
+- Expired
+- Cancelled
+
+Use existing My Approvals.
+
+Do NOT create a second approval inbox.
+
+============================================================
+11. SCREEN 263 — NOTIFICATION WORKFLOW
+============================================================
+
+Create notification automation configuration.
+
+IMPORTANT:
+
+This screen configures the existing enterprise notification engine.
+
+It does NOT create a second notification backend.
+
+Configure:
+
+- Event
+- Recipients
+- Channel
+- Priority
+- Template
+- Timing
+- Conditions
+- Frequency
+- Escalation
+
+Channels may include:
+
+- In-app
+- Email
+- Internal Chat
+- SMS
+- WhatsApp
+- Push
+
+Only show channels with valid configured integrations.
+
+Examples:
+
+Invoice Overdue
+→ Finance Manager
+→ In-app + Email
+
+Service Ticket Critical
+→ Service Manager
+→ In-app + Internal notification
+
+Meeting reminder
+→ Participants
+→ In-app + configured calendar/email
+
+Task overdue
+→ Owner
+→ In-app
+
+Notification preferences must still respect user settings.
+
+Avoid notification spam.
+
+Support:
+
+- immediate
+- scheduled
+- digest
+- escalation
+
+============================================================
+12. SCREEN 264 — EMPLOYEE ONBOARDING AUTOMATION
+============================================================
+
+Create a specialized automation template using existing systems.
+
+Lifecycle:
+
+Candidate Accepted
+↓
+Offer Finalized
+↓
+Employee Created
+↓
+Onboarding Workflow
+↓
+Documents
+↓
+Manager Notification
+↓
+IT/Access Requests
+↓
+Training
+↓
+Orientation
+↓
+First-Day Tasks
+↓
+Completion
+
+Important:
+
+Do NOT create a separate HR onboarding engine.
+
+This screen is a specialized workflow/template built on:
+
+- HR
+- Employee
+- Documents
+- Tasks
+- Security
+- Notifications
+- Calendar
+- Automation Engine
+
+Possible automatic actions:
+
+- Create onboarding checklist
+- Assign HR tasks
+- Notify manager
+- Create IT access request
+- Schedule orientation
+- Request documents
+- Assign training
+- Notify relevant departments
+
+Sensitive access provisioning must NOT happen automatically without proper authorization.
+
+Security access should flow through the existing security/access architecture.
+
+Show:
+
+- workflow status
+- employee
+- current stage
+- pending tasks
+- failed steps
+- approvals
+- completion percentage
+
+============================================================
+13. SCREEN 265 — SALES WON AUTOMATION
+============================================================
+
+Create specialized Sales Won automation.
+
+Trigger:
+
+Opportunity → Won
+
+Possible workflow:
+
+Opportunity Won
+↓
+Validate opportunity
+↓
+Create/confirm customer
+↓
+Create order / verify order
+↓
+Notify Finance
+↓
+Create fulfillment task
+↓
+Notify Inventory
+↓
+Create onboarding/service task where configured
+↓
+Create customer follow-up
+↓
+Update customer history
+↓
+Notify relevant teams
+
+IMPORTANT:
+
+Do not automatically create duplicate customers.
+
+Use existing CRM identity matching.
+
+Do not create duplicate orders.
+
+Do not fabricate revenue.
+
+Finance remains source of truth for financial records.
+
+Inventory remains source of truth for stock.
+
+Service remains source of truth for service records.
+
+Each action must be idempotent.
+
+If one downstream system fails:
+
+The entire platform must not falsely report complete success.
+
+Show partial failure and recovery state.
+
+Example:
+
+CRM = successful
+Finance notification = successful
+Inventory task = failed
+
+Status:
+
+PARTIALLY COMPLETED
+
+with retry/recovery.
+
+============================================================
+14. SCREEN 266 — DISPATCH AUTOMATION
+============================================================
+
+Create specialized Dispatch automation.
+
+Possible lifecycle:
+
+Order Ready
+↓
+Stock Validation
+↓
+Reservation
+↓
+Dispatch Creation
+↓
+Serial Validation where required
+↓
+Dispatch Assignment
+↓
+Notification
+↓
+Delivery Tracking
+↓
+Completion
+↓
+Customer History
+
+Use existing Inventory & Dispatch systems.
+
+Do NOT create a second dispatch database.
+
+Do NOT directly manipulate stock from frontend automation.
+
+Inventory backend remains authoritative.
+
+Stock transitions must be transactional.
+
+Possible actions:
+
+- Validate stock
+- Reserve stock
+- Create dispatch task
+- Assign warehouse task
+- Notify team
+- Create delivery tracking request
+- Update customer activity
+- Notify customer through configured integration
+
+If tracking integration is unavailable:
+
+Do not fabricate tracking status.
+
+============================================================
+15. AUTOMATION STATE MACHINE
+============================================================
+
+Workflow lifecycle:
+
+DRAFT
+↓
+VALIDATING
+↓
+PENDING REVIEW
+↓
+PUBLISHED
+↓
+ACTIVE
+↓
+RUNNING
+↓
+COMPLETED
+
+Failure states:
+
+FAILED
+PARTIALLY_COMPLETED
+PAUSED
+CANCELLED
+
+Archived:
+
+ARCHIVED
+
+Do not hide failed executions.
+
+============================================================
+16. EXECUTION ENGINE PRINCIPLES
+============================================================
+
+Automation must be:
+
+- deterministic where possible
+- idempotent
+- transactional where appropriate
+- observable
+- auditable
+- permission-aware
+- retry-safe
+- failure-aware
+
+Never assume:
+
+"Action sent = action completed."
+
+Example:
+
+Send email request
+≠
+Email delivered.
+
+Create payment request
+≠
+Payment completed.
+
+Create dispatch
+≠
+Delivery completed.
+
+Always represent actual backend state.
+
+============================================================
+17. RETRY & FAILURE HANDLING
+============================================================
+
+Support:
+
+- retry
+- exponential backoff
+- timeout
+- dead-letter handling where applicable
+- manual recovery
+- partial completion
+- failure reason
+- execution logs
+
+Retry only safe/idempotent operations automatically.
+
+Do not blindly retry financial or destructive operations.
+
+============================================================
+18. CONCURRENCY
+============================================================
+
+Handle concurrent workflow executions.
+
+Example:
+
+Two workflows attempt to reserve the same inventory.
+
+Backend must enforce:
+
+- transactions
+- locking where required
+- consistency
+- idempotency
+
+Frontend must never determine authoritative stock.
+
+============================================================
+19. AUTOMATION SECURITY
+============================================================
+
+Every workflow and action must respect:
+
+- authentication
+- RBAC
+- ABAC
+- least privilege
+- record permissions
+- department restrictions
+- tenant isolation if applicable
+- API authorization
+- audit
+
+Workflow authors must only configure actions they are authorized to use.
+
+A manager must not be able to create an automation that grants themselves administrator access.
+
+Automation must NEVER bypass:
+
+- security
+- approval
+- financial controls
+- HR permissions
+- inventory controls
+
+============================================================
+20. AI + AUTOMATION
+============================================================
+
+Qubit AI Platform may assist automation.
+
+Examples:
+
+- AI classifies a lead
+- AI summarizes a meeting
+- AI drafts communication
+- AI recommends next action
+- AI analyzes service ticket
+
+But AI must NOT bypass workflow controls.
+
+Correct architecture:
+
+EVENT
+→ AUTOMATION
+→ AI RECOMMENDATION
+→ VALIDATION
+→ APPROVAL IF REQUIRED
+→ ACTION
+→ AUDIT
+
+AI must never silently execute high-risk actions.
+
+============================================================
+21. AUTOMATION + EXISTING MODULES
+============================================================
+
+Automation must connect existing Qubit systems.
+
+SALES:
+
+Lead
+Opportunity
+Quotation
+Order
+Customer
+Follow-up
+
+FINANCE:
+
+Invoice
+Payment
+Expense
+Approval
+Receivable
+
+HR:
+
+Employee
+Onboarding
+Leave
+Performance
+Exit
+
+INVENTORY:
+
+Purchase
+Goods Receipt
+Stock
+Dispatch
+Return
+
+SERVICE:
+
+Ticket
+Visit
+Parts
+Resolution
+
+MEETINGS:
+
+Meeting
+Notes
+Action Items
+Tasks
+
+MARKETING:
+
+Campaign
+Content
+Lead generation
+Publishing workflows
+
+AI:
+
+Insights
+Recommendations
+Drafts
+Approved actions
+
+All connections must use existing domain models.
+
+============================================================
+22. CROSS-MODULE AUTOMATION
+============================================================
+
+This is one of the most important goals of Phase 16.
+
+Qubit One should support cross-domain workflows.
+
+Example:
+
+SALES
+Opportunity Won
+
+↓
+FINANCE
+Create required financial workflow
+
+↓
+
+INVENTORY
+Prepare fulfillment
+
+↓
+
+SERVICE
+Create implementation/service task
+
+↓
+
+MEETINGS
+Schedule onboarding meeting
+
+↓
+
+TASKS
+Assign responsible employees
+
+↓
+
+NOTIFICATIONS
+Notify stakeholders
+
+↓
+
+CUSTOMER HISTORY
+Record activity
+
+The user should not have to manually copy information between modules.
+
+============================================================
+23. USER EXPERIENCE
+============================================================
+
+Although automation is a technical engine, the UI must remain understandable to normal business users.
+
+Avoid technical jargon where unnecessary.
+
+Instead of:
+
+"Node Execution Context"
+
+Prefer:
+
+"Workflow step"
+
+Instead of:
+
+"Webhook payload mutation"
+
+Prefer:
+
+"Incoming event data"
+
+Advanced technical details can exist in expandable sections.
+
+============================================================
+24. ROLE-BASED AUTOMATION
+============================================================
+
+Not every employee should be able to create automations.
+
+Example:
+
+Employee:
+- View permitted automations
+- Trigger permitted actions
+- Run personal workflows if allowed
+
+Manager:
+- Team workflows
+- Department workflows
+
+Department Admin:
+- Department automation configuration
+
+Enterprise Admin:
+- Global automation configuration
+
+Security Admin:
+- Security-sensitive workflow controls
+
+System Admin:
+- Infrastructure/integration configuration
+
+Backend authorization must enforce this.
+
+============================================================
+25. ADMIN VS END-USER NAVIGATION
+============================================================
+
+IMPORTANT:
+
+Administrative navigation may show:
+
+Automation
+→ Workflow Builder
+→ Trigger Library
+→ Action Library
+→ Settings
+
+But ordinary users should NOT necessarily see the entire Automation Engine.
+
+The navigation must be role-aware.
+
+Example:
+
+Sales Executive may simply encounter:
+
+"Automated follow-up created."
+
+They do NOT need access to:
+
+Workflow Builder
+Action Library
+System Trigger Configuration
+
+unless authorized.
+
+Therefore:
+
+ADMINISTRATIVE STRUCTURE
+≠
+END-USER NAVIGATION
+
+Preserve this principle throughout the implementation.
+
+============================================================
+26. GLOBAL SEARCH
+============================================================
+
+Automation records should integrate with Qubit Global Search where appropriate.
+
+Search:
+
+- workflow
+- automation
+- execution
+- action
+- trigger
+- failed run
+
+Only authorized records appear.
+
+============================================================
+27. AUDIT
+============================================================
+
+Use the existing enterprise Audit Log.
+
+Audit:
+
+- workflow created
+- workflow modified
+- workflow published
+- workflow paused
+- workflow resumed
+- workflow archived
+- action configuration changed
+- approval configuration changed
+- execution started
+- execution completed
+- execution failed
+- manual retry
+- permission changes
+
+Do NOT create another audit system.
+
+============================================================
+28. OBSERVABILITY
+============================================================
+
+Automation engine must provide:
+
+- execution logs
+- workflow metrics
+- latency
+- failure rate
+- retry count
+- queue status
+- action status
+- integration status
+
+Important operational questions must be answerable:
+
+WHAT happened?
+WHEN?
+WHY?
+WHO initiated it?
+WHICH workflow?
+WHICH version?
+WHICH records?
+WHICH action?
+SUCCESS OR FAILURE?
+WHAT SHOULD HAPPEN NEXT?
+
+============================================================
+29. DATA INTEGRITY
+============================================================
+
+Use:
+
+- transactions
+- foreign keys
+- constraints
+- unique identifiers
+- idempotency keys
+- versioning
+- optimistic concurrency where appropriate
+- validation
+- safe migrations
+
+Do not duplicate domain data inside automation unnecessarily.
+
+Automation should reference existing records.
+
+============================================================
+30. WORKFLOW VERSIONING
+============================================================
+
+Published workflows must be versioned.
+
+Example:
+
+Sales Won Automation
+v1
+v2
+v3
+
+Existing executions must retain the workflow version they used.
+
+Changing a workflow must NOT retroactively alter historical execution records.
+
+============================================================
+31. TEST MODE
+============================================================
+
+Workflow Builder may provide a controlled test mode.
+
+Test mode must:
+
+- clearly indicate simulation
+- prevent unintended real-world actions
+- use safe mock/sandbox execution where supported
+- show expected steps
+- identify failures
+
+Never allow "test" to accidentally send real customer messages or perform destructive operations.
+
+============================================================
+32. MANUAL EXECUTION
+============================================================
+
+Authorized administrators may manually trigger workflows where configured.
+
+Manual execution must record:
+
+- user
+- timestamp
+- reason
+- workflow
+- version
+- input
+- result
+
+Do not allow unauthorized manual execution.
+
+============================================================
+33. RESPONSIVE DESIGN
+============================================================
+
+Desktop is primary.
+
+Mobile should support:
+
+- automation overview
+- execution status
+- failures
+- approvals
+- workflow notifications
+
+Complex workflow building may remain desktop-first.
+
+Do not simply shrink the workflow canvas for mobile.
+
+============================================================
+34. ACCESSIBILITY
+============================================================
+
+Support:
+
+- keyboard navigation
+- accessible workflow nodes
+- keyboard-friendly configuration
+- screen reader labels
+- visible focus
+- accessible tables
+- accessible dialogs
+- sufficient contrast
+- status not conveyed only through color
+
+Workflow errors must be understandable without relying on visual indicators alone.
+
+============================================================
+35. ERROR STATES
+============================================================
+
+Every screen must support:
+
+- loading
+- empty
+- permission denied
+- invalid configuration
+- workflow failure
+- integration failure
+- timeout
+- retry
+- partial completion
+- conflict
+- unavailable trigger
+- unavailable action
+
+Never show a workflow as successful when execution is uncertain.
+
+============================================================
+36. PERFORMANCE
+============================================================
+
+Design for enterprise scale.
+
+Support:
+
+- pagination
+- server-side filtering
+- indexed execution history
+- background processing
+- queue-based execution
+- optimized workflow loading
+- lazy loading
+- efficient event processing
+
+Do not load millions of execution records into the browser.
+
+============================================================
+37. RELIABILITY ARCHITECTURE
+============================================================
+
+Automation must be resilient.
+
+Potential dependencies:
+
+- PostgreSQL
+- Redis
+- Kafka/event infrastructure
+- email provider
+- WhatsApp provider
+- calendar provider
+- AI provider
+- CRM
+- finance
+- inventory
+- service
+
+A failure in one dependency must not bring down the entire automation engine.
+
+Use appropriate:
+
+- queues
+- retries
+- timeouts
+- circuit breakers
+- dead-letter handling
+- idempotency
+- observability
+
+where architecturally justified.
+
+============================================================
+38. OPTIONAL FUTURE EXTENSIONS
+============================================================
+
+Do NOT add these as new Phase 16 screens.
+
+Architect for future:
+
+- visual rule engine
+- event bus marketplace
+- enterprise webhook manager
+- advanced SLA engine
+- process mining
+- workflow analytics
+- automation templates marketplace
+- AI workflow generation
+- natural language workflow builder
+- cross-company workflows
+- advanced approval policies
+- automation cost analytics
+- workflow simulation
+- dependency graph
+- enterprise process orchestration
+
+These remain future extensions.
+
+============================================================
+39. DO NOT CREATE DUPLICATE ENGINES
+============================================================
+
+CRITICAL.
+
+Do NOT create:
+
+Sales Workflow Engine
+HR Workflow Engine
+Finance Workflow Engine
+Service Workflow Engine
+Marketing Workflow Engine
+Meeting Workflow Engine
+
+as separate workflow engines.
+
+There must be ONE:
+
+QUBIT AUTOMATION ENGINE
+
+with domain-specific triggers/actions/templates.
+
+============================================================
+40. DESIGN LANGUAGE
+============================================================
+
+Use the attached Qubit One UI reference image.
+
+Maintain:
+
+- light enterprise workspace
+- deep navy navigation
+- restrained blue
+- dark text
+- neutral gray surfaces
+- subtle borders
+- subtle shadows
+- moderate radius
+- Inter/system typography
+- clean hierarchy
+- professional density
+
+No:
+
+- neon
+- cyberpunk
+- excessive gradients
+- excessive glass
+- giant cards
+- excessive animation
+- decorative technical graphics
+- gaming UI
+
+Workflow Builder can use subtle visual differentiation between node types, but must remain within the Qubit One design system.
+
+============================================================
+41. PRODUCT GOVERNANCE
+============================================================
+
+Before modifying or adding functionality:
+
+ANALYZE
+→ IMPACT
+→ DEPENDENCIES
+→ SECURITY
+→ DATA
+→ UX
+→ PERFORMANCE
+→ MIGRATION
+→ ROLLBACK
+→ TESTING
+
+Decision framework:
+
+KEEP
+IMPROVE
+MERGE
+SIMPLIFY
+ADD
+REFACTOR
+DEFER
+REJECT
+
+Never add a feature merely because it exists in another product.
+
+============================================================
+42. TESTING
+============================================================
+
+Test:
+
+- trigger execution
+- conditions
+- branches
+- actions
+- approvals
+- notifications
+- retries
+- idempotency
+- concurrency
+- partial failures
+- permissions
+- versioning
+- rollback
+- audit
+- integration failure
+- duplicate prevention
+- manual execution
+- scheduled execution
+
+Critical workflows:
+
+Employee Onboarding
+Sales Won
+Dispatch
+
+must have end-to-end tests.
+
+============================================================
+43. FINAL SCREEN COUNT
+============================================================
+
+Verify exactly:
+
+257 Automation Home
+258 Workflow Builder
+259 Workflow Detail
+260 Trigger Library
+261 Action Library
+262 Approval Workflow
+263 Notification Workflow
+264 Employee Onboarding Automation
+265 Sales Won Automation
+266 Dispatch Automation
+
+TOTAL = 10 SCREENS.
+
+Previous total = 256
+
+Phase 16 = 10
+
+NEW TOTAL = 266
+
+REMAINING = 42
+
+DO NOT create screens 267–308 during this phase.
+
+============================================================
+44. FINAL ENTERPRISE REVIEW
+============================================================
+
+Review the implementation as:
+
+1. Product Architect
+2. Enterprise UX Architect
+3. Security Architect
+4. Data & Reliability Architect
+5. AI & Automation Architect
+
+Verify:
+
+- one centralized automation engine
+- no duplicate workflow engines
+- no duplicate task system
+- no duplicate notification system
+- no duplicate approval engine
+- no duplicate audit system
+- no unrestricted actions
+- no frontend-only security
+- proper authorization
+- proper idempotency
+- proper versioning
+- proper failure recovery
+- proper observability
+- proper cross-module integration
+- correct role-based navigation
+- correct UI consistency
+- exact screen count
+- no broken existing functionality
+
+============================================================
+45. FINAL EXECUTION INSTRUCTION
+============================================================
+
+DO NOT ASK ME WHAT TO BUILD NEXT.
+
+DO NOT STOP AFTER CREATING ONLY UI MOCKUPS.
+
+DO NOT CREATE FAKE AUTOMATION SUCCESS.
+
+DO NOT CREATE FAKE INTEGRATIONS.
+
+DO NOT CREATE DUPLICATE DOMAIN DATABASES.
+
+DO NOT CREATE DUPLICATE WORKFLOW ENGINES.
+
+DO NOT BYPASS EXISTING SECURITY OR APPROVAL SYSTEMS.
+
+Analyze the existing Qubit One implementation first.
+
+Then implement Phase 16 completely.
+
+STRICTLY FOLLOW THE ATTACHED QUBIT ONE UI REFERENCE IMAGE.
+
+The final result must feel like a native part of the existing Qubit One Enterprise Operating System.
+
+The Automation Engine must connect the enterprise together without turning the product into a collection of disconnected workflows.
+
+COMPLETE PHASE 16:
+
+SCREENS 257–266
+
+EXACTLY 10 SCREENS.

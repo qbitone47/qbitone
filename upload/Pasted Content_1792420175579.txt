@@ -1,0 +1,2123 @@
+# QUBIT ONE — PHASE 12
+# HR / PEOPLE OPERATING SYSTEM
+# SCREENS 183–210 OF 308
+
+You are continuing the existing Qubit One Enterprise Business Operating System.
+
+This is NOT a new project.
+
+Qubit One already contains the enterprise architecture, design system, authentication, authorization, employee workspace, enterprise structure, approval system, workflow engine, notifications, audit architecture, Sales, Finance, Inventory, Marketing, AI and analytics foundations from previous phases.
+
+Your responsibility is to implement ONLY PHASE 12:
+
+HR / PEOPLE OPERATING SYSTEM.
+
+This phase contains EXACTLY 28 CORE SCREENS:
+
+183–210.
+
+Do not skip, rename, merge, duplicate, or silently remove any screen.
+
+==================================================
+1. ATTACHED QUBIT ONE UI REFERENCE
+==================================================
+
+A current approved Qubit One UI reference image is attached.
+
+STRICTLY FOLLOW THE ATTACHED QUBIT ONE UI/UX DESIGN.
+
+The attached image is the PRIMARY VISUAL SOURCE OF TRUTH.
+
+The HR module must look like a natural part of Qubit One.
+
+Do NOT create a separate HR SaaS product.
+
+Do NOT redesign Qubit One.
+
+Match the established:
+
+- left sidebar
+- top header
+- breadcrumb
+- global search
+- page structure
+- typography
+- spacing
+- cards
+- tables
+- filters
+- tabs
+- buttons
+- drawers
+- modals
+- badges
+- status indicators
+- page background
+- borders
+- shadows
+- responsive behavior
+- information hierarchy
+
+The result should feel like:
+
+"Qubit One People OS"
+
+not:
+
+"another HR application."
+
+==================================================
+2. VISUAL DIRECTION
+==================================================
+
+Maintain the existing Qubit One enterprise visual language.
+
+Use:
+
+- clean light workspace
+- deep navy navigation
+- professional blue accents
+- white surfaces
+- restrained gray
+- dark readable typography
+- subtle borders
+- subtle shadows
+- moderate corner radius
+- Inter/system typography
+- professional enterprise density
+- restrained animation
+
+Avoid:
+
+- neon
+- cyberpunk
+- excessive gradients
+- excessive glassmorphism
+- glowing cards
+- gaming UI
+- oversized illustrations
+- excessive animations
+- colorful HR gimmicks
+- giant employee profile photos
+- cluttered dashboards
+
+HR should feel trustworthy, private, structured and professional.
+
+==================================================
+3. PEOPLE OS PRINCIPLE
+==================================================
+
+The HR system must represent the complete employee lifecycle:
+
+WORKFORCE PLANNING
+↓
+RECRUITMENT
+↓
+CANDIDATE
+↓
+INTERVIEW
+↓
+OFFER
+↓
+ONBOARDING
+↓
+ACTIVE EMPLOYEE
+↓
+ATTENDANCE
+↓
+LEAVE
+↓
+PERFORMANCE
+↓
+GOALS / OKRs
+↓
+TRAINING
+↓
+DOCUMENTS / POLICIES
+↓
+CAREER / TRANSFER / PROMOTION
+↓
+EXIT
+↓
+ALUMNI / RECORD RETENTION
+
+Every stage should connect to the next.
+
+Do not build isolated HR pages.
+
+==================================================
+4. EXISTING QUBIT ONE EMPLOYEE MODEL
+==================================================
+
+Employee identity already exists in Qubit One.
+
+Do NOT create a duplicate employee identity system.
+
+HR should extend the existing employee entity with authorized HR information.
+
+Employee identity should connect with:
+
+- Organization Structure
+- Department
+- Role
+- Reporting Line
+- Employee Workspace
+- Tasks
+- Calendar
+- Meetings
+- Approvals
+- Sales
+- Finance
+- Service
+- Attendance
+- Leave
+- Performance
+- Training
+- Documents
+- Exit
+
+==================================================
+5. SENSITIVE HR DATA
+==================================================
+
+HR contains highly sensitive information.
+
+Examples:
+
+- personal information
+- employment information
+- compensation
+- payroll
+- identity documents
+- performance reviews
+- disciplinary information
+- attendance
+- leave
+- recruitment records
+- candidate information
+- bank/payment information where applicable
+
+Use strict least-privilege access.
+
+Do NOT expose sensitive HR information simply because a user can see an employee profile.
+
+Use role-aware and field-level authorization where appropriate.
+
+Examples:
+
+Employee:
+Own authorized information.
+
+Manager:
+Relevant team information.
+
+HR:
+Authorized HR information.
+
+Finance:
+Authorized payroll/financial information.
+
+CEO:
+Appropriate executive-level information.
+
+==================================================
+6. EXACT SCREEN INVENTORY
+==================================================
+
+Implement exactly these 28 screens:
+
+183. HR Home
+184. Employee Directory
+185. Employee Profile
+186. Employee 360
+187. Recruitment Dashboard
+188. Candidate List
+189. Candidate Detail
+190. Interview Workspace
+191. Offer Letter Builder
+192. Offer Letter Preview
+193. Onboarding Workspace
+194. Onboarding Checklist
+195. Attendance Dashboard
+196. Attendance Detail
+197. Leave Management
+198. Leave Request
+199. Payroll Overview
+200. Payslip View
+201. Employee Documents
+202. Performance Dashboard
+203. Performance Review
+204. Goals & OKRs
+205. Training & Learning
+206. Company Policies
+207. HR Approvals
+208. HR Reports
+209. HR Settings
+210. Employee Exit
+
+No additional numbered core screens.
+
+==================================================
+7. SCREEN 183 — HR HOME
+==================================================
+
+Create the primary HR command workspace.
+
+The page should answer:
+
+"What requires HR attention today?"
+
+Show:
+
+- workforce overview
+- new joiners
+- employees exiting
+- open positions
+- pending interviews
+- pending offers
+- onboarding progress
+- attendance exceptions
+- leave requests
+- performance review progress
+- pending HR approvals
+- policy acknowledgements
+- important HR alerts
+
+Useful KPIs:
+
+- Total Employees
+- New Joiners
+- Open Positions
+- Candidates
+- Pending Interviews
+- Attendance Exceptions
+- Pending Leave
+- Review Completion
+- Training Completion
+
+Avoid creating an oversized dashboard.
+
+Prioritize:
+
+SIGNAL
+→ CONTEXT
+→ ACTION.
+
+==================================================
+8. SCREEN 184 — EMPLOYEE DIRECTORY
+==================================================
+
+Create the centralized employee discovery workspace.
+
+Search by:
+
+- name
+- employee ID
+- department
+- designation
+- location
+- manager
+- employment status
+- skill
+- role
+
+Employee row/card may show:
+
+- photo/avatar
+- name
+- employee ID
+- designation
+- department
+- manager
+- employment status
+- work location
+- contact action where authorized
+
+Actions:
+
+- View Profile
+- View Organization
+- Contact
+- Open Employee 360 where authorized
+
+Support:
+
+- filters
+- sorting
+- saved views
+- pagination
+- export where authorized
+
+Do not expose sensitive HR data in directory search.
+
+==================================================
+9. SCREEN 185 — EMPLOYEE PROFILE
+==================================================
+
+Create the authoritative employee profile workspace.
+
+Sections:
+
+Identity
+Employment
+Organization
+Contact
+Work Information
+Skills
+Documents
+Preferences
+Emergency Information where authorized
+
+Show:
+
+- employee name
+- employee ID
+- designation
+- department
+- manager
+- joining date
+- employment type
+- work location
+- status
+
+Sensitive sections must be permission-controlled.
+
+Allow authorized HR users to edit appropriate information.
+
+Employee-controlled fields and HR-controlled fields must be clearly distinguished.
+
+Do not allow arbitrary users to modify employment records.
+
+==================================================
+10. SCREEN 186 — EMPLOYEE 360
+==================================================
+
+Create a comprehensive but permission-aware employee overview.
+
+This is NOT "show everything to everyone."
+
+Sections may include:
+
+- profile
+- organization
+- employment
+- attendance summary
+- leave summary
+- performance
+- goals
+- training
+- documents
+- tasks
+- meetings
+- approvals
+- activity timeline
+
+Sensitive information must only appear to authorized roles.
+
+Use a timeline for important lifecycle events.
+
+Examples:
+
+Joined
+Promoted
+Transferred
+Review Completed
+Training Completed
+Leave Approved
+
+Do not duplicate the enterprise Activity/Audit architecture.
+
+This is an HR-oriented view over existing data.
+
+==================================================
+11. SCREEN 187 — RECRUITMENT DASHBOARD
+==================================================
+
+Create recruitment operations overview.
+
+Show:
+
+- open positions
+- candidates
+- applications
+- screening
+- interviews
+- offers
+- accepted offers
+- rejected candidates
+- hiring funnel
+- time-to-hire
+- pending recruitment actions
+
+Pipeline:
+
+Position
+→ Application
+→ Screening
+→ Interview
+→ Offer
+→ Accepted
+→ Onboarding
+
+Show bottlenecks.
+
+Examples:
+
+"Interview stage has 14 candidates waiting."
+
+"3 offers awaiting candidate response."
+
+Do not create a separate analytics system.
+
+==================================================
+12. SCREEN 188 — CANDIDATE LIST
+==================================================
+
+Create centralized candidate management.
+
+Columns:
+
+- candidate
+- position
+- source
+- stage
+- recruiter
+- interview status
+- experience
+- location
+- last activity
+- updated date
+
+Filters:
+
+- position
+- stage
+- recruiter
+- source
+- location
+- experience
+- status
+
+Support:
+
+- search
+- sorting
+- bulk actions where authorized
+- candidate assignment
+
+Candidate information must be protected.
+
+Do not expose candidate personal data to unauthorized users.
+
+==================================================
+13. SCREEN 189 — CANDIDATE DETAIL
+==================================================
+
+Create detailed candidate workspace.
+
+Sections:
+
+Profile
+Resume
+Experience
+Education
+Skills
+Application
+Interview History
+Notes
+Communication
+Documents
+Offer
+Timeline
+
+Show recruitment lifecycle.
+
+Actions:
+
+- Move Stage
+- Assign Recruiter
+- Schedule Interview
+- Add Note
+- Request Feedback
+- Create Offer
+
+Candidate stage changes must be controlled and auditable.
+
+Do not fabricate candidate information.
+
+Uploaded resumes/documents must use secure file handling.
+
+==================================================
+14. SCREEN 190 — INTERVIEW WORKSPACE
+==================================================
+
+Create centralized interview management.
+
+Show:
+
+- candidate
+- position
+- interviewer
+- interview type
+- date/time
+- status
+- feedback
+- score
+- recommendation
+
+Support:
+
+- schedule
+- reschedule
+- cancel
+- join meeting where integrated
+- submit feedback
+
+Interview feedback should be structured.
+
+Possible:
+
+Technical
+Communication
+Problem Solving
+Role Fit
+Overall Recommendation
+
+Do not allow unauthorized users to modify another interviewer's confidential feedback.
+
+==================================================
+15. SCREEN 191 — OFFER LETTER BUILDER
+==================================================
+
+Create controlled offer generation.
+
+Fields:
+
+- candidate
+- position
+- department
+- reporting manager
+- joining date
+- employment type
+- compensation
+- benefits
+- work location
+- working hours
+- probation where applicable
+- terms
+- clauses
+- authorized signatory
+
+Use approved company templates.
+
+Offer templates should be versioned.
+
+Sensitive compensation information must be protected.
+
+Actions:
+
+Save Draft
+Preview
+Submit Approval
+Generate
+
+Do not allow arbitrary users to create final offers.
+
+==================================================
+16. SCREEN 192 — OFFER LETTER PREVIEW
+==================================================
+
+Create professional document preview.
+
+Show exactly how the final offer will appear.
+
+Support:
+
+- preview
+- page navigation
+- document metadata
+- version
+- approval state
+- candidate details
+- signatory
+- generation status
+
+Actions:
+
+Back to Edit
+Submit Approval
+Generate Final
+Download where authorized
+
+Finalized documents must be immutable or version-controlled.
+
+Do not silently overwrite an issued offer.
+
+==================================================
+17. SCREEN 193 — ONBOARDING WORKSPACE
+==================================================
+
+Create onboarding command center.
+
+Show:
+
+- upcoming joiners
+- onboarding status
+- missing documents
+- pending HR tasks
+- IT tasks
+- manager tasks
+- training
+- policy acknowledgement
+- equipment
+- access requirements
+
+Lifecycle:
+
+Offer Accepted
+→ Preboarding
+→ Day 1
+→ Initial Setup
+→ Training
+→ Probation
+→ Completed
+
+Connect onboarding with the existing Automation Engine.
+
+Do not create another workflow engine.
+
+==================================================
+18. SCREEN 194 — ONBOARDING CHECKLIST
+==================================================
+
+Create detailed onboarding checklist.
+
+Tasks may include:
+
+HR Documentation
+IT Account
+Email
+Access
+Equipment
+Manager Introduction
+Team Introduction
+Policy Acknowledgement
+Training
+Payroll Setup
+Workspace Setup
+
+Each task:
+
+- owner
+- due date
+- status
+- dependency
+- completion
+- evidence where applicable
+
+Statuses:
+
+Not Started
+In Progress
+Blocked
+Completed
+Skipped with reason
+
+Support automated tasks through existing Automation Engine.
+
+==================================================
+19. SCREEN 195 — ATTENDANCE DASHBOARD
+==================================================
+
+Create HR attendance overview.
+
+Show:
+
+- present
+- absent
+- late
+- early departure
+- remote
+- leave
+- attendance exceptions
+- overtime where configured
+
+Views:
+
+Today
+Week
+Month
+
+Filters:
+
+- department
+- team
+- location
+- employee
+- status
+
+Use privacy-aware aggregation.
+
+Managers should see relevant team information.
+
+HR can see authorized organization-level information.
+
+Do not expose attendance unnecessarily.
+
+==================================================
+20. SCREEN 196 — ATTENDANCE DETAIL
+==================================================
+
+Create employee attendance detail.
+
+Show:
+
+- date
+- check-in
+- check-out
+- total hours
+- break
+- status
+- exception
+- correction request
+
+Where supported, attendance may connect to approved:
+
+- device systems
+- biometric systems
+- mobile attendance
+- location verification
+
+Do not pretend GPS or biometric verification exists if not configured.
+
+Corrections should follow an approval workflow.
+
+All material changes must be auditable.
+
+==================================================
+21. SCREEN 197 — LEAVE MANAGEMENT
+==================================================
+
+Create centralized leave management.
+
+Show:
+
+- leave requests
+- leave balances
+- pending approvals
+- upcoming leave
+- team calendar
+- leave trends
+
+Leave types should be configurable.
+
+Examples:
+
+- casual
+- sick
+- earned
+- unpaid
+- other organization-defined types
+
+Connect to:
+
+- employee
+- manager
+- calendar
+- approvals
+- attendance
+
+Do not create a separate calendar system.
+
+==================================================
+22. SCREEN 198 — LEAVE REQUEST
+==================================================
+
+Create employee leave request experience.
+
+Fields:
+
+- leave type
+- start date
+- end date
+- duration
+- reason where required
+- attachment where required
+- approver
+- balance
+
+Show:
+
+- available balance
+- pending requests
+- previous requests
+
+Actions:
+
+Submit
+Save Draft
+Cancel
+Withdraw where permitted
+
+Approval must use the enterprise Approval Matrix.
+
+Do not bypass approval rules.
+
+==================================================
+23. SCREEN 199 — PAYROLL OVERVIEW
+==================================================
+
+Create authorized payroll overview.
+
+Show:
+
+- payroll period
+- employee count
+- payroll status
+- gross payroll
+- deductions
+- employer costs where applicable
+- net payroll
+- pending processing
+- exceptions
+
+IMPORTANT:
+
+Payroll contains highly sensitive financial data.
+
+Only authorized HR/Finance roles should access detailed payroll.
+
+Finance remains the authoritative source for financial records.
+
+Payroll must integrate with Finance instead of creating conflicting financial records.
+
+Use clear states:
+
+Draft
+Processing
+Review
+Approved
+Processed
+Closed
+
+Do not display actual payroll figures to unauthorized users.
+
+==================================================
+24. SCREEN 200 — PAYSLIP VIEW
+==================================================
+
+Create employee payslip view.
+
+Employee sees their own authorized payslip.
+
+Show:
+
+- employee
+- pay period
+- earnings
+- deductions
+- net pay
+- employer contribution where applicable
+- tax/statutory information where configured
+
+Support:
+
+- preview
+- download
+- print where authorized
+
+Payslip records should be versioned/finalized.
+
+Do not allow employees to edit finalized payroll values.
+
+==================================================
+25. SCREEN 201 — EMPLOYEE DOCUMENTS
+==================================================
+
+Create employee document management.
+
+Categories:
+
+- identity
+- employment
+- offer
+- contracts
+- certificates
+- payroll-related documents
+- policies
+- training
+- other authorized HR documents
+
+Show:
+
+- document name
+- type
+- status
+- version
+- expiry
+- owner
+- uploaded date
+
+Support:
+
+- upload
+- preview
+- download
+- replace version
+- archive
+
+Use secure storage.
+
+Implement:
+
+- file validation
+- access control
+- audit
+- versioning
+- safe deletion/archive
+
+==================================================
+26. SCREEN 202 — PERFORMANCE DASHBOARD
+==================================================
+
+Create organization/team performance overview.
+
+Show:
+
+- review cycle
+- completion
+- pending reviews
+- goal progress
+- performance distribution where permitted
+- overdue reviews
+- team performance trends
+
+Managers should see their authorized teams.
+
+HR may see organization-wide aggregated data.
+
+Avoid exposing sensitive performance information broadly.
+
+==================================================
+27. SCREEN 203 — PERFORMANCE REVIEW
+==================================================
+
+Create structured performance review workspace.
+
+Sections:
+
+Employee Information
+Review Period
+Goals
+Achievements
+Competencies
+Manager Feedback
+Employee Self Review
+Development Areas
+Final Rating
+Acknowledgement
+
+Support:
+
+- self review
+- manager review
+- calibration where configured
+- employee acknowledgement
+- finalization
+
+Do not allow finalized reviews to be silently edited.
+
+Changes should create versions or controlled correction workflows.
+
+==================================================
+28. SCREEN 204 — GOALS & OKRs
+==================================================
+
+Create goal and OKR management.
+
+Hierarchy:
+
+Company Goal
+↓
+Department Goal
+↓
+Team Goal
+↓
+Individual Goal
+
+Each goal:
+
+- title
+- owner
+- objective
+- key result
+- target
+- current value
+- progress
+- due date
+- status
+
+Support:
+
+- alignment
+- progress updates
+- comments
+- check-ins
+- review
+
+Connect to:
+
+- Performance
+- CEO KPI architecture
+- department objectives
+
+Do not create a disconnected KPI system.
+
+==================================================
+29. SCREEN 205 — TRAINING & LEARNING
+==================================================
+
+Create employee learning workspace.
+
+Show:
+
+- assigned training
+- recommended training
+- mandatory training
+- completion
+- certificates
+- deadlines
+- learning progress
+
+Training may be:
+
+- internal course
+- external course
+- workshop
+- certification
+- compliance training
+
+Actions:
+
+Start
+Continue
+Complete
+Upload Certificate
+
+Managers/HR can assign training where authorized.
+
+Do not create a full LMS platform unless required.
+
+Keep the core screen focused on employee learning operations.
+
+==================================================
+30. SCREEN 206 — COMPANY POLICIES
+==================================================
+
+Create centralized company policy workspace.
+
+Show:
+
+- policy name
+- category
+- version
+- effective date
+- owner
+- acknowledgement requirement
+- acknowledgement status
+
+Categories:
+
+- HR
+- Security
+- IT
+- Finance
+- Workplace
+- Compliance
+- Operations
+
+Support:
+
+- view
+- search
+- filter
+- acknowledge
+- version history
+
+Important policy changes should be auditable.
+
+Employees should see policies relevant to them.
+
+==================================================
+31. SCREEN 207 — HR APPROVALS
+==================================================
+
+Create HR approval workspace.
+
+Examples:
+
+- leave
+- employee changes
+- attendance correction
+- recruitment offer
+- onboarding exception
+- payroll exception
+- document approval
+- employee transfer
+- promotion
+- exit
+
+Reuse the enterprise Approval Matrix.
+
+Do not create another approval engine.
+
+Show:
+
+- request
+- requester
+- department
+- type
+- submitted date
+- approver
+- SLA
+- status
+
+Actions:
+
+Approve
+Reject
+Request Changes
+View Details
+
+Sensitive approvals may require step-up authentication where configured.
+
+==================================================
+32. SCREEN 208 — HR REPORTS
+==================================================
+
+Create centralized HR reporting workspace.
+
+Reports may include:
+
+- headcount
+- hiring
+- attrition
+- attendance
+- leave
+- recruitment funnel
+- time-to-hire
+- onboarding
+- performance
+- training
+- workforce distribution
+- employee movement
+
+Use existing reporting architecture.
+
+Do not create a second reporting engine.
+
+Exports must respect permissions.
+
+Sensitive reports should be audited.
+
+==================================================
+33. SCREEN 209 — HR SETTINGS
+==================================================
+
+Create HR configuration workspace.
+
+Sections:
+
+Organization HR Rules
+Employment Types
+Leave Types
+Leave Policies
+Attendance Rules
+Working Hours
+Holiday Calendar
+Recruitment Settings
+Interview Templates
+Offer Templates
+Onboarding Rules
+Performance Cycles
+Goal Settings
+Training Settings
+Document Types
+Policy Settings
+Payroll Integration
+Notifications
+HR Permissions
+
+All configuration must be permission-controlled.
+
+Sensitive changes should be audited.
+
+Do not hard-code business rules into UI components.
+
+==================================================
+34. SCREEN 210 — EMPLOYEE EXIT
+==================================================
+
+Create employee exit/offboarding workspace.
+
+Lifecycle:
+
+Exit Request
+→ Review
+→ Approval
+→ Notice Period
+→ Handover
+→ Asset Return
+→ Access Revocation
+→ Final Payroll
+→ Exit Interview
+→ Documentation
+→ Separation Complete
+
+Show:
+
+- employee
+- exit type
+- requested date
+- last working date
+- notice period
+- manager
+- HR owner
+- handover
+- assets
+- access
+- final settlement status
+- exit interview
+- documents
+
+Connect with:
+
+- IT/security access
+- Finance
+- Inventory/assets
+- Tasks
+- Documents
+- Calendar
+
+Critical:
+
+Access revocation must use the enterprise identity/security architecture.
+
+Do not create an independent access-control system.
+
+Do not automatically revoke access merely because a draft exit record exists.
+
+Use configured workflow and approved state transitions.
+
+==================================================
+35. EMPLOYEE LIFECYCLE INTEGRATION
+==================================================
+
+The HR module must connect the entire employee lifecycle:
+
+Candidate
+→ Offer
+→ Onboarding
+→ Active Employee
+→ Attendance
+→ Leave
+→ Performance
+→ Training
+→ Promotion / Transfer
+→ Exit
+
+Every transition should be:
+
+- traceable
+- permission-controlled
+- auditable
+- consistent
+
+Do not create disconnected records.
+
+==================================================
+36. ORGANIZATION STRUCTURE INTEGRATION
+==================================================
+
+Reuse Phase 1:
+
+Organization Structure
+Department Hierarchy
+Role Matrix
+Permission Matrix
+Reporting Lines
+Employee Lifecycle
+
+HR must consume these enterprise structures.
+
+Do NOT create another department hierarchy inside HR.
+
+Do NOT create another role matrix.
+
+Do NOT create another reporting-line system.
+
+==================================================
+37. EMPLOYEE WORKSPACE INTEGRATION
+==================================================
+
+Phase 4 already contains:
+
+My Profile
+My Tasks
+My Calendar
+My Meetings
+My Approvals
+My Documents
+My Notifications
+My Activity
+Company Directory
+Organization Chart
+Employee 360
+
+HR must provide the underlying authorized data.
+
+Do not duplicate these employee-facing screens.
+
+HR is the administrative/operational layer.
+
+Employee Workspace is the employee-facing layer.
+
+==================================================
+38. FINANCE INTEGRATION
+==================================================
+
+HR payroll and employee financial records must integrate with Finance.
+
+Examples:
+
+Payroll
+Employee Advance
+Reimbursement
+Financial Approval
+
+Finance remains authoritative for financial accounting.
+
+Do not create duplicate financial ledgers.
+
+==================================================
+39. INVENTORY / ASSET INTEGRATION
+==================================================
+
+Employee onboarding and exit may require equipment.
+
+Examples:
+
+Laptop
+Phone
+ID Card
+Accessories
+Other company assets
+
+Use the existing Inventory/asset architecture.
+
+Do not create a second asset database inside HR.
+
+==================================================
+40. SECURITY INTEGRATION
+==================================================
+
+Employee lifecycle may affect system access.
+
+Examples:
+
+Onboarding:
+approved employee → authorized access provisioning workflow
+
+Role change:
+approved role change → permission workflow
+
+Exit:
+approved separation → access revocation workflow
+
+Use existing Phase 3 Security architecture.
+
+Do not directly manipulate permissions from ordinary HR screens.
+
+==================================================
+41. APPROVAL GOVERNANCE
+==================================================
+
+Reuse enterprise Approval Matrix.
+
+Potential approval chains:
+
+Leave:
+Employee → Manager
+
+Offer:
+Recruiter → HR → Authorized Approver
+
+Promotion:
+Manager → HR → Authorized Approver
+
+Attendance Correction:
+Employee → Manager/HR
+
+Exit:
+Employee/Manager → HR → Authorized Approver
+
+These are examples.
+
+Actual workflow must come from configurable enterprise rules.
+
+==================================================
+42. HR AUTOMATION
+==================================================
+
+Reuse Phase 16 Automation Engine when implemented.
+
+Potential automations:
+
+Offer Accepted
+→ Create Onboarding
+
+Joining Date Approaching
+→ Notify HR
+
+Onboarding Completed
+→ Create Training Tasks
+
+Probation Ending
+→ Create Review
+
+Leave Approved
+→ Update Calendar/Attendance
+
+Employee Exit Approved
+→ Start Offboarding Workflow
+
+Do not create another automation engine.
+
+==================================================
+43. HR NOTIFICATIONS
+==================================================
+
+Reuse the enterprise notification system.
+
+Potential notifications:
+
+- interview scheduled
+- interview feedback pending
+- offer approval required
+- onboarding task assigned
+- policy acknowledgement required
+- leave approval required
+- performance review due
+- training deadline
+- document expiry
+- exit task assigned
+
+Do not create duplicate notification storage.
+
+==================================================
+44. HR AUDIT
+==================================================
+
+Sensitive HR actions must be auditable.
+
+Examples:
+
+- employee data changed
+- role changed
+- department changed
+- compensation changed
+- leave approved
+- attendance corrected
+- offer generated
+- offer approved
+- performance finalized
+- payroll status changed
+- document uploaded/deleted
+- exit approved
+- access workflow triggered
+
+Reuse the enterprise Audit Log.
+
+Do not create a separate HR audit database.
+
+==================================================
+45. DATA PRIVACY
+==================================================
+
+HR data must follow least privilege.
+
+Sensitive fields should be protected at the backend.
+
+Examples:
+
+Salary
+Bank information
+Identity documents
+Performance rating
+Disciplinary records
+Recruitment notes
+Personal contact information
+
+Do not rely only on frontend hiding.
+
+==================================================
+46. FILE SECURITY
+==================================================
+
+HR documents require secure file handling.
+
+Implement:
+
+- file type validation
+- size validation
+- secure storage
+- authorization
+- malware/security scanning where available
+- versioning
+- audit
+- controlled deletion
+- expiry metadata where applicable
+
+Never trust file extension alone.
+
+==================================================
+47. EMPLOYEE DATA INTEGRITY
+==================================================
+
+Critical HR data must use:
+
+- transactions
+- foreign keys
+- unique constraints
+- validation
+- versioning where appropriate
+- optimistic concurrency where appropriate
+- audit history
+
+Prevent:
+
+- duplicate employee IDs
+- conflicting employment states
+- invalid reporting lines
+- invalid leave balances
+- duplicate offers
+- duplicate onboarding records
+- duplicate exit processes
+
+==================================================
+48. HR STATUS MODEL
+==================================================
+
+Use consistent lifecycle statuses.
+
+Employee:
+
+Candidate
+Offer
+Onboarding
+Active
+Suspended where applicable
+Notice Period
+Separated
+Archived
+
+Recruitment:
+
+Open
+Screening
+Interview
+Offer
+Accepted
+Rejected
+Withdrawn
+Closed
+
+Onboarding:
+
+Not Started
+In Progress
+Blocked
+Completed
+
+Performance:
+
+Not Started
+Self Review
+Manager Review
+Calibration
+Acknowledgement
+Finalized
+
+Exit:
+
+Draft
+Requested
+Approved
+Notice Period
+Handover
+Clearance
+Final Settlement
+Separated
+Closed
+
+Do not create contradictory states.
+
+==================================================
+49. ERROR STATES
+==================================================
+
+Every important screen must support:
+
+- loading
+- empty
+- error
+- permission denied
+- validation failure
+- conflict
+- stale data
+- integration failure
+
+Example:
+
+If payroll integration fails:
+
+show the actual failure state.
+
+Do not display fake payroll success.
+
+==================================================
+50. RELIABILITY
+==================================================
+
+HR should remain functional if one external dependency fails.
+
+Examples:
+
+Payroll provider failure must not break Employee Directory.
+
+Email failure must not break Performance Reviews.
+
+Document storage failure must not corrupt employee records.
+
+Use:
+
+- timeouts
+- retries
+- idempotency
+- queues
+- background jobs
+- graceful degradation
+
+==================================================
+51. PERFORMANCE
+==================================================
+
+HR may contain:
+
+- thousands of employees
+- large candidate lists
+- large documents
+- attendance records
+- performance records
+
+Use:
+
+- pagination
+- server-side search
+- server-side filtering
+- lazy loading
+- optimized queries
+- appropriate indexes
+- caching where appropriate
+
+Never load all employee records into the browser unnecessarily.
+
+==================================================
+52. GLOBAL SEARCH
+==================================================
+
+HR entities should integrate with the existing Qubit One Global Search.
+
+Search authorized:
+
+- employees
+- candidates
+- positions
+- offers
+- interviews
+- policies
+- documents
+- training
+- goals
+
+Respect permissions.
+
+Do not create HR-specific global search infrastructure.
+
+==================================================
+53. ROLE-AWARE EXPERIENCE
+==================================================
+
+Employee:
+
+- own profile
+- own attendance
+- own leave
+- own payslip
+- own documents
+- own goals
+- own training
+
+Manager:
+
+- team directory
+- team attendance
+- leave approvals
+- performance
+- goals
+- onboarding tasks
+
+Recruiter:
+
+- candidates
+- interviews
+- offers
+
+HR:
+
+- workforce
+- recruitment
+- employee lifecycle
+- performance
+- policy
+- reports
+
+Finance:
+
+- authorized payroll/financial data
+
+CEO:
+
+- aggregated strategic workforce information
+
+Security/Admin:
+
+- authorized access/security workflows
+
+Never assume that HR means unrestricted access to every employee field.
+
+==================================================
+54. HR REPORTING
+==================================================
+
+Reports must distinguish:
+
+Operational data
+from
+Analytical data.
+
+For example:
+
+Headcount:
+actual employee records.
+
+Attrition:
+defined according to organization methodology.
+
+Time-to-hire:
+defined consistently across recruitment stages.
+
+Performance:
+must respect privacy and aggregation rules.
+
+Every major KPI should have a definition.
+
+==================================================
+55. AI BOUNDARY
+==================================================
+
+Qubit One already has a dedicated AI Platform.
+
+Do not create a separate HR AI platform.
+
+Phase 12 is core HR.
+
+AI may be used lightly for:
+
+- document summarization
+- candidate assistance
+- policy search
+- onboarding suggestions
+
+ONLY where appropriate and permission-aware.
+
+Major HR AI capabilities should remain within the broader Qubit AI Platform / future HR AI workspace.
+
+Do not turn HR into a chatbot.
+
+AI must never bypass HR permissions.
+
+==================================================
+56. ACCESSIBILITY
+==================================================
+
+Support:
+
+- keyboard navigation
+- semantic HTML
+- screen readers
+- visible focus
+- sufficient contrast
+- accessible tables
+- accessible forms
+- reduced motion
+
+Do not communicate employee status only through color.
+
+==================================================
+57. RESPONSIVE DESIGN
+==================================================
+
+Desktop remains the primary HR administrative experience.
+
+Mobile should support practical employee workflows.
+
+Do not simply shrink desktop screens.
+
+Prioritize on mobile:
+
+- leave
+- attendance
+- approvals
+- profile
+- payslip
+- documents
+- notifications
+- onboarding tasks
+
+Dedicated mobile screens are handled in Phase 18.
+
+==================================================
+58. DESIGN SYSTEM GOVERNANCE
+==================================================
+
+Use Phase 2 Qubit One Design System.
+
+Reuse:
+
+- buttons
+- tables
+- cards
+- filters
+- forms
+- tabs
+- drawers
+- modals
+- badges
+- status indicators
+- timelines
+- charts
+- alerts
+- empty states
+- loading states
+- error states
+
+If a new HR component is needed:
+
+make it reusable.
+
+Do not create one-off UI patterns.
+
+==================================================
+59. OPTIONAL ENTERPRISE EXTENSIONS
+==================================================
+
+Do NOT add these as new Phase 12 core screens.
+
+Future extensions may include:
+
+- Workforce Planning
+- Compensation Planning
+- Succession Planning
+- Career Pathing
+- Talent Marketplace
+- Employee Engagement
+- Pulse Surveys
+- Advanced Benefits Management
+- Advanced Payroll Engine
+- Statutory Compliance Automation
+- Expense/Travel HR Integration
+- Workforce Forecasting
+- Skills Intelligence
+- Advanced Applicant Tracking
+- Alumni Management
+
+These must remain future extensions unless they can naturally fit into existing screens.
+
+==================================================
+60. EXACT SCREEN COUNT
+==================================================
+
+Phase 12 MUST contain exactly:
+
+28 CORE SCREENS
+
+183–210.
+
+No additional official screens.
+
+==================================================
+61. FINAL VALIDATION
+==================================================
+
+Before completing Phase 12, verify all 28:
+
+183 HR Home
+184 Employee Directory
+185 Employee Profile
+186 Employee 360
+187 Recruitment Dashboard
+188 Candidate List
+189 Candidate Detail
+190 Interview Workspace
+191 Offer Letter Builder
+192 Offer Letter Preview
+193 Onboarding Workspace
+194 Onboarding Checklist
+195 Attendance Dashboard
+196 Attendance Detail
+197 Leave Management
+198 Leave Request
+199 Payroll Overview
+200 Payslip View
+201 Employee Documents
+202 Performance Dashboard
+203 Performance Review
+204 Goals & OKRs
+205 Training & Learning
+206 Company Policies
+207 HR Approvals
+208 HR Reports
+209 HR Settings
+210 Employee Exit
+
+Verify:
+
+- no missing screen
+- no duplicate screen
+- no duplicate employee database
+- no duplicate approval engine
+- no duplicate workflow engine
+- no duplicate notification system
+- no duplicate audit system
+- no duplicate reporting system
+- correct permissions
+- correct sensitive-data protection
+- correct employee lifecycle
+- correct Sales/Finance/Inventory integrations
+- correct responsive behavior
+- accessibility
+- loading states
+- empty states
+- failure states
+- auditability
+- data integrity
+
+==================================================
+62. FINAL UX TEST
+==================================================
+
+Compare every Phase 12 screen against the attached Qubit One UI reference.
+
+The result must feel like one unified enterprise system.
+
+The HR experience should communicate:
+
+TRUST
+CLARITY
+PRIVACY
+CONTROL
+EFFICIENCY
+PROFESSIONALISM
+
+It must not feel:
+
+- cluttered
+- overly colorful
+- like a consumer HR app
+- like a separate SaaS product
+- overly automated
+- overly AI-driven
+
+==================================================
+63. FINAL ARCHITECTURE TEST
+==================================================
+
+Think as:
+
+Product Architect
+Enterprise UX Architect
+Security Architect
+HR Systems Architect
+Data Architect
+Reliability Architect
+AI/Automation Architect
+
+Before finalizing, check:
+
+KEEP
+IMPROVE
+MERGE
+SIMPLIFY
+ADD
+REFACTOR
+DEFER
+REJECT
+
+for any functionality that conflicts with the existing Qubit One system.
+
+Existing working architecture takes priority over unnecessary redesign.
+
+==================================================
+64. FINAL INSTRUCTION
+==================================================
+
+DO NOT ASK ME WHAT TO BUILD NEXT.
+
+DO NOT STOP AFTER A FEW SCREENS.
+
+DO NOT SKIP COMPLEX SCREENS.
+
+DO NOT REDUCE THE 28-SCREEN REQUIREMENT.
+
+DO NOT CREATE DUPLICATE ENTERPRISE SYSTEMS.
+
+DO NOT RESTART QUBIT ONE ARCHITECTURE.
+
+DO NOT EXPOSE SENSITIVE HR DATA TO UNAUTHORIZED USERS.
+
+DO NOT CREATE FAKE PAYROLL, ATTENDANCE OR EMPLOYEE DATA AS REAL PRODUCTION DATA.
+
+DO NOT CREATE A SECOND AI PLATFORM.
+
+DO NOT CREATE A SECOND APPROVAL OR WORKFLOW SYSTEM.
+
+COMPLETE PHASE 12 AS THE CENTRAL PEOPLE OPERATING SYSTEM OF QUBIT ONE.
+
+Maintain full compatibility with:
+
+Phase 1 — Enterprise Architecture
+Phase 2 — Design System
+Phase 3 — Authentication & Security
+Phase 4 — Employee Workspace
+Phase 5 — CEO Command Center
+Phase 6 — Sales Operating System
+Phase 7 — Sales AI
+Phase 8 — Finance
+Phase 9 — Inventory & Dispatch
+Phase 10 — Digital Marketing
+Phase 11 — Marketing AI
+
+Also follow the permanent Qubit One Enterprise Product Intelligence & Governance Instruction.
+
+# END OF PHASE 12

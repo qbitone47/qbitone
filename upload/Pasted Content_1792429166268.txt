@@ -1,0 +1,1689 @@
+# QUBIT ONE — PHASE 15 IMPLEMENTATION MASTER PROMPT
+# QUBIT AI PLATFORM
+# SCREENS 247–256
+# EXACTLY 10 SCREENS
+
+You are continuing an existing enterprise product called Qubit One.
+
+Qubit One is a serious Enterprise Business Operating System designed for organizations, executives, managers, employees and business departments.
+
+This is an existing product.
+
+This is NOT a new AI application.
+
+This is NOT a redesign.
+
+This phase adds the centralized Qubit AI Platform on top of the existing Qubit One architecture.
+
+============================================================
+0. CURRENT PROJECT STATE
+============================================================
+
+Phases 1–14 are already implemented/planned and contain screens 1–246.
+
+Existing Qubit One domains include:
+
+- Enterprise Architecture
+- Design System
+- Authentication & Security
+- Employee Workspace
+- CEO Command Center
+- Sales Operating System
+- Sales AI
+- Finance
+- Inventory & Dispatch
+- Digital Marketing
+- Marketing AI
+- HR / People OS
+- Service Engineer OS
+- Meetings & Collaboration
+- Calendar
+- Tasks
+- Notifications
+- Company Directory
+- CRM
+- Global Search
+- Enterprise Audit
+- Approval Matrix
+- Automation Engine
+
+Qubit AI Platform must integrate with these existing systems.
+
+DO NOT create duplicate:
+
+- employee databases
+- CRM databases
+- finance databases
+- HR databases
+- inventory databases
+- service databases
+- task systems
+- calendar systems
+- notification systems
+- authentication
+- authorization
+- audit logs
+- document systems
+- reporting engines
+- workflow engines
+- approval engines
+- search engines
+
+AI is an intelligence and execution layer over existing enterprise systems.
+
+============================================================
+1. VISUAL SOURCE OF TRUTH
+============================================================
+
+The attached Qubit One UI reference image is the PRIMARY visual source of truth.
+
+STRICTLY FOLLOW THIS UI/UX DESIGN.
+
+The Qubit AI Platform must visually belong to the existing Qubit One product.
+
+Maintain:
+
+- existing Qubit One sidebar
+- existing top navigation
+- existing header
+- existing typography
+- existing spacing
+- existing page structure
+- existing cards
+- existing tables
+- existing buttons
+- existing inputs
+- existing filters
+- existing badges
+- existing modal/drawer patterns
+- existing shadows
+- existing borders
+- existing radius
+- existing iconography
+- existing responsive behavior
+
+The AI platform must look like an enterprise module inside Qubit One.
+
+DO NOT turn it into a futuristic AI/cyberpunk interface.
+
+DO NOT use:
+
+- neon
+- glowing cards
+- excessive gradients
+- holographic effects
+- sci-fi interfaces
+- excessive glassmorphism
+- giant AI illustrations
+- robotic decorative graphics
+- gaming aesthetics
+- excessive animation
+- consumer chatbot styling
+
+The visual direction remains:
+
+Premium
+Professional
+Minimal
+Enterprise
+Highly legible
+Calm
+Data-driven
+Action-oriented
+
+Use the established Qubit One visual language.
+
+============================================================
+2. PHASE 15 OBJECTIVE
+============================================================
+
+Build the centralized:
+
+QUBIT AI PLATFORM
+
+The platform should allow authorized users to discover, interact with, monitor and safely use Qubit AI capabilities.
+
+The architecture should support:
+
+Universal Qubit AI
+CEO AI
+Sales AI
+Finance AI
+HR AI
+Marketing AI
+Service AI
+Future AI agents
+
+without creating independent AI silos.
+
+AI should operate as:
+
+ENTERPRISE CONTEXT
+        ↓
+PERMISSION CHECK
+        ↓
+AI REASONING
+        ↓
+EVIDENCE / DATA
+        ↓
+RECOMMENDATION
+        ↓
+OPTIONAL ACTION
+        ↓
+USER APPROVAL
+        ↓
+EXECUTION
+        ↓
+AUDIT
+        ↓
+RESULT
+
+AI is NOT the source of truth.
+
+Existing Qubit domain systems remain the source of truth.
+
+============================================================
+3. EXACT SCREEN INVENTORY
+============================================================
+
+Implement EXACTLY these 10 screens:
+
+247. AI Home
+248. AI Agent Directory
+249. CEO AI
+250. Sales AI Workspace
+251. Finance AI Workspace
+252. HR AI Workspace
+253. Marketing AI Workspace
+254. Service AI Workspace
+255. AI Conversation
+256. AI Action Approval
+
+DO NOT add additional numbered screens.
+
+DO NOT remove any screen.
+
+DO NOT rename screens.
+
+============================================================
+4. SCREEN 247 — AI HOME
+============================================================
+
+Create the central Qubit AI Platform home.
+
+Purpose:
+
+Give authorized users one place to access Qubit AI capabilities.
+
+The page should answer:
+
+"What can Qubit AI help me with?"
+
+and:
+
+"What AI activity is relevant to me right now?"
+
+Show:
+
+- AI overview
+- available AI agents
+- recent conversations
+- recent AI insights
+- pending AI actions
+- approved/rejected actions
+- AI recommendations
+- AI activity
+- frequently used agents
+- domain AI workspaces
+- AI search / ask interface
+
+Possible summary cards:
+
+- Available Agents
+- Active Conversations
+- Pending Actions
+- Actions Completed
+- Recent Insights
+
+Quick actions:
+
+- Ask Qubit AI
+- Open AI Agent Directory
+- Open CEO AI
+- Open Sales AI
+- Open Finance AI
+- Open HR AI
+- Open Marketing AI
+- Open Service AI
+
+Recent activity:
+
+- AI-generated insight
+- recommendation
+- draft
+- action request
+- approved action
+- completed action
+
+All information must be permission-aware.
+
+Never display AI capabilities that the user is not authorized to use.
+
+============================================================
+5. SCREEN 248 — AI AGENT DIRECTORY
+============================================================
+
+Create the centralized AI Agent Directory.
+
+This is the catalog of available Qubit AI agents.
+
+Agents may include:
+
+- Universal Qubit AI
+- CEO AI
+- Sales AI
+- Finance AI
+- HR AI
+- Marketing AI
+- Service AI
+
+Future agents may be registered through the architecture without redesigning this screen.
+
+Each agent card/list item may show:
+
+- Agent name
+- Description
+- Department
+- Capabilities
+- Availability
+- Permission level
+- Status
+- Last activity
+- Version
+- Owner
+
+Example:
+
+CEO AI
+Strategic company intelligence and executive decision support.
+
+Sales AI
+Lead prioritization, pipeline intelligence and sales assistance.
+
+Finance AI
+Financial analysis and finance workflow assistance.
+
+HR AI
+People analytics and HR workflow assistance.
+
+Marketing AI
+Content, SEO and campaign intelligence.
+
+Service AI
+Service operations and engineer assistance.
+
+Do not duplicate the existing Phase 7 or Phase 11 AI functionality.
+
+Those AI capabilities should be surfaced here through the centralized AI platform.
+
+Filters:
+
+- All
+- Executive
+- Sales
+- Finance
+- HR
+- Marketing
+- Service
+- General
+
+Search agents by:
+
+- name
+- capability
+- department
+
+============================================================
+6. SCREEN 249 — CEO AI
+============================================================
+
+Create the executive AI workspace.
+
+CEO AI must provide a permission-controlled executive intelligence experience.
+
+It should combine authorized information from:
+
+- Sales
+- Finance
+- HR
+- Marketing
+- Service
+- Inventory
+- Operations
+- Executive KPIs
+- Meetings
+- Tasks
+- Company activity
+
+Possible questions:
+
+"What changed in the business today?"
+
+"Why did revenue change?"
+
+"Which sales risks require attention?"
+
+"Which departments are underperforming?"
+
+"What are the top operational issues?"
+
+"What requires my approval?"
+
+"What should I focus on today?"
+
+AI response structure should prefer:
+
+Answer
+↓
+Evidence
+↓
+Business impact
+↓
+Recommended action
+↓
+Optional action
+
+Example:
+
+REVENUE TREND
+
+Revenue is below the current target.
+
+Evidence:
+- Sales pipeline
+- Closed revenue
+- Receivables
+- Historical trend
+
+Potential causes:
+- pipeline slowdown
+- delayed collections
+- lower conversion
+
+Recommended action:
+Review Sales Pipeline and Receivables.
+
+Do not fabricate conclusions.
+
+CEO AI must clearly distinguish:
+
+- confirmed data
+- calculated metrics
+- AI inference
+- recommendation
+
+AI must not directly execute consequential business actions without appropriate approval.
+
+============================================================
+7. SCREEN 250 — SALES AI WORKSPACE
+============================================================
+
+Create the centralized Sales AI workspace.
+
+This screen must integrate with Phase 7 Sales AI.
+
+DO NOT create a second Sales AI system.
+
+Existing Sales AI capabilities include:
+
+- AI Lead Prioritization
+- AI Follow-up Writer
+- AI Customer Summary
+- AI Next Best Action
+- AI Pipeline Review
+- AI Daily Brief
+- AI Sales Q&A
+
+Surface these capabilities inside the centralized AI Platform.
+
+Sales AI context may include:
+
+- Leads
+- Contacts
+- Accounts
+- Opportunities
+- Pipeline
+- Quotations
+- Orders
+- Customer activity
+- Meetings
+- Visits
+- Follow-ups
+- Sales targets
+
+Possible AI functions:
+
+- Lead prioritization
+- Pipeline analysis
+- Follow-up drafting
+- Customer summary
+- Next best action
+- Forecast analysis
+- Risk detection
+- Daily sales brief
+
+Responses must link back to source records.
+
+Example:
+
+"Lead ABC should be prioritized."
+
+Show:
+
+Why
+→ evidence
+→ relevant lead
+→ recommended next action
+
+Do not invent customer information.
+
+Sales AI cannot bypass sales permissions.
+
+============================================================
+8. SCREEN 251 — FINANCE AI WORKSPACE
+============================================================
+
+Create the Finance AI workspace.
+
+Finance AI must be highly controlled.
+
+Finance remains the source of truth.
+
+AI is an analysis and assistance layer.
+
+Authorized context may include:
+
+- revenue
+- invoices
+- payments
+- receivables
+- payables
+- expenses
+- budgets
+- reimbursements
+- cash
+- bank data
+- finance reports
+
+Possible functions:
+
+- Financial summary
+- Cash-flow insights
+- Receivables risk
+- Payables overview
+- Expense analysis
+- Budget variance analysis
+- Invoice follow-up suggestions
+- Financial trend analysis
+- Report explanation
+
+Critical rule:
+
+AI must NEVER silently modify financial records.
+
+For any consequential action:
+
+AI recommendation
+→ user review
+→ explicit approval
+→ authorized backend operation
+→ audit
+
+Do not allow the AI to:
+
+- fabricate payments
+- mark invoices paid
+- change financial records
+- alter balances
+- approve transactions
+
+without explicit authorized workflow.
+
+All monetary calculations must be performed using authoritative backend data and deterministic calculation logic.
+
+============================================================
+9. SCREEN 252 — HR AI WORKSPACE
+============================================================
+
+Create the HR AI workspace.
+
+HR data is highly sensitive.
+
+AI must enforce strict authorization.
+
+Possible context:
+
+- employee data
+- attendance
+- leave
+- recruitment
+- performance
+- goals
+- training
+- organizational structure
+
+Possible capabilities:
+
+- Workforce overview
+- Attendance insights
+- Leave trends
+- Recruitment pipeline analysis
+- Training recommendations
+- Organization insights
+- Performance trend analysis
+- HR report explanation
+
+DO NOT expose:
+
+- salary
+- payroll
+- personal sensitive data
+- confidential performance information
+- private HR documents
+
+unless the user has explicit authorization.
+
+AI must respect field-level or record-level permissions where required.
+
+Example:
+
+A manager may ask:
+
+"How is my team's attendance?"
+
+AI should only use authorized team data.
+
+An employee must not be able to query:
+
+"Show me everyone's salary."
+
+The AI must refuse/deny based on authorization.
+
+Never solve permission problems with prompt instructions alone.
+
+Backend authorization remains authoritative.
+
+============================================================
+10. SCREEN 253 — MARKETING AI WORKSPACE
+============================================================
+
+Create the centralized Marketing AI workspace.
+
+Integrate Phase 11 Marketing AI capabilities.
+
+Existing capabilities include:
+
+- AI Content Ideas
+- AI Caption Writer
+- AI Creative Brief
+- AI Post Review
+- AI SEO Assistant
+- AI Campaign Analysis
+- AI Content Calendar
+
+Marketing AI context may include:
+
+- content
+- social media
+- campaigns
+- SEO
+- keywords
+- analytics
+- creative assets
+- publishing calendar
+- leads
+- conversions
+
+AI can assist with:
+
+- content ideas
+- captions
+- creative briefs
+- SEO recommendations
+- campaign analysis
+- calendar planning
+- content review
+
+Consequential publishing actions must require appropriate approval.
+
+Do not automatically publish content merely because AI generated it.
+
+Respect:
+
+- brand assets
+- brand guidelines
+- user permissions
+- platform integrations
+- publishing permissions
+- approval workflows
+
+============================================================
+11. SCREEN 254 — SERVICE AI WORKSPACE
+============================================================
+
+Create the Service AI workspace.
+
+Integrate with Phase 13 Service Engineer OS.
+
+Service AI may use authorized:
+
+- service tickets
+- customer sites
+- products
+- serial numbers
+- warranty status
+- service history
+- checklists
+- parts
+- visits
+- reports
+- engineer activity
+
+Possible capabilities:
+
+- Ticket summary
+- Priority recommendation
+- Similar service history
+- Troubleshooting suggestions
+- Parts suggestions
+- Service report drafting
+- Engineer daily briefing
+- Repeat-failure analysis
+- SLA risk detection
+
+CRITICAL:
+
+AI must never invent:
+
+- diagnosis
+- warranty coverage
+- serial information
+- parts availability
+- repair completion
+- customer approval
+
+Example:
+
+If warranty status is unknown:
+
+AI must say:
+
+"Warranty status could not be verified."
+
+It must NOT assume:
+
+"Warranty is active."
+
+AI recommendations are advisory unless explicitly approved through authorized workflows.
+
+============================================================
+12. SCREEN 255 — AI CONVERSATION
+============================================================
+
+Create the central Qubit AI conversational workspace.
+
+This is the primary universal AI interaction screen.
+
+The UI should be enterprise-oriented, not a consumer chatbot clone.
+
+Layout:
+
+LEFT / CONTEXT AREA
+- Current agent
+- Available agents
+- Conversation history
+- Recent conversations
+
+MAIN AREA
+- conversation
+- prompt input
+- AI response
+- evidence
+- source links
+- suggested actions
+
+RIGHT / CONTEXT PANEL where appropriate:
+- relevant records
+- selected context
+- permissions/context status
+- actions
+
+Users should be able to ask:
+
+"Show my pending approvals."
+
+"What should I focus on today?"
+
+"Summarize my sales pipeline."
+
+"Explain this invoice."
+
+"Summarize this meeting."
+
+"What service tickets need attention?"
+
+"Create a follow-up draft."
+
+The system should identify the appropriate agent where possible.
+
+However, routing must be permission-aware.
+
+AI response hierarchy:
+
+1. Direct answer
+2. Supporting evidence
+3. Source records
+4. Reasoning/interpretation where appropriate
+5. Recommendation
+6. Optional action
+
+Do not expose hidden chain-of-thought.
+
+Instead, provide concise business reasoning, evidence and source references.
+
+============================================================
+13. CONVERSATION CONTEXT
+============================================================
+
+Conversation context must be controlled.
+
+Do not automatically expose the entire enterprise database to every conversation.
+
+Context should be:
+
+- user-authorized
+- relevant
+- minimal
+- auditable where appropriate
+
+Possible context sources:
+
+- current page
+- selected record
+- selected meeting
+- selected customer
+- selected ticket
+- selected employee
+- selected report
+- explicitly requested domain
+
+Example:
+
+If user is viewing a Sales Opportunity and asks:
+
+"Summarize this."
+
+AI should use the authorized opportunity context.
+
+It should not automatically retrieve unrelated HR or Finance data.
+
+============================================================
+14. SCREEN 256 — AI ACTION APPROVAL
+============================================================
+
+Create the centralized AI action approval workspace.
+
+This is one of the most important security screens.
+
+AI must distinguish between:
+
+INFORMATIONAL
+and
+ACTIONABLE
+
+Examples of informational AI output:
+
+- summary
+- analysis
+- recommendation
+- explanation
+
+Examples of actionable AI output:
+
+- create task
+- send message
+- update CRM
+- create follow-up
+- schedule meeting
+- create draft
+- update approved workflow record
+
+For consequential actions:
+
+AI
+→ proposes action
+→ shows exact intended changes
+→ shows affected records
+→ shows reason/source
+→ user reviews
+→ user approves/rejects
+→ backend validates authorization
+→ action executes
+→ result recorded
+→ audit log updated
+
+Approval screen should show:
+
+- Action
+- AI Agent
+- Requested by
+- Date/time
+- Affected records
+- Proposed changes
+- Reason
+- Evidence
+- Risk level
+- Permission status
+- Approval status
+
+Statuses:
+
+- Pending
+- Approved
+- Rejected
+- Expired
+- Failed
+- Completed
+
+Actions:
+
+- Review
+- Approve
+- Reject
+- View Source
+- View Record
+- Retry where safe
+
+CRITICAL:
+
+Approval UI is NOT authorization.
+
+The backend must independently validate:
+
+- user identity
+- user permissions
+- record permissions
+- business rules
+- action validity
+- current record state
+
+before execution.
+
+Never trust frontend approval state.
+
+============================================================
+15. AI ACTION RISK MODEL
+============================================================
+
+AI actions should be categorized.
+
+LOW RISK:
+
+- create draft
+- summarize
+- create personal task
+- prepare content
+
+MEDIUM RISK:
+
+- create customer follow-up
+- schedule internal meeting
+- update non-critical CRM fields
+
+HIGH RISK:
+
+- financial changes
+- payment actions
+- employee changes
+- access changes
+- customer communication with business consequences
+- deleting records
+- approving transactions
+
+High-risk actions require stronger confirmation and authorization.
+
+For extremely sensitive operations, existing enterprise approval workflows may be required.
+
+============================================================
+16. AI SOURCE OF TRUTH MODEL
+============================================================
+
+Qubit AI must NEVER become the authoritative database.
+
+Example:
+
+Sales database
+= source of truth for sales records.
+
+Finance
+= source of truth for financial records.
+
+HR
+= source of truth for employee/HR records.
+
+Inventory
+= source of truth for stock.
+
+Service
+= source of truth for service records.
+
+Meetings
+= source of truth for meeting records.
+
+AI reads authorized information from these systems and produces intelligence.
+
+AI-generated conclusions must not overwrite source-of-truth data unless a valid approved workflow performs the update.
+
+============================================================
+17. AI RESPONSE QUALITY
+============================================================
+
+AI responses should distinguish between:
+
+FACT
+
+Directly supported by enterprise data.
+
+CALCULATION
+
+Derived using deterministic business calculations.
+
+INFERENCE
+
+AI-generated interpretation.
+
+RECOMMENDATION
+
+Suggested next step.
+
+ACTION
+
+An executable operation requiring appropriate authorization.
+
+This distinction must be visible where it improves trust.
+
+============================================================
+18. HALLUCINATION CONTROL
+============================================================
+
+AI must not invent enterprise facts.
+
+If data is missing:
+
+Say:
+
+"Insufficient data to determine this."
+
+If integration is unavailable:
+
+Say:
+
+"The required integration is unavailable."
+
+If permission is missing:
+
+Say:
+
+"You do not have permission to access this information."
+
+Never fabricate:
+
+- employee records
+- customer records
+- invoices
+- payments
+- stock
+- service status
+- meeting transcripts
+- calendar availability
+- analytics
+- business metrics
+
+============================================================
+19. AI PERMISSION MODEL
+============================================================
+
+AI inherits user permissions.
+
+Conceptually:
+
+USER
+↓
+AUTHENTICATION
+↓
+RBAC / ABAC
+↓
+DATA ACCESS POLICY
+↓
+AI CONTEXT FILTER
+↓
+AI MODEL
+↓
+ACTION AUTHORIZATION
+↓
+EXECUTION
+
+Never:
+
+USER
+↓
+AI
+↓
+ENTIRE DATABASE
+
+AI must not be used as a permission bypass.
+
+============================================================
+20. AI AGENT REGISTRY ARCHITECTURE
+============================================================
+
+Agents should be registered through a centralized architecture.
+
+Each agent should have metadata such as:
+
+- Agent ID
+- Name
+- Domain
+- Description
+- Version
+- Capabilities
+- Required permissions
+- Allowed data sources
+- Allowed actions
+- Risk classification
+- Status
+- Owner
+- Model/provider configuration
+- Tool permissions
+
+Do not hard-code every agent independently into unrelated frontend pages.
+
+The architecture must support future agents.
+
+============================================================
+21. AI TOOL USE
+============================================================
+
+AI may use enterprise tools only when authorized.
+
+Examples:
+
+- Search
+- CRM lookup
+- Finance lookup
+- HR lookup
+- Inventory lookup
+- Service lookup
+- Calendar lookup
+- Task creation
+- Meeting creation
+- Notification
+- Report generation
+
+Tool access must be:
+
+- permission-controlled
+- scoped
+- auditable
+- validated server-side
+
+Never expose unrestricted database tools to the model.
+
+============================================================
+22. AI ACTION EXECUTION
+============================================================
+
+Never allow the model to directly execute arbitrary SQL or unrestricted backend commands.
+
+AI should request structured tools/actions.
+
+Example:
+
+BAD:
+
+AI → arbitrary SQL
+
+GOOD:
+
+AI
+→ CreateTask tool
+→ backend validates
+→ authorization
+→ transaction
+→ task created
+→ audit event
+
+Actions should use strongly typed schemas and validation.
+
+============================================================
+23. AI + AUDIT
+============================================================
+
+Important AI events must integrate with the existing Audit Log.
+
+Audit examples:
+
+- AI conversation created where required
+- sensitive data accessed
+- AI action proposed
+- AI action approved
+- AI action rejected
+- AI action executed
+- AI action failed
+- agent configuration changed
+- permission configuration changed
+- AI-generated record update
+
+Do not create a separate audit system.
+
+============================================================
+24. AI + SECURITY
+============================================================
+
+Apply:
+
+- authentication
+- RBAC
+- ABAC
+- least privilege
+- tenant isolation if applicable
+- record-level authorization
+- rate limiting
+- prompt/input validation
+- output validation
+- tool authorization
+- secret protection
+- encryption
+- secure logging
+- audit
+
+Never expose:
+
+- system secrets
+- API keys
+- credentials
+- hidden prompts
+- private internal configuration
+- unauthorized records
+
+============================================================
+25. PROMPT INJECTION DEFENSE
+============================================================
+
+Treat enterprise data as untrusted input.
+
+Documents, emails, chat messages, meeting transcripts, customer messages and external content may contain malicious instructions.
+
+The AI must not blindly follow instructions contained inside retrieved enterprise content.
+
+Separate:
+
+SYSTEM POLICY
+USER INTENT
+AUTHORIZED DATA
+UNTRUSTED CONTENT
+TOOL ACTION
+
+The model must not allow retrieved content to override security policy.
+
+============================================================
+26. EXTERNAL AI PROVIDERS
+============================================================
+
+If external AI providers are used:
+
+- use approved APIs
+- protect credentials
+- minimize data sent
+- respect data residency requirements
+- apply enterprise privacy policy
+- log provider usage where required
+- handle provider failure
+- provide configurable provider abstraction
+
+Do not hard-code the entire platform around one AI provider unnecessarily.
+
+The AI platform should allow future provider/model changes without rewriting the product.
+
+============================================================
+27. RELIABILITY
+============================================================
+
+AI systems can fail.
+
+Handle:
+
+- provider timeout
+- model unavailable
+- rate limits
+- tool failure
+- database failure
+- network failure
+- malformed model output
+- invalid tool arguments
+- partial execution
+- duplicate action requests
+- concurrency conflicts
+
+Use:
+
+- timeout
+- retry/backoff
+- idempotency
+- structured output validation
+- safe failure
+- graceful degradation
+- audit
+- user-visible status
+
+Never show "Success" before backend confirmation.
+
+============================================================
+28. AI ACTION IDEMPOTENCY
+============================================================
+
+AI may retry an action.
+
+Prevent duplicates.
+
+Examples:
+
+Do not create two identical:
+
+- tasks
+- meetings
+- CRM updates
+- notifications
+- messages
+- financial requests
+
+Use idempotency and backend transaction controls.
+
+============================================================
+29. AI CONVERSATION DATA
+============================================================
+
+Conversation history must be securely stored according to enterprise policy.
+
+Support:
+
+- access control
+- retention
+- deletion where policy permits
+- audit
+- search within authorized conversations
+
+Sensitive conversations must not be visible to unauthorized users.
+
+Do not make all AI conversations globally searchable.
+
+============================================================
+30. PERFORMANCE
+============================================================
+
+AI responses can be expensive.
+
+Use:
+
+- streaming where appropriate
+- asynchronous processing for long jobs
+- caching where safe
+- retrieval optimization
+- context limits
+- background processing
+- rate limiting
+- model selection based on task complexity
+
+Do not load the entire enterprise dataset into every prompt.
+
+============================================================
+31. OBSERVABILITY
+============================================================
+
+AI platform should support operational observability.
+
+Track where appropriate:
+
+- request count
+- latency
+- failures
+- model/provider status
+- tool execution
+- action success/failure
+- token/cost metrics where available
+- user-facing errors
+- queue status
+- integration health
+
+Never expose sensitive prompts/data unnecessarily in logs.
+
+============================================================
+32. RESPONSIVE DESIGN
+============================================================
+
+Desktop is the primary enterprise experience.
+
+Mobile should prioritize:
+
+- Ask Qubit AI
+- recent conversations
+- AI insights
+- pending approvals
+- action approval
+- quick actions
+
+Do not simply shrink the desktop UI.
+
+Mobile-specific AI workflows will be refined in Phase 18.
+
+============================================================
+33. ACCESSIBILITY
+============================================================
+
+Follow enterprise accessibility principles.
+
+Support:
+
+- keyboard navigation
+- visible focus
+- semantic controls
+- accessible forms
+- readable AI responses
+- screen-reader labels
+- accessible status indicators
+- accessible approval dialogs
+- sufficient contrast
+
+Never communicate AI status only through color.
+
+============================================================
+34. EMPTY / ERROR / LOADING STATES
+============================================================
+
+Every AI screen must support:
+
+- Loading
+- Empty
+- Error
+- No permission
+- No agent available
+- AI provider unavailable
+- Data unavailable
+- Tool failure
+- Action pending
+- Action failed
+- Action completed
+
+Examples:
+
+"AI service temporarily unavailable."
+
+"Your account does not have permission to access this agent."
+
+"Insufficient data to answer this question."
+
+Do not use fake AI responses as placeholders in production flows.
+
+============================================================
+35. GLOBAL SEARCH INTEGRATION
+============================================================
+
+AI records should integrate with Qubit Global Search where appropriate.
+
+Search may include:
+
+- agents
+- AI conversations
+- AI-generated insights
+- approved actions
+- AI activity
+
+Only authorized content may appear.
+
+============================================================
+36. EXISTING AI SYSTEM INTEGRATION
+============================================================
+
+IMPORTANT:
+
+Phase 7 Sales AI already exists.
+
+Phase 11 Marketing AI already exists.
+
+Do not rebuild them.
+
+Phase 15 creates the CENTRAL PLATFORM through which those AI capabilities are discovered and accessed.
+
+The architecture should be:
+
+                 QUBIT AI PLATFORM
+                         |
+        +----------------+----------------+
+        |        |       |       |        |
+      CEO     SALES   FINANCE    HR   MARKETING
+                                      |
+                                   SERVICE
+        |
+   Future Agents
+
+Existing domain AI implementations remain connected to the central platform.
+
+============================================================
+37. DESIGN SYSTEM CONSISTENCY
+============================================================
+
+AI UI must use existing Qubit components.
+
+Reuse:
+
+- buttons
+- inputs
+- cards
+- tables
+- tabs
+- drawers
+- modals
+- badges
+- tooltips
+- navigation
+- command bar
+- notifications
+- empty states
+- error states
+
+Do not create a completely separate AI design system.
+
+AI may have subtle visual distinction, but it must remain native to Qubit One.
+
+============================================================
+38. OPTIONAL FUTURE AI CAPABILITIES
+============================================================
+
+Do NOT create additional screens for these.
+
+Architect the system so they can be added later:
+
+- Procurement AI
+- Inventory AI
+- Operations AI
+- Project AI
+- Legal/Compliance AI
+- Customer Support AI
+- Knowledge AI
+- IT AI
+- Security AI
+- Data Analyst AI
+- Revenue Intelligence AI
+- Forecasting AI
+- Enterprise Search AI
+- AI Workflow Builder
+- Multi-agent orchestration
+
+These are future capabilities.
+
+Do not increase Phase 15 screen count.
+
+============================================================
+39. TESTING
+============================================================
+
+Test:
+
+- authentication
+- authorization
+- agent permissions
+- data access
+- record-level permissions
+- tool permissions
+- AI response validation
+- structured output validation
+- action approval
+- action rejection
+- duplicate prevention
+- concurrency
+- provider failure
+- timeout
+- retry
+- audit
+- sensitive data protection
+- conversation security
+- search permissions
+
+Critical workflows must have:
+
+- unit tests
+- integration tests
+- API tests
+- authorization tests
+- failure tests
+- regression tests
+
+============================================================
+40. DO NOT BREAK EXISTING SYSTEMS
+============================================================
+
+Do not break:
+
+- Phase 1 Enterprise Architecture
+- Phase 2 Design System
+- Phase 3 Security
+- Phase 4 Employee Workspace
+- Phase 5 CEO Command Center
+- Phase 6 Sales
+- Phase 7 Sales AI
+- Phase 8 Finance
+- Phase 9 Inventory
+- Phase 10 Marketing
+- Phase 11 Marketing AI
+- Phase 12 HR
+- Phase 13 Service
+- Phase 14 Meetings & Collaboration
+
+Preserve existing APIs and database relationships unless a genuine architectural improvement is required.
+
+Do not introduce technology churn without meaningful benefit.
+
+============================================================
+41. EXACT SCREEN COUNT VALIDATION
+============================================================
+
+Verify exactly:
+
+247 AI Home
+248 AI Agent Directory
+249 CEO AI
+250 Sales AI Workspace
+251 Finance AI Workspace
+252 HR AI Workspace
+253 Marketing AI Workspace
+254 Service AI Workspace
+255 AI Conversation
+256 AI Action Approval
+
+TOTAL = 10 SCREENS.
+
+Previous total = 246
+
+Phase 15 = 10
+
+New total = 256
+
+Remaining = 52
+
+DO NOT create screens 257–308 during this phase.
+
+============================================================
+42. FINAL ENTERPRISE REVIEW
+============================================================
+
+Before completing Phase 15, review the implementation as:
+
+1. Product Architect
+2. Enterprise UX Architect
+3. Security Architect
+4. Data & Reliability Architect
+5. AI/Automation Architect
+
+Verify:
+
+- AI is centralized
+- no duplicate domain systems
+- no permission bypass
+- no unrestricted database access
+- no fake integrations
+- no hallucinated enterprise facts
+- no fake actions
+- no unauthorized data exposure
+- no duplicate task/calendar/notification systems
+- no duplicate AI systems
+- AI actions are auditable
+- high-risk actions require confirmation/approval
+- source-of-truth systems remain authoritative
+- UI matches Qubit One
+- responsive behavior is correct
+- accessibility is correct
+- performance is acceptable
+- error states are complete
+- exact 10 screens are implemented
+
+============================================================
+43. FINAL EXECUTION INSTRUCTION
+============================================================
+
+DO NOT ASK ME WHAT TO BUILD NEXT.
+
+DO NOT STOP AFTER CREATING ONLY THE UI.
+
+DO NOT BUILD A FAKE AI DEMO.
+
+DO NOT USE MOCK AI SUCCESS STATES AS PRODUCTION LOGIC.
+
+DO NOT CREATE UNAUTHORIZED DATABASE ACCESS.
+
+DO NOT CREATE A SECOND TASK, CALENDAR, NOTIFICATION, SEARCH OR AUDIT SYSTEM.
+
+DO NOT REBUILD EXISTING SALES AI OR MARKETING AI.
+
+Analyze the existing Qubit One architecture first.
+
+Then implement Phase 15 completely.
+
+STRICTLY FOLLOW THE ATTACHED QUBIT ONE UI REFERENCE IMAGE.
+
+The final implementation must feel like a native, production-grade AI intelligence and execution layer inside Qubit One.
+
+Complete:
+
+PHASE 15
+SCREENS 247–256
+EXACTLY 10 SCREENS.

@@ -104,6 +104,14 @@ import { SalesExpensesScreen } from "./screens/sales-expenses";
 import { SalesReportsScreen } from "./screens/sales-reports";
 import { TeamSalesDashboardScreen } from "./screens/team-sales-dashboard";
 import { SalesSettingsScreen } from "./screens/sales-settings";
+import { SalesAiHomeScreen } from "./screens/sales-ai-home";
+import { AiLeadPrioritizationScreen } from "./screens/ai-lead-prioritization";
+import { AiFollowupWriterScreen } from "./screens/ai-followup-writer";
+import { AiCustomerSummaryScreen } from "./screens/ai-customer-summary";
+import { AiNextBestActionScreen } from "./screens/ai-next-best-action";
+import { AiPipelineReviewScreen } from "./screens/ai-pipeline-review";
+import { AiDailyBriefScreen } from "./screens/ai-daily-brief";
+import { AiSalesQaScreen } from "./screens/ai-sales-qa";
 
 export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "org-structure": OrganizationStructureScreen,
@@ -208,4 +216,12 @@ export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "sales-reports": SalesReportsScreen,
   "team-sales-dashboard": TeamSalesDashboardScreen,
   "sales-settings": SalesSettingsScreen,
+  "sales-ai-home": SalesAiHomeScreen,
+  "ai-lead-prioritization": AiLeadPrioritizationScreen,
+  "ai-followup-writer": AiFollowupWriterScreen,
+  "ai-customer-summary": AiCustomerSummaryScreen,
+  "ai-next-best-action": AiNextBestActionScreen,
+  "ai-pipeline-review": AiPipelineReviewScreen,
+  "ai-daily-brief": AiDailyBriefScreen,
+  "ai-sales-qa": AiSalesQaScreen,
 };

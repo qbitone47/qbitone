@@ -5,6 +5,7 @@
 // Phase 4: Core Employee Workspace (screens 41–58)
 // Phase 5: CEO Command Center (screens 59–72)
 // Phase 6: Sales Operating System (screens 73–102)
+// Phase 7: Sales AI (screens 103–110)
 
 export type ScreenId =
   | "org-structure"
@@ -108,9 +109,17 @@ export type ScreenId =
   | "sales-expenses"
   | "sales-reports"
   | "team-sales-dashboard"
-  | "sales-settings";
+  | "sales-settings"
+  | "sales-ai-home"
+  | "ai-lead-prioritization"
+  | "ai-followup-writer"
+  | "ai-customer-summary"
+  | "ai-next-best-action"
+  | "ai-pipeline-review"
+  | "ai-daily-brief"
+  | "ai-sales-qa";
 
-export type ScreenModule = "enterprise" | "design-system" | "security" | "workspace" | "people" | "mail" | "executive" | "sales";
+export type ScreenModule = "enterprise" | "design-system" | "security" | "workspace" | "people" | "mail" | "executive" | "sales" | "sales-ai";
 
 /** Screens rendered without the app shell (standalone authentication) */
 export const AUTH_SCREENS: ScreenId[] = ["login", "mfa-verification", "sso-provider-selection"];
@@ -233,6 +242,15 @@ export const SCREENS: ScreenMeta[] = [
   { id: "sales-reports", num: "100", title: "Sales Reports", shortTitle: "Sales Reports", description: "Operational sales reporting — pipeline, conversion, win/loss and aging.", module: "sales" },
   { id: "team-sales-dashboard", num: "101", title: "Team Sales Dashboard", shortTitle: "Team Sales", description: "Manager workspace — what is happening, what is at risk, who needs attention.", module: "sales" },
   { id: "sales-settings", num: "102", title: "Sales Settings", shortTitle: "Settings", description: "Sales configuration — stages, sources, rules. Admin-only, validated, audited.", module: "sales" },
+  // ——— Phase 7 · Sales AI ———
+  { id: "sales-ai-home", num: "103", title: "Sales AI Home", shortTitle: "Sales AI Home", description: "Sales intelligence command center — insights, recommendations and quick actions, grounded in authorized data.", module: "sales-ai" },
+  { id: "ai-lead-prioritization", num: "104", title: "AI Lead Prioritization", shortTitle: "Lead Prioritization", description: "Explainable AI ranking of your leads — every factor inspectable, insufficient data never scored.", module: "sales-ai" },
+  { id: "ai-followup-writer", num: "105", title: "AI Follow-up Writer", shortTitle: "Follow-up Writer", description: "Context → AI draft → edit → review → send. Nothing external leaves without your confirmation.", module: "sales-ai" },
+  { id: "ai-customer-summary", num: "106", title: "AI Customer Summary", shortTitle: "Customer Summary", description: "Structured Customer 360 from authorized records — evidence-linked, refreshable, copyable.", module: "sales-ai" },
+  { id: "ai-next-best-action", num: "107", title: "AI Next Best Action", shortTitle: "Next Best Action", description: "What to do next — reason, evidence, urgency and confidence. Accepting routes into existing workflows.", module: "sales-ai" },
+  { id: "ai-pipeline-review", num: "108", title: "AI Pipeline Review", shortTitle: "Pipeline Review", description: "Pipeline health with stalled-deal, aging and forecast-risk insights. Actual, forecast and AI estimate never mixed.", module: "sales-ai" },
+  { id: "ai-daily-brief", num: "109", title: "AI Daily Brief", shortTitle: "Daily Brief", description: "A personalized, concise read of today — priorities, meetings, follow-ups, target progress and risks.", module: "sales-ai" },
+  { id: "ai-sales-qa", num: "110", title: "AI Sales Q&A", shortTitle: "Sales Q&A", description: "Grounded answers over authorized sales data — key numbers, reasoning, sources, recommended actions.", module: "sales-ai" },
 ];
 
 export const screenMeta = (id: ScreenId): ScreenMeta =>

@@ -52,7 +52,7 @@ export const SIDEBAR_MODULES: SidebarModule[] = [
   { id: "service", label: "Service", icon: Wrench, section: "Business" },
   { id: "mail", label: "Mail", icon: Mail, section: "Communication", expandableModule: "mail" },
   { id: "meetings", label: "Meetings", icon: Video, section: "Intelligence" },
-  { id: "ai", label: "AI", icon: Sparkles, section: "Intelligence" },
+  { id: "ai", label: "Sales AI", icon: Sparkles, section: "Intelligence", expandableModule: "sales-ai" },
   { id: "analytics", label: "Analytics", icon: BarChart3, section: "Intelligence" },
   { id: "documents", label: "Documents", icon: FolderClosed, section: "Intelligence" },
   { id: "security", label: "Security", icon: ShieldCheck, section: "System", expandableModule: "security" },
@@ -66,6 +66,7 @@ export const MODULE_PHASE: Record<string, string> = {
   people: "Phase 4 — People & Organization",
   mail: "Phase 4 — Company Mail",
   sales: "Phase 6 — Sales Operating System",
+  "sales-ai": "Phase 7 — Sales AI",
   finance: "Phase 7 — Finance",
   hr: "Phase 7 — HR & People",
   inventory: "Phase 8 — Inventory",
@@ -107,7 +108,7 @@ export function SidebarContent({
 }) {
   const { screen, navigate } = useQubitNav();
   // Executive module starts expanded (Phase 5); workspace starts collapsed.
-  const [open, setOpen] = React.useState<Record<string, boolean>>({ executive: true, workspace: false, enterprise: false, people: false, mail: false, "design-system": false, security: false, sales: false });
+  const [open, setOpen] = React.useState<Record<string, boolean>>({ executive: true, workspace: false, enterprise: false, people: false, mail: false, "design-system": false, security: false, sales: false, ai: false });
 
   const sections = React.useMemo(() => {
     const map = new Map<string, SidebarModule[]>();
@@ -283,13 +284,13 @@ export function SidebarContent({
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[12.5px] font-semibold leading-tight text-slate-900">Qubit One Pvt Ltd</span>
               <span className="block truncate text-[10.5px] leading-tight text-slate-400">
-                Phase 6 · Sales Operating System
+                Phase 7 · Sales AI
               </span>
             </span>
             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-hidden />
           </div>
         ) : (
-          <div className="flex justify-center py-0.5" title="Qubit One Pvt Ltd — Phase 6 · Sales Operating System">
+          <div className="flex justify-center py-0.5" title="Qubit One Pvt Ltd — Phase 7 · Sales AI">
             <QubitMark className="h-7 w-7 rounded-lg text-[13px]" />
           </div>
         )}

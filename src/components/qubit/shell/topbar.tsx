@@ -51,6 +51,7 @@ const MODULE_LABELS: Record<ScreenModule, string> = {
   mail: "Mail",
   executive: "CEO Command Center",
   sales: "Sales",
+  "sales-ai": "Sales AI",
 };
 
 export function TopBar({
