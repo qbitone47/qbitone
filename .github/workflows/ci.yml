@@ -38,17 +38,20 @@ jobs:
       - name: Lint
         run: bun run lint
 
-      - name: Generate Next.js route types
-        run: bunx next typegen
-
-      - name: Typecheck
-        run: bun run typecheck
-
+      # Prisma client generation must precede typecheck and build:
+      # the @prisma/client package only re-exports PrismaClient after
+      # the engine materialises it into node_modules/.prisma/client.
       - name: Generate Prisma client
         run: bunx prisma generate
 
       - name: Prepare CI database
         run: mkdir -p db && bunx prisma db push --skip-generate --accept-data-loss
+
+      - name: Generate Next.js route types
+        run: bunx next typegen
+
+      - name: Typecheck
+        run: bun run typecheck
 
       - name: Production build
         run: bun run build
