@@ -1,0 +1,51 @@
+Qubit One — Proprietary Software License
+
+Copyright (c) 2025 Qubit One. All Rights Reserved.
+
+IMPORTANT NOTICE — READ CAREFULLY BEFORE ACCESSING, COPYING OR USING THIS SOFTWARE.
+
+1. Ownership. This software, including its source code, documentation, design assets,
+   screen definitions, fixtures and associated materials (collectively, the "Software"),
+   is the confidential and proprietary property of Qubit One and is protected by
+   copyright and other intellectual property laws and treaties.
+
+2. Confidentiality. The Software contains confidential information, trade secrets and
+   proprietary business logic of Qubit One. You shall treat the Software as strictly
+   confidential, shall not disclose it to any third party, and shall use at least the
+   same degree of care as you use to protect your own confidential information.
+
+3. No License Granted. Except as expressly agreed in a separate written agreement
+   signed by an authorized representative of Qubit One, no license, express or implied,
+   is granted under this notice. Without such a written agreement you may NOT:
+     a. copy, modify, merge, publish, distribute, sublicense, sell or offer for sale
+        the Software or any derivative work of it;
+     b. use the Software, in whole or in part, for any production, commercial or
+        revenue-generating purpose;
+     c. reverse engineer, decompile or disassemble the Software, except to the extent
+        such restriction is prohibited by applicable law;
+     d. remove, alter or obscure any copyright, trademark or proprietary notice
+        contained in or on the Software.
+
+4. Evaluation Use. Access to the Software for internal evaluation or development is
+   permitted only under an applicable written agreement with Qubit One and only within
+   the scope of that agreement.
+
+5. Third-Party Notices. The Software depends on third-party open-source packages
+   (see package.json / bun.lock). Such dependencies are NOT licensed under this
+   notice and remain under their own respective licenses. Nothing in this notice
+   restricts rights granted to you by the licenses of those third-party dependencies.
+
+6. No Warranty. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL QUBIT ONE
+   BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM, OUT OF OR IN
+   CONNECTION WITH THE SOFTWARE OR ITS USE.
+
+7. Termination. Any right to access or use the Software terminates automatically upon
+   breach of this notice. Upon termination, you must cease all use and destroy all
+   copies of the Software in your possession or control.
+
+8. Contact. Licensing inquiries: legal@YOUR-DOMAIN.example (placeholder — replace
+   with the project's real legal contact before distribution).
+
+Copyright (c) 2025 Qubit One. All Rights Reserved.
