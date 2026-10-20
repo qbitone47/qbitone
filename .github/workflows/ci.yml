@@ -1,0 +1,64 @@
+name: CI
+
+# Qubit One — continuous validation.
+# Validates dependency installation, lint, TypeScript type checking
+# and the production build on every push to main and every pull
+# request targeting main. No production secrets are required: the
+# pipeline uses a throwaway local SQLite database.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Lint, typecheck and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Throwaway CI database (never a real environment).
+      DATABASE_URL: file:./db/ci.db
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies (frozen lockfile)
+        run: bun install --frozen-lockfile
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Generate Next.js route types
+        run: bunx next typegen
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Generate Prisma client
+        run: bunx prisma generate
+
+      - name: Prepare CI database
+        run: mkdir -p db && bunx prisma db push --skip-generate --accept-data-loss
+
+      - name: Production build
+        run: bun run build
+
+      - name: Upload standalone artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: qubit-one-standalone
+          path: .next/standalone
+          retention-days: 7
+        # Artifact upload is best-effort; it exists so a validated
+        # production artifact can be inspected after a green run.
+        continue-on-error: true

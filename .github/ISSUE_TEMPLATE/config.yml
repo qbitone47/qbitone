@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability — private disclosure
+    url: https://github.com/YOUR-ORG/YOUR-REPO/blob/main/SECURITY.md
+    about: "Do NOT open a public issue for security vulnerabilities. Follow the private reporting policy in SECURITY.md (contact: security@YOUR-DOMAIN.example — placeholder)."
+  - name: Security architecture & known gaps
+    url: https://github.com/YOUR-ORG/YOUR-REPO/blob/main/docs/SECURITY.md
+    about: Read the security architecture and the honest gap inventory before reporting — some items are documented known limitations.
+  - name: Contributing guide
+    url: https://github.com/YOUR-ORG/YOUR-REPO/blob/main/CONTRIBUTING.md
+    about: Branch naming, Conventional Commits, review expectations and code standards.
