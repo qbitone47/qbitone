@@ -25,6 +25,7 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, RATE_PROFILES, requireIdentity, tooManyRequests } from "@/lib/qubit/auth-server";
 import {
   SESSION_USER_ID,
   listApprovals,
@@ -67,8 +68,15 @@ interface OmittedSource {
 
 const CAP = 5; // max items per group — bounded work per source
 
-const roleFrom = (req: NextRequest): WorkspaceRole =>
-  (req.headers.get("X-Qubit-Role") as WorkspaceRole) ?? "administrator";
+// Phase 21: the acting role is derived from the signed session cookie
+// (server-verified) — a client-declared role header is never trusted.
+// Fail-closed: requests without a valid session receive 401.
+async function identityFrom(req: NextRequest): Promise<{ ok: true; role: WorkspaceRole; userId: string } | { ok: false; response: NextResponse }> {
+  const auth = await requireIdentity(req);
+  return auth.ok
+    ? { ok: true, role: auth.identity.role as WorkspaceRole, userId: auth.identity.userId }
+    : { ok: false, response: auth.response };
+}
 
 // Screen-id guard — every emitted screen id must exist in screens.ts.
 // An unknown id degrades to a non-navigable row instead of a broken link.
@@ -164,11 +172,20 @@ function salesGroup(
 // GET /api/search — min query length 2, else 400 bad_query.
 // ============================================================
 export async function GET(req: NextRequest) {
+  const actor = await identityFrom(req);
+  if (!actor.ok) return actor.response;
+  // Phase 21 (§22 / audit L3): search is high-frequency but still
+  // bounded — a generous per-user limit plus a max query length.
+  const gate = rateLimit(`search:${actor.userId}`, RATE_PROFILES.search.limit, RATE_PROFILES.search.windowMs);
+  if (!gate.allowed) return tooManyRequests(gate.retryAfterSec);
   const started = Date.now();
-  const role = roleFrom(req);
+  const role = actor.role;
   const q = (req.nextUrl.searchParams.get("q") ?? "").trim().toLowerCase();
   if (q.length < 2) {
     return NextResponse.json({ code: "bad_query", message: "Provide a search query of at least 2 characters." }, { status: 400 });
+  }
+  if (q.length > 120) {
+    return NextResponse.json({ code: "bad_query", message: "Search queries are limited to 120 characters." }, { status: 400 });
   }
 
   const groups: SearchGroup[] = [];

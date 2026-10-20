@@ -1,17 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, RATE_PROFILES, requireIdentity, tooManyRequests } from "@/lib/qubit/auth-server";
 import { auditCsv, queryAudit } from "@/lib/qubit/security-server";
 
-const roleOf = (req: NextRequest) => req.headers.get("x-qubit-role") ?? "employee";
+// Phase 21: identity from the signed session; the client never declares a role.
+async function identityFrom(req: NextRequest) {
+  const auth = await requireIdentity(req);
+  return auth.ok
+    ? { ok: true as const, identity: auth.identity }
+    : { ok: false as const, response: auth.response };
+}
 
 // GET /api/security/audit — server-side filtered, paginated audit
 // history. Non-admin viewers are scoped to their own events by the
-// server; export is privileged and audited.
+// server; export is privileged, rate-limited and audited.
 export async function GET(req: NextRequest) {
-  const role = roleOf(req);
+  const actor = await identityFrom(req);
+  if (!actor.ok) return actor.response;
+  const { role, userId } = actor.identity;
   const sp = req.nextUrl.searchParams;
 
   if (sp.get("export") === "csv") {
-    const csv = auditCsv(role);
+    const gate = rateLimit(`audit-export:${userId}`, RATE_PROFILES.export.limit, RATE_PROFILES.export.windowMs);
+    if (!gate.allowed) return tooManyRequests(gate.retryAfterSec);
+    const csv = auditCsv(role, userId); // §16: the export audit event carries the requesting identity
     if (csv === null) {
       return NextResponse.json(
         { code: "permission_denied", message: "Exporting audit records requires Security administrator access." },
@@ -26,6 +37,17 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  // Phase 21 (audit L2): paging parameters are validated — non-numeric
+  // input is rejected instead of silently coercing to NaN pages.
+  const pageRaw = Number(sp.get("page") ?? 1);
+  const pageSizeRaw = Number(sp.get("pageSize") ?? 12);
+  if (!Number.isInteger(pageRaw) || pageRaw < 1 || !Number.isInteger(pageSizeRaw) || pageSizeRaw < 1 || pageSizeRaw > 100) {
+    return NextResponse.json(
+      { code: "bad_request", message: "Provide numeric page (≥1) and pageSize (1–100)." },
+      { status: 400 },
+    );
+  }
+
   const result = queryAudit(
     {
       query: sp.get("query") ?? undefined,
@@ -34,11 +56,11 @@ export async function GET(req: NextRequest) {
       action: sp.get("action") ?? undefined,
       actor: sp.get("actor") ?? undefined,
       range: sp.get("range") ?? undefined,
-      page: Number(sp.get("page") ?? 1),
-      pageSize: Number(sp.get("pageSize") ?? 12),
+      page: pageRaw,
+      pageSize: pageSizeRaw,
     },
     role,
-    "sagar",
+    userId,
   );
   return NextResponse.json(result);
 }

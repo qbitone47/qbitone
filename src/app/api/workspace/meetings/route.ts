@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireIdentity } from "@/lib/qubit/auth-server";
 import {
   addMeetingAction,
   cancelMeeting,
@@ -11,21 +12,30 @@ import {
   type WorkspaceRole,
 } from "@/lib/qubit/workspace-server";
 
-const roleFrom = (req: NextRequest): WorkspaceRole =>
-  (req.headers.get("X-Qubit-Role") as WorkspaceRole) ?? "administrator";
+// Phase 21: the acting role is derived from the signed session cookie
+// (server-verified) — a client-declared role header is never trusted.
+// Fail-closed: requests without a valid session receive 401.
+async function identityFrom(req: NextRequest): Promise<{ ok: true; role: WorkspaceRole } | { ok: false; response: NextResponse }> {
+  const auth = await requireIdentity(req);
+  return auth.ok
+    ? { ok: true, role: auth.identity.role as WorkspaceRole }
+    : { ok: false, response: auth.response };
+}
 
 // GET /api/workspace/meetings — the session user's meetings + calendar
 // events, scoped server-side. Optional ?id= returns a single meeting
 // detail (notes and action items included).
 export async function GET(req: NextRequest) {
+  const actor = await identityFrom(req);
+  if (!actor.ok) return actor.response;
   const id = req.nextUrl.searchParams.get("id");
   if (id) {
-    const result = getMeeting(roleFrom(req), id);
+    const result = getMeeting(actor.role, id);
     return result.ok
       ? NextResponse.json(result)
       : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
   }
-  return NextResponse.json(listMeetings(roleFrom(req)));
+  return NextResponse.json(listMeetings(actor.role));
 }
 
 // POST /api/workspace/meetings — meeting lifecycle actions.
@@ -40,6 +50,8 @@ export async function GET(req: NextRequest) {
 //                                    into My Tasks (409 on repeat)
 //   { action: "create-event", ...fields } — personal calendar entry (screen 44)
 export async function POST(req: NextRequest) {
+  const actor = await identityFrom(req);
+  if (!actor.ok) return actor.response;
   let body: {
     action?: string;
     id?: string;
@@ -69,7 +81,7 @@ export async function POST(req: NextRequest) {
 
   switch (body.action) {
     case "create": {
-      const result = createMeeting(roleFrom(req), {
+      const result = createMeeting(actor.role, {
         title: body.title ?? "",
         agenda: body.agenda,
         start: body.start ?? Number.NaN,
@@ -84,21 +96,21 @@ export async function POST(req: NextRequest) {
     }
     case "cancel": {
       if (!body.id) return NextResponse.json({ code: "bad_request", message: "Provide a meeting id." }, { status: 400 });
-      const result = cancelMeeting(roleFrom(req), { id: body.id, reason: body.reason ?? "" });
+      const result = cancelMeeting(actor.role, { id: body.id, reason: body.reason ?? "" });
       return result.ok
         ? NextResponse.json(result)
         : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
     }
     case "notes": {
       if (!body.id) return NextResponse.json({ code: "bad_request", message: "Provide a meeting id." }, { status: 400 });
-      const result = saveMeetingNotes(roleFrom(req), { id: body.id, text: body.text ?? "" });
+      const result = saveMeetingNotes(actor.role, { id: body.id, text: body.text ?? "" });
       return result.ok
         ? NextResponse.json(result)
         : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
     }
     case "add-action": {
       if (!body.id) return NextResponse.json({ code: "bad_request", message: "Provide a meeting id." }, { status: 400 });
-      const result = addMeetingAction(roleFrom(req), {
+      const result = addMeetingAction(actor.role, {
         id: body.id,
         title: body.title ?? "",
         ownerId: body.ownerId,
@@ -114,13 +126,13 @@ export async function POST(req: NextRequest) {
       if (typeof body.index !== "number" || !Number.isInteger(body.index) || body.index < 0) {
         return NextResponse.json({ code: "bad_request", message: "Provide the action item index." }, { status: 400 });
       }
-      const result = promoteMeetingAction(roleFrom(req), { id: body.id, index: body.index });
+      const result = promoteMeetingAction(actor.role, { id: body.id, index: body.index });
       return result.ok
         ? NextResponse.json(result)
         : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
     }
     case "create-event": {
-      const result = createCalendarEvent(roleFrom(req), {
+      const result = createCalendarEvent(actor.role, {
         title: body.title ?? "",
         type: (body.type ?? "Meeting") as Parameters<typeof createCalendarEvent>[1]["type"],
         start: body.start ?? Number.NaN,

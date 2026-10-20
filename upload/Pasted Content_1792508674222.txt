@@ -1,0 +1,1612 @@
+# QUBIT ONE — PHASE 21
+# ENTERPRISE SECURITY, COMPLIANCE & APPLICATION HARDENING
+# NO NEW OFFICIAL UI SCREENS
+
+You are now working on PHASE 21 of Qubit One.
+
+==================================================
+IMPORTANT PROJECT CONTEXT
+==================================================
+
+Qubit One is a serious enterprise-grade unified business operating system.
+
+The approved product roadmap contains:
+
+18 original UI phases
+308 approved screens
+
+Phase 19:
+Functional Recovery + Data Activation
+
+Phase 20:
+Enterprise Integration + End-to-End Validation + Regression
+
+PHASE 21:
+Security, Compliance & Enterprise Hardening
+
+This phase is NOT a new UI design phase.
+
+DO NOT create a new set of official screens.
+
+DO NOT increase the official screen count beyond 308.
+
+DO NOT redesign the existing Qubit One UI.
+
+The objective is to secure, harden, audit and validate the existing system.
+
+==================================================
+1. FIRST PRINCIPLE
+==================================================
+
+SECURITY MUST NOT DEPEND ON THE FRONTEND.
+
+Hiding a button is NOT authorization.
+
+Disabling a menu item is NOT authorization.
+
+The backend must independently enforce:
+
+Authentication
+Authorization
+RBAC
+ABAC where implemented
+Tenant / organization isolation
+Record ownership
+Field-level restrictions where required
+API permissions
+Export permissions
+AI permissions
+Administrative permissions
+
+Every protected operation must be secure even if a malicious user directly calls the API.
+
+==================================================
+2. FULL SECURITY AUDIT FIRST
+==================================================
+
+Before making changes, inspect the existing implementation.
+
+Audit:
+
+Frontend
+Backend
+Database
+APIs
+Authentication
+Sessions
+Tokens
+RBAC
+ABAC
+Organization boundaries
+Employee permissions
+Admin permissions
+File uploads
+Documents
+Exports
+Reports
+AI
+Automation
+Notifications
+Email
+Calendar
+Meetings
+CRM
+Sales
+Finance
+HR
+Inventory
+Service
+Marketing
+Analytics
+Audit
+Settings
+Integrations
+Environment variables
+Deployment
+Dependencies
+Logging
+Error handling
+Secrets
+
+Do not assume a component is insecure without inspecting it.
+
+Classify findings:
+
+CRITICAL
+HIGH
+MEDIUM
+LOW
+INFORMATIONAL
+
+Prioritize:
+
+1. Authentication bypass
+2. Authorization bypass
+3. Data leakage
+4. Tenant/organization isolation failure
+5. Sensitive data exposure
+6. Remote code execution risks
+7. Injection vulnerabilities
+8. File upload vulnerabilities
+9. Session/token vulnerabilities
+10. Secrets exposure
+11. Audit gaps
+12. Configuration weaknesses
+
+==================================================
+3. AUTHENTICATION HARDENING
+==================================================
+
+Validate the existing authentication architecture.
+
+Support secure enterprise authentication patterns appropriate to the existing system:
+
+Password authentication
+SSO/OIDC where configured
+MFA
+TOTP where supported
+Passkeys/phishing-resistant authentication where supported
+Recovery
+Session management
+Device/session management
+Step-up authentication for sensitive operations
+
+Never weaken security for convenience.
+
+Password requirements must be enforced server-side.
+
+Passwords must NEVER be stored in plaintext.
+
+Use secure password hashing.
+
+Never log passwords.
+
+Never return passwords through APIs.
+
+==================================================
+4. SESSION SECURITY
+==================================================
+
+Audit:
+
+Session creation
+Session expiration
+Idle timeout
+Absolute timeout
+Logout
+Logout from all devices
+Session revocation
+Refresh token handling
+Device sessions
+Concurrent sessions
+Suspicious session behavior
+
+Sensitive operations should support step-up authentication where appropriate.
+
+Session identifiers/tokens must not be exposed through insecure client mechanisms.
+
+Protect against:
+
+Session fixation
+Session theft
+Token replay
+Expired-token reuse
+Unauthorized session persistence
+
+==================================================
+5. MFA HARDENING
+==================================================
+
+Validate the MFA architecture.
+
+Support where configured:
+
+TOTP
+Passkeys / phishing-resistant authentication
+Recovery codes
+Trusted device/session management
+Step-up authentication
+
+Sensitive actions may require stronger authentication.
+
+Examples:
+
+Changing administrator permissions
+Exporting sensitive HR data
+Changing security settings
+Changing payment/financial configuration
+Changing authentication providers
+Changing API credentials
+Executing high-risk AI actions
+
+Recovery flows must not become an authentication bypass.
+
+==================================================
+6. RBAC HARDENING
+==================================================
+
+Audit all existing roles.
+
+At minimum validate:
+
+Administrator
+CEO
+Manager
+Sales
+Finance
+HR
+Marketing
+Inventory
+Service Engineer
+Employee
+
+For every permission verify:
+
+VIEW
+CREATE
+EDIT
+DELETE
+APPROVE
+EXPORT
+MANAGE
+ADMINISTER
+
+Permissions must be enforced:
+
+Frontend
+API
+Backend service
+Database access layer
+
+Do not trust role values sent from the client.
+
+Server-side identity must determine the actual user and permissions.
+
+==================================================
+7. ABAC / CONTEXTUAL AUTHORIZATION
+==================================================
+
+Where appropriate, authorization should consider:
+
+User
+Role
+Department
+Organization
+Record ownership
+Manager relationship
+Location
+Data sensitivity
+Action
+Resource
+Business state
+
+Examples:
+
+A Sales Executive can see assigned leads.
+
+A Sales Manager can see authorized team leads.
+
+HR can access authorized employee HR records.
+
+An ordinary employee must not automatically access payroll information.
+
+Finance data must not become visible merely because a user can access Finance navigation.
+
+==================================================
+8. ORGANIZATION / TENANT ISOLATION
+==================================================
+
+If Qubit One supports multiple organizations/tenants, enforce strict isolation.
+
+Every relevant record must belong to the correct organization/tenant.
+
+Prevent:
+
+Cross-tenant reads
+Cross-tenant updates
+Cross-tenant deletes
+Cross-tenant exports
+Cross-tenant search
+Cross-tenant AI retrieval
+
+Never rely only on frontend filtering.
+
+Test deliberately for IDOR/BOLA-style vulnerabilities.
+
+Example:
+
+User A must not access:
+
+/customers/{user-B-customer-id}
+
+simply because the ID is known.
+
+Backend must verify authorization.
+
+==================================================
+9. API SECURITY
+==================================================
+
+Audit all APIs.
+
+Validate:
+
+Authentication
+Authorization
+Input validation
+Output filtering
+Rate limiting
+Request size limits
+Pagination
+Timeouts
+Error handling
+Idempotency
+CORS
+CSRF where applicable
+HTTP security headers
+Content types
+API versioning
+Sensitive endpoint protection
+
+Never trust:
+
+query parameters
+request body
+headers
+client-side role
+client-side organization ID
+client-side user ID
+
+Server must derive security context from authenticated identity.
+
+==================================================
+10. INPUT VALIDATION
+==================================================
+
+Validate all user-controlled input.
+
+Protect against:
+
+SQL injection
+NoSQL injection where applicable
+Command injection
+Template injection
+Path traversal
+LDAP injection where applicable
+XSS
+HTML injection
+SSRF
+Header injection
+Malformed JSON
+Oversized payloads
+
+Use:
+
+Allowlists where practical
+Strong schemas
+Server-side validation
+Parameterized queries
+Safe output encoding
+Strict content types
+
+Do not rely only on frontend validation.
+
+==================================================
+11. XSS PROTECTION
+==================================================
+
+Audit:
+
+Rich text
+Comments
+Chat
+Meeting notes
+Announcements
+Customer notes
+AI responses
+Documents
+Email content
+HTML previews
+User profile fields
+Marketing content
+
+Never blindly render untrusted HTML.
+
+Sanitize where HTML is genuinely required.
+
+Use secure browser policies and appropriate security headers.
+
+==================================================
+12. CSRF / REQUEST SECURITY
+==================================================
+
+For cookie-based authenticated state-changing operations:
+
+implement appropriate CSRF protection.
+
+Validate:
+
+Origin
+SameSite cookie configuration
+CSRF tokens where applicable
+HTTP method restrictions
+
+Do not introduce CSRF vulnerabilities through convenience endpoints.
+
+==================================================
+13. CORS HARDENING
+==================================================
+
+Audit CORS configuration.
+
+Do not use unrestricted:
+
+Access-Control-Allow-Origin: *
+
+for authenticated enterprise APIs unless explicitly justified.
+
+Allow only required origins.
+
+Do not allow credentialed requests from arbitrary origins.
+
+==================================================
+14. FILE UPLOAD SECURITY
+==================================================
+
+Qubit One handles:
+
+Employee documents
+Service photos
+Attachments
+Meeting files
+Marketing assets
+Reports
+Documents
+Potential AI attachments
+
+Secure all uploads.
+
+Validate:
+
+File size
+MIME type
+Extension
+Content
+Filename
+Storage path
+User permission
+Organization ownership
+
+Prevent:
+
+Path traversal
+Executable uploads
+Malicious HTML/SVG
+Polyglot files
+Oversized files
+Unauthorized file access
+
+Store files outside executable application paths where appropriate.
+
+Use secure object storage architecture.
+
+Downloads must verify authorization.
+
+==================================================
+15. DOCUMENT SECURITY
+==================================================
+
+Documents must inherit enterprise permissions.
+
+Validate:
+
+View
+Download
+Upload
+Replace
+Delete
+Share
+Export
+
+Sensitive documents must not become public through predictable URLs.
+
+Use:
+
+Authorization checks
+Secure object identifiers
+Signed URLs where appropriate
+Expiration
+Access logging
+
+Do not expose storage credentials to the browser.
+
+==================================================
+16. DATA EXPORT SECURITY
+==================================================
+
+Exports can become a major data leakage vector.
+
+Validate:
+
+CSV
+XLSX
+PDF
+Bulk export
+Scheduled reports
+AI-generated reports
+API export
+
+Every export must enforce permissions.
+
+For sensitive/high-volume exports consider:
+
+Approval
+Audit
+Rate limits
+Async processing
+Expiration
+Secure download
+Watermarking where appropriate
+
+Never allow users to export data they cannot view normally.
+
+==================================================
+17. SENSITIVE DATA PROTECTION
+==================================================
+
+Identify sensitive fields.
+
+Examples:
+
+Passwords
+Authentication secrets
+MFA secrets
+Recovery codes
+Bank information
+Payroll
+Compensation
+Government identifiers
+Employee documents
+Performance information
+Candidate information
+Security configuration
+API credentials
+Integration secrets
+
+Use appropriate:
+
+Encryption at rest
+Encryption in transit
+Field-level protection where required
+Masking
+Access control
+Audit
+
+Never expose secrets in:
+
+Frontend
+Logs
+Error messages
+Analytics
+AI prompts
+Browser storage
+
+unless explicitly required and securely designed.
+
+==================================================
+18. SECRETS MANAGEMENT
+==================================================
+
+Audit all:
+
+API keys
+Database credentials
+JWT secrets
+OAuth secrets
+Email credentials
+WhatsApp credentials
+Cloud credentials
+AI provider keys
+Payment credentials
+Storage credentials
+
+No secrets may be hardcoded into source code.
+
+No secrets may be committed to Git.
+
+No secrets may be included in frontend bundles.
+
+Use environment/secret management appropriate to deployment.
+
+Rotate compromised credentials.
+
+==================================================
+19. DATABASE SECURITY
+==================================================
+
+Audit database access.
+
+Application users must receive only required permissions.
+
+Prevent direct unrestricted production database access from frontend.
+
+Validate:
+
+Foreign keys
+Unique constraints
+Check constraints
+Transactions
+Safe migrations
+Least privilege
+Connection security
+
+Sensitive tables must have appropriate authorization boundaries.
+
+Never construct SQL using raw untrusted user input.
+
+==================================================
+20. AUDIT LOG HARDENING
+==================================================
+
+The enterprise Audit Log is a security control.
+
+Audit important actions:
+
+Login
+Logout
+MFA changes
+Password changes
+Role changes
+Permission changes
+Employee changes
+Financial changes
+Inventory adjustments
+Exports
+Document access where required
+Security settings
+Integration changes
+AI actions
+Automation execution
+Approval actions
+
+Audit should capture:
+
+WHO
+WHAT
+WHEN
+RESOURCE
+RESULT
+IP/context where appropriate
+REQUEST/CORRELATION ID
+ORGANIZATION/TENANT
+
+Audit logs must not be casually editable by ordinary users.
+
+==================================================
+21. SECURITY EVENT MONITORING
+==================================================
+
+Detect important events:
+
+Repeated failed logins
+MFA failures
+Suspicious session behavior
+Privilege changes
+Mass exports
+Unusual data access
+Repeated authorization failures
+API abuse
+Integration credential failures
+Security configuration changes
+
+Security alerts must not become noisy.
+
+Use meaningful severity levels.
+
+==================================================
+22. RATE LIMITING
+==================================================
+
+Implement appropriate rate limits for:
+
+Login
+MFA
+Password recovery
+API authentication
+Sensitive APIs
+Exports
+Search
+AI requests
+File uploads
+Messaging
+Public endpoints
+
+Rate limiting must not break normal enterprise workflows.
+
+Use stronger controls on abuse-prone endpoints.
+
+==================================================
+23. BRUTE FORCE PROTECTION
+==================================================
+
+Protect:
+
+Login
+MFA
+Password reset
+Recovery
+SSO initiation where applicable
+API authentication
+
+Use appropriate:
+
+Rate limits
+Progressive delays
+Temporary lock controls
+Risk detection
+
+Do not permanently lock legitimate employees without recovery mechanisms.
+
+==================================================
+24. SSRF PROTECTION
+==================================================
+
+Audit all functionality that fetches URLs.
+
+Examples:
+
+Universal web integrations
+Marketing tools
+Document import
+Image import
+AI retrieval
+Webhook configuration
+External API configuration
+
+Prevent access to:
+
+Internal network
+localhost
+Cloud metadata endpoints
+Private IP ranges
+Sensitive infrastructure
+
+Validate URLs and network destinations server-side.
+
+==================================================
+25. WEBHOOK SECURITY
+==================================================
+
+For inbound webhooks:
+
+Verify signatures where supported.
+
+Validate:
+
+Source
+Signature
+Timestamp
+Replay protection
+Payload
+Organization
+Event type
+
+Do not trust a webhook simply because it reaches a known endpoint.
+
+==================================================
+26. OAUTH / INTEGRATION SECURITY
+==================================================
+
+Audit:
+
+Google
+Microsoft
+WhatsApp
+Calendar
+Email
+Social platforms
+Payment providers
+Cloud storage
+AI providers
+
+Use legitimate OAuth flows.
+
+Protect:
+
+access tokens
+refresh tokens
+client secrets
+
+Store tokens securely.
+
+Implement revocation/disconnection.
+
+Never expose provider credentials to unauthorized users.
+
+==================================================
+27. AI SECURITY
+==================================================
+
+AI is part of Qubit One but must remain permission-aware.
+
+AI must NOT:
+
+bypass authorization
+query arbitrary databases
+execute arbitrary SQL
+execute shell commands
+retrieve unauthorized records
+expose hidden HR data
+expose finance data
+reveal secrets
+execute high-risk actions without approval
+
+Protect against:
+
+Prompt injection
+Indirect prompt injection
+Malicious documents
+Untrusted web content
+Data exfiltration
+Tool abuse
+Privilege escalation
+
+External content must be treated as untrusted input.
+
+==================================================
+28. AI DATA ISOLATION
+==================================================
+
+When AI accesses Qubit data:
+
+User permissions
+↓
+Authorization layer
+↓
+Approved AI tool
+↓
+Authorized data
+↓
+AI context
+
+Never:
+
+Database
+↓
+Universal AI
+↓
+Everything
+
+AI must inherit the user's actual authorization boundaries.
+
+==================================================
+29. AUTOMATION SECURITY
+==================================================
+
+Automation workflows must not bypass authorization.
+
+Every action must execute with an authorized service/user context.
+
+Validate:
+
+Workflow ownership
+Workflow permissions
+Action permissions
+Approval requirements
+Secrets
+Execution identity
+Audit
+Idempotency
+
+A workflow should not gain unlimited privileges merely because an administrator created it.
+
+==================================================
+30. HIGH-RISK ACTIONS
+==================================================
+
+Identify high-risk actions.
+
+Examples:
+
+Delete large amounts of data
+Bulk export
+Change permissions
+Change administrators
+Financial actions
+Security configuration changes
+Credential rotation
+Access revocation
+Large inventory adjustments
+Mass communication
+AI-initiated consequential actions
+
+Require stronger controls where appropriate:
+
+Step-up authentication
+Approval
+Confirmation
+Audit
+
+==================================================
+31. SECURITY HEADERS
+==================================================
+
+Audit appropriate HTTP security headers.
+
+Consider:
+
+Content-Security-Policy
+Strict-Transport-Security
+X-Content-Type-Options
+Referrer-Policy
+Permissions-Policy
+Frame protection
+Secure cookies
+
+Configure according to the actual architecture.
+
+Do not blindly add headers that break legitimate functionality.
+
+==================================================
+32. TRANSPORT SECURITY
+==================================================
+
+All production-sensitive communication must use secure transport.
+
+Validate:
+
+HTTPS
+TLS
+Secure cookies
+Certificate configuration
+Internal service communication where appropriate
+
+Never transmit passwords or tokens over insecure transport.
+
+==================================================
+33. ERROR MESSAGE SECURITY
+==================================================
+
+Errors must be useful without leaking internals.
+
+Never expose:
+
+Stack traces
+SQL queries
+Database credentials
+File paths
+Internal architecture
+Tokens
+Secrets
+Sensitive records
+
+to normal users.
+
+Detailed diagnostics belong in secure server-side logs.
+
+==================================================
+34. DEPENDENCY SECURITY
+==================================================
+
+Audit all dependencies.
+
+Check:
+
+Outdated packages
+Known vulnerabilities
+Unmaintained packages
+Transitive dependencies
+Lockfiles
+
+Do not blindly upgrade everything.
+
+Follow:
+
+KEEP
+UPDATE
+REPLACE
+REMOVE
+
+based on actual security/compatibility impact.
+
+Avoid technology churn.
+
+==================================================
+35. SUPPLY-CHAIN SECURITY
+==================================================
+
+Harden:
+
+Git
+CI/CD
+Build pipeline
+Package installation
+Container images
+Deployment artifacts
+
+Protect against:
+
+Secret commits
+Malicious dependencies
+Unauthorized workflow changes
+Untrusted build artifacts
+
+Use dependency scanning and appropriate CI security checks.
+
+==================================================
+36. CONTAINER / INFRASTRUCTURE HARDENING
+==================================================
+
+If Docker/Kubernetes is used, audit:
+
+Container permissions
+Root execution
+Secrets
+Image vulnerabilities
+Network policies
+Resource limits
+Health checks
+Service accounts
+Pod permissions
+Exposed ports
+
+Do not run everything with unnecessary administrative privileges.
+
+==================================================
+37. BACKUP SECURITY
+==================================================
+
+Security includes recoverability.
+
+Validate:
+
+Encrypted backups
+Separate backup location
+Retention
+Access control
+Backup monitoring
+Restore testing
+
+Backups must not be accessible to ordinary application users.
+
+==================================================
+38. INCIDENT RESPONSE FOUNDATION
+==================================================
+
+Create a practical security incident model.
+
+Security event
+→ Detection
+→ Classification
+→ Investigation
+→ Containment
+→ Recovery
+→ Audit
+→ Post-incident review
+
+Define severity:
+
+Critical
+High
+Medium
+Low
+
+Examples:
+
+Account compromise
+Database exposure
+Credential leak
+Privilege escalation
+Malicious upload
+Unauthorized export
+AI data leakage
+
+==================================================
+39. PRIVACY / COMPLIANCE
+==================================================
+
+Design for enterprise privacy principles.
+
+Apply:
+
+Data minimization
+Purpose limitation
+Least privilege
+Retention controls
+Access logging
+Secure deletion
+User data protection
+Sensitive-data handling
+
+Do not claim legal compliance automatically.
+
+Where compliance requirements are applicable, keep architecture configurable for applicable laws/regulations and company policy.
+
+==================================================
+40. DATA RETENTION
+==================================================
+
+Review retention for:
+
+Audit logs
+Documents
+Employee records
+Candidate records
+Meeting recordings/transcripts
+Chat
+Service photos
+Reports
+Exports
+Notifications
+
+Do not delete data merely to simplify storage.
+
+Retention must respect:
+
+business requirements
+legal requirements
+security requirements
+company policy
+
+==================================================
+41. SECURITY TESTING
+==================================================
+
+Create or repair security tests.
+
+Test:
+
+Authentication bypass
+Authorization bypass
+IDOR/BOLA
+Privilege escalation
+Cross-tenant access
+SQL injection
+XSS
+CSRF
+SSRF
+Path traversal
+File upload
+Rate limiting
+Session security
+Token handling
+Export authorization
+AI authorization
+Automation authorization
+
+Critical security paths require regression tests.
+
+==================================================
+42. ROLE-BASED SECURITY TEST MATRIX
+==================================================
+
+Test at minimum:
+
+Administrator
+CEO
+Manager
+Sales
+Finance
+HR
+Marketing
+Inventory
+Service Engineer
+Employee
+
+For each role test:
+
+Page access
+API access
+Record access
+Create
+Edit
+Delete
+Approve
+Export
+Sensitive data
+AI
+Automation
+
+Expected unauthorized actions must fail safely.
+
+==================================================
+43. FRONTEND SECURITY
+==================================================
+
+Review:
+
+localStorage
+sessionStorage
+cookies
+browser cache
+URL parameters
+query strings
+client state
+React rendering
+HTML rendering
+file previews
+
+Do not store highly sensitive credentials in browser storage unless explicitly justified and securely designed.
+
+==================================================
+44. SECURITY OF SEARCH
+==================================================
+
+Global Search must respect authorization.
+
+Example:
+
+If an employee cannot open an HR payroll record:
+
+that record must not appear in search results merely because it matches the search query.
+
+Search indexing must enforce access boundaries.
+
+==================================================
+45. SECURITY OF ANALYTICS
+==================================================
+
+Analytics must respect:
+
+department permissions
+record permissions
+field permissions
+HR privacy
+Finance privacy
+export permissions
+
+A dashboard must not become a backdoor to restricted data.
+
+==================================================
+46. SECURITY OF REPORTS
+==================================================
+
+Saved reports inherit permissions.
+
+A user must not gain broader data access simply by opening someone else's report.
+
+Scheduled reports must validate recipients.
+
+Exports must enforce the permissions of the executing user/service.
+
+==================================================
+47. SECURITY OF NOTIFICATIONS
+==================================================
+
+Notifications must not leak sensitive information.
+
+Examples:
+
+Do not place confidential payroll details into a generic notification.
+
+Do not expose private HR information through email previews.
+
+Do not show restricted document content in notifications.
+
+==================================================
+48. SECURITY OF MAIL / CHAT / MEETINGS
+==================================================
+
+Validate:
+
+Private messages
+Meeting notes
+Attachments
+Participant permissions
+Calendar visibility
+Meeting recordings
+Transcripts
+Search
+Exports
+
+Respect privacy settings.
+
+==================================================
+49. SECURITY OF MOBILE
+==================================================
+
+Mobile APIs must use the same authorization model.
+
+Do not create weaker mobile endpoints.
+
+Validate:
+
+Mobile authentication
+Session security
+Device sessions
+API tokens
+Notifications
+Documents
+Location
+Photos
+Service data
+
+Location data must be permission-controlled and retained appropriately.
+
+==================================================
+50. SECURITY OF SERVICE ENGINEER DATA
+==================================================
+
+Protect:
+
+Customer information
+Customer addresses
+Service photos
+Serial numbers
+Warranty data
+Engineer location
+Customer signatures
+
+Do not expose location continuously unless explicitly required and authorized.
+
+==================================================
+51. SECURITY OF HR
+==================================================
+
+HR is highly sensitive.
+
+Strictly protect:
+
+Payroll
+Salary
+Bank information
+Performance
+Candidate information
+Documents
+Personal data
+Exit information
+
+Employee directory should not automatically expose sensitive HR fields.
+
+==================================================
+52. SECURITY OF FINANCE
+==================================================
+
+Protect:
+
+Invoices
+Payments
+Bank data
+Receivables
+Payables
+Expenses
+Budgets
+Financial reports
+
+Financial records must not be freely rewritten.
+
+Use controlled corrections and audit trails.
+
+==================================================
+53. SECURITY OF INVENTORY
+==================================================
+
+Protect:
+
+Stock adjustments
+Warehouse movements
+Serial numbers
+Valuation
+Returns
+Damaged stock
+Dispatch
+
+Inventory manipulation must require appropriate authorization.
+
+==================================================
+54. SECURITY OF SALES
+==================================================
+
+Protect:
+
+Customer data
+Lead data
+Pipeline
+Quotations
+Orders
+Revenue
+Exports
+Customer communications
+
+Sales representatives must only access authorized records.
+
+==================================================
+55. SECURITY OF MARKETING
+==================================================
+
+Protect:
+
+Social credentials
+OAuth tokens
+Campaign data
+Customer lists
+Audience data
+Advertising integrations
+
+Never expose platform credentials through frontend code.
+
+==================================================
+56. UI PRESERVATION
+==================================================
+
+STRICTLY PRESERVE THE APPROVED QUBIT ONE DESIGN.
+
+The attached Qubit One screenshots are the visual source of truth.
+
+Use:
+
+Light enterprise workspace
+Deep navy navigation
+White surfaces
+Restrained blue
+Dark professional typography
+Subtle borders
+Moderate rounded corners
+Professional spacing
+Clean hierarchy
+
+DO NOT introduce:
+
+Neon
+Cyberpunk
+Gaming UI
+Orange-heavy styling
+Excessive gradients
+Excessive glassmorphism
+Excessive animation
+Decorative security/hacker visuals
+
+Security should look calm, professional and enterprise-grade.
+
+==================================================
+57. NO NEW SCREEN COUNT
+==================================================
+
+Do not create new official screens.
+
+Use existing screens such as:
+
+Security Center
+Audit Log
+Security Alerts
+Device Sessions
+Role Access Request
+IP / Network Policy
+Security-related Settings
+Analytics
+Admin/Settings
+
+to expose security functionality where appropriate.
+
+If a security capability requires backend support, implement it behind the existing UI.
+
+Do not invent unnecessary pages.
+
+==================================================
+58. SECURITY DASHBOARD DATA
+==================================================
+
+Existing Security Center / Security Alerts / Audit screens must show meaningful data where available.
+
+Examples:
+
+Active sessions
+MFA status
+Recent security events
+Failed login attempts
+Role changes
+Permission changes
+Suspicious activity
+Recent exports
+Security configuration changes
+
+Never fabricate alerts.
+
+If there is no event:
+
+show an accurate empty state.
+
+==================================================
+59. FINAL SECURITY VALIDATION
+==================================================
+
+After implementation run a complete security regression.
+
+Validate:
+
+Authentication
+Authorization
+RBAC
+ABAC
+Session security
+MFA
+API security
+Database security
+File security
+Document security
+Export security
+AI security
+Automation security
+Integration security
+Audit
+Logging
+Backups
+Mobile
+Search
+Analytics
+Reports
+Notifications
+
+==================================================
+60. DEFINITION OF DONE
+==================================================
+
+PHASE 21 IS COMPLETE ONLY WHEN:
+
+- No obvious authentication bypass exists
+- Backend authorization is enforced
+- RBAC is server-side
+- Organization/tenant isolation is enforced
+- Sensitive HR data is protected
+- Finance data is protected
+- Inventory manipulation is protected
+- Sales/customer data is protected
+- Service data is protected
+- Documents are access-controlled
+- Exports are permission-controlled
+- Search respects authorization
+- Analytics respects authorization
+- AI respects authorization
+- Automation respects authorization
+- MFA/recovery flows are secure
+- Sessions are secure
+- APIs validate input
+- Rate limiting exists where appropriate
+- File uploads are hardened
+- Secrets are protected
+- OAuth integrations are secure
+- Audit logging works
+- Security alerts are meaningful
+- Dependencies are reviewed
+- Production configuration is hardened
+- Error messages do not leak sensitive internals
+- Security tests cover critical attack paths
+- No fake security state exists
+- No unnecessary UI screens are added
+- Existing 308-screen product remains intact
+
+==================================================
+61. FINAL RULE
+==================================================
+
+Do not stop at writing a security checklist.
+
+Inspect the actual project.
+
+Identify real vulnerabilities and architectural weaknesses.
+
+Fix them systematically.
+
+Run tests.
+
+Verify the fixes.
+
+Do not rewrite working functionality without evidence.
+
+Do not break existing workflows.
+
+Do not weaken usability unnecessarily.
+
+Do not create fake compliance claims.
+
+Do not expose secrets.
+
+Do not create duplicate security systems.
+
+QUBIT ONE MUST EMERGE FROM PHASE 21 AS A SECURE, PERMISSION-AWARE, AUDITABLE, ENTERPRISE-GRADE BUSINESS OPERATING SYSTEM.
+
+FINAL PRODUCT PRINCIPLE:
+
+SECURITY IS NOT A SCREEN.
+
+SECURITY IS A PROPERTY OF THE ENTIRE QUBIT ONE SYSTEM.

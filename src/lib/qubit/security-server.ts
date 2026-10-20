@@ -284,7 +284,7 @@ interface Challenge {
   method?: string;
 }
 
-interface LoginAttempt {
+interface FailureRecord {
   failures: number;
   windowStart: number;
   lockedUntil: number;
@@ -295,13 +295,17 @@ interface StoreState {
   live: AuditEvent[];
   seq: number;
   challenges: Map<string, Challenge>;
-  loginAttempts: Map<string, LoginAttempt>;
+  loginAttempts: Map<string, FailureRecord>;
   lastAuditAccess: number;
   revokedSessions: Set<string>;
   policies: NetworkPolicy[];
   alerts: SecurityAlert[];
   requests: AccessRequest[];
   passkeyAdded: boolean;
+  /** Phase 21 (audit M4): per-source failure circuit breaker, keyed by a
+   *  coarse client key (first x-forwarded-for hop) supplied by the login
+   *  route. Same shape/window/lock as the per-email tracker. */
+  sourceFailures: Map<string, FailureRecord>;
 }
 
 const g = globalThis as unknown as { __qubitSecurityStore?: StoreState };
@@ -320,9 +324,15 @@ function store(): StoreState {
       alerts: SECURITY_ALERTS.map((a) => ({ ...a })),
       requests: ACCESS_REQUESTS.map((r) => ({ ...r })),
       passkeyAdded: false,
+      sourceFailures: new Map(),
     };
   }
-  return g.__qubitSecurityStore;
+  const s = g.__qubitSecurityStore;
+  // Phase 21 (M4) lazy schema migration: a process-lifetime store seeded by
+  // pre-breaker code (dev hot reload) has no sourceFailures map — backfill
+  // it so the first login after a code change cannot crash the route.
+  if (!s.sourceFailures) s.sourceFailures = new Map();
+  return s;
 }
 
 // ---------- Audit writer ----------
@@ -363,29 +373,91 @@ const MAX_FAILURES = 5;
 const WINDOW_MS = 10 * 60 * 1000;
 const LOCK_MS = 10 * 60 * 1000;
 
-export function checkLockout(email: string): { locked: boolean; retryAfterSec: number } {
-  const rec = store().loginAttempts.get(email);
+// Phase 21 (audit M4): the lockout used to be keyed ONLY by the submitted
+// email, which turns the protection itself into a denial-of-service vector —
+// an attacker can lock out any address (or flood the map with junk emails)
+// without ever belonging to it. Two additions, without changing any user-
+// visible message (no enumeration):
+//   · a per-SOURCE circuit breaker — more than SOURCE_MAX_FAILURES failures
+//     from one coarse client key in WINDOW_MS locks that source for LOCK_MS
+//     regardless of email;
+//   · the per-email tracker is capped (MAX_TRACKED_EMAILS) so junk emails
+//     cannot grow it without bound — expired entries are evicted first.
+const SOURCE_MAX_FAILURES = 40;
+const MAX_TRACKED_EMAILS = 1000;
+
+function failureRecord(map: Map<string, FailureRecord>, key: string): FailureRecord {
+  let rec = map.get(key);
+  if (!rec) {
+    rec = { failures: 0, windowStart: Date.now(), lockedUntil: 0 };
+    map.set(key, rec);
+  }
+  return rec;
+}
+
+/** Evict expired windows when the tracked set grows past the cap, so the
+ *  per-email map can no longer be inflated indefinitely (M4 DoS half). */
+function capTrackedEmails(s: StoreState) {
+  if (s.loginAttempts.size <= MAX_TRACKED_EMAILS) return;
+  const now = Date.now();
+  for (const [k, rec] of s.loginAttempts) {
+    if (now - rec.windowStart >= WINDOW_MS && rec.lockedUntil <= now) s.loginAttempts.delete(k);
+    if (s.loginAttempts.size <= MAX_TRACKED_EMAILS) return;
+  }
+  // Still over the cap (all windows fresh) — drop the oldest-inserted keys.
+  for (const k of Array.from(s.loginAttempts.keys())) {
+    s.loginAttempts.delete(k);
+    if (s.loginAttempts.size <= MAX_TRACKED_EMAILS) return;
+  }
+}
+
+export function checkLockout(email: string, sourceKey?: string): { locked: boolean; retryAfterSec: number } {
+  const s = store();
+  const now = Date.now();
+  if (sourceKey) {
+    const src = s.sourceFailures.get(sourceKey);
+    if (src?.lockedUntil && src.lockedUntil > now) {
+      return { locked: true, retryAfterSec: Math.ceil((src.lockedUntil - now) / 1000) };
+    }
+  }
+  const rec = s.loginAttempts.get(email);
   if (!rec) return { locked: false, retryAfterSec: 0 };
-  if (rec.lockedUntil > Date.now()) {
-    return { locked: true, retryAfterSec: Math.ceil((rec.lockedUntil - Date.now()) / 1000) };
+  if (rec.lockedUntil > now) {
+    return { locked: true, retryAfterSec: Math.ceil((rec.lockedUntil - now) / 1000) };
   }
   return { locked: false, retryAfterSec: 0 };
 }
 
-export function recordAuthFailure(email: string): { lockedNow: boolean; remaining: number } {
+export function recordAuthFailure(email: string, sourceKey?: string): { lockedNow: boolean; remaining: number } {
   const s = store();
-  const rec = s.loginAttempts.get(email) ?? { failures: 0, windowStart: Date.now(), lockedUntil: 0 };
-  if (Date.now() - rec.windowStart > WINDOW_MS) {
+  const now = Date.now();
+  // Per-source circuit breaker — keyed by the coarse client key the login
+  // route derives from the first x-forwarded-for hop. 40 failures in the
+  // window lock the source for LOCK_MS regardless of the emails tried.
+  if (sourceKey) {
+    const src = failureRecord(s.sourceFailures, sourceKey);
+    if (now - src.windowStart >= WINDOW_MS) {
+      src.failures = 0;
+      src.windowStart = now;
+    }
+    src.failures += 1;
+    if (src.failures >= SOURCE_MAX_FAILURES) src.lockedUntil = now + LOCK_MS;
+  }
+
+  // Per-email lockout — unchanged behavior and thresholds.
+  const rec = failureRecord(s.loginAttempts, email);
+  if (now - rec.windowStart >= WINDOW_MS) {
     rec.failures = 0;
-    rec.windowStart = Date.now();
+    rec.windowStart = now;
   }
   rec.failures += 1;
   let lockedNow = false;
   if (rec.failures >= MAX_FAILURES) {
-    rec.lockedUntil = Date.now() + LOCK_MS;
+    rec.lockedUntil = now + LOCK_MS;
     lockedNow = true;
   }
   s.loginAttempts.set(email, rec);
+  capTrackedEmails(s);
   return { lockedNow, remaining: Math.max(0, MAX_FAILURES - rec.failures) };
 }
 
@@ -394,14 +466,14 @@ export function clearAuthFailures(email: string) {
 }
 
 // ---------- Authentication (password first factor) ----------
-export function authenticatePassword(email: string, password: string, simulate?: string) {
+export function authenticatePassword(email: string, password: string, simulate?: string, sourceKey?: string) {
   // Server-side validation — never trust the client form.
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   if (!emailOk) return { ok: false as const, status: 400, code: "invalid_email", message: "Enter a valid work email address." };
   if (!password || password.length < 1)
     return { ok: false as const, status: 400, code: "invalid_password", message: "Enter your password to continue." };
 
-  const lock = checkLockout(email);
+  const lock = checkLockout(email, sourceKey);
   if (lock.locked)
     return {
       ok: false as const,
@@ -413,7 +485,7 @@ export function authenticatePassword(email: string, password: string, simulate?:
 
   // Demo failure simulations (real deployments derive these from the identity store)
   if (simulate === "invalid-credentials" || (!simulate && password.length < 6 && email.endsWith("@qubitone.in") === false)) {
-    const f = recordAuthFailure(email);
+    const f = recordAuthFailure(email, sourceKey);
     writeAudit({ actor: maskEmail(email), action: "Failed sign-in", resource: "Qubit One workspace", result: "Failure", severity: "Warning", context: "Incorrect password" });
     if (f.lockedNow)
       return { ok: false as const, status: 429, code: "rate_limited", message: "Too many failed attempts. Sign-in is temporarily locked for 10 minutes." };
@@ -424,7 +496,7 @@ export function authenticatePassword(email: string, password: string, simulate?:
   if (simulate === "account-disabled")
     return { ok: false as const, status: 403, code: "account_disabled", message: "This account is no longer active. Contact IT support for help." };
   if (simulate === "rate-limited") {
-    recordAuthFailure(email);
+    recordAuthFailure(email, sourceKey);
     return { ok: false as const, status: 429, code: "rate_limited", message: "Too many attempts. Try again in 10 minutes." };
   }
   if (simulate === "network-failure")
@@ -436,7 +508,10 @@ export function authenticatePassword(email: string, password: string, simulate?:
   clearAuthFailures(email);
   const s = store();
   const challengeId = `chl-${s.seq + 1}`;
-  const code = String(Math.floor(100000 + Math.random() * 900000));
+  // Phase 21 (audit L5): TOTP codes come from a CSPRNG, not Math.random.
+  const rng = new Uint32Array(1);
+  crypto.getRandomValues(rng);
+  const code = String(100000 + (rng[0] % 900000));
   s.challenges.set(challengeId, {
     id: challengeId,
     email,
@@ -459,6 +534,10 @@ export function authenticatePassword(email: string, password: string, simulate?:
     maskedEmail: maskEmail(email),
     expiresInSeconds: 300,
     methods: ["authenticator-app", "push", "passkey", "recovery-code"],
+    // Demo authenticator surface: the simulated TOTP app shows its current
+    // value so the strict server-side comparison (Phase 21 audit H1) can
+    // be exercised honestly — wrong codes now genuinely fail.
+    demoAuthenticatorCode: code,
   };
 }
 
@@ -490,7 +569,20 @@ export function verifyMfa(challengeId: string, code: string, method: string, sim
     return { ok: false as const, status: 429, code: "too_many_attempts", message: "Too many incorrect attempts. For safety, start the sign-in again." };
   }
 
-  const codeOk = simulate === "invalid-code" || code === "000000" ? false : /^\d{6}$/.test(code) || /^[A-Z0-9-]{6,}$/i.test(code);
+  // Phase 21 (audit H1 — HIGH): the submitted TOTP code is compared
+  // against the challenge code actually issued. Format validation alone
+  // is NOT verification. Push/passkey remain approval-based factors
+  // (no code); recovery codes keep the documented demo format check
+  // until a real recovery-code vault exists — no fabricated secrets.
+  const submitted = code.trim();
+  let codeOk: boolean;
+  if (method === "authenticator-app") {
+    codeOk = simulate !== "invalid-code" && submitted !== "000000" && submitted === ch.code;
+  } else if (method === "push" || method === "passkey") {
+    codeOk = simulate !== "invalid-code";
+  } else {
+    codeOk = simulate !== "invalid-code" && /^[A-Z0-9-]{6,}$/i.test(submitted);
+  }
   if (!codeOk) {
     ch.attempts += 1;
     writeAudit({ actor: resolveActorName(ch.email), action: "MFA verification", resource: "Verification challenge", result: "Failure", severity: "Warning", context: "Invalid verification code" });
@@ -767,13 +859,24 @@ export function queryAudit(q: AuditQuery, viewerRole: string, viewerId: string) 
   };
 }
 
-export function auditCsv(viewerRole: string): string | null {
+// Phase 21 (audit M6): neutralize spreadsheet formula injection — user-
+// controlled text (meeting titles, cancel reasons…) flows into audit
+// fields and must never export as an executable cell formula.
+function csvSafeCell(v: unknown): string {
+  let s = String(v).replace(/"/g, '""');
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return `"${s}"`;
+}
+
+export function auditCsv(viewerRole: string, actorId?: string): string | null {
   if (viewerRole !== "administrator") return null; // export is privileged
   const s = store();
   const all = [...s.live, ...s.seed].slice(0, 400);
   const header = "timestamp,actor,action,resource,result,severity,source,ip,correlation_id";
-  const rows = all.map((e) => [e.time, e.actor, e.action, e.resource, e.result, e.severity, e.source, e.ipMasked, e.correlationId].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","));
-  writeAudit({ action: "Export audit log", resource: "Audit records (CSV)", result: "Success", severity: "Warning", context: `Exported ${all.length} records` });
+  const rows = all.map((e) => [e.time, e.actor, e.action, e.resource, e.result, e.severity, e.source, e.ipMasked, e.correlationId].map(csvSafeCell).join(","));
+  // Phase 21 (§16): the export event names the requesting identity, so the
+  // trail shows WHO took the privileged export, not just that one happened.
+  writeAudit({ actorId, action: "Export audit log", resource: "Audit records (CSV)", result: "Success", severity: "Warning", context: `Exported ${all.length} records` });
   return [header, ...rows].join("\n");
 }
 

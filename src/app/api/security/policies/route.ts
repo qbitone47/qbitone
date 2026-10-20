@@ -1,16 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireIdentity } from "@/lib/qubit/auth-server";
 import { createPolicy, listPolicies, validatePolicy } from "@/lib/qubit/security-server";
 
-const roleOf = (req: NextRequest) => req.headers.get("x-qubit-role") ?? "employee";
+// Phase 21: identity from the signed session; the client never declares a role.
+async function identityFrom(req: NextRequest) {
+  const auth = await requireIdentity(req);
+  return auth.ok
+    ? { ok: true as const, identity: auth.identity }
+    : { ok: false as const, response: auth.response };
+}
+
+const adminOnly = (role: string) =>
+  role === "administrator"
+    ? null
+    : NextResponse.json(
+        { code: "permission_denied", message: "Network policies are restricted to security administrators." },
+        { status: 403 },
+      );
 
 // GET /api/security/policies — admin/security-admin only.
 export async function GET(req: NextRequest) {
-  if (roleOf(req) !== "administrator") {
-    return NextResponse.json(
-      { code: "permission_denied", message: "Network policies are restricted to security administrators." },
-      { status: 403 },
-    );
-  }
+  const actor = await identityFrom(req);
+  if (!actor.ok) return actor.response;
+  const denied = adminOnly(actor.identity.role);
+  if (denied) return denied;
   return NextResponse.json({ policies: listPolicies() });
 }
 
@@ -18,12 +31,10 @@ export async function GET(req: NextRequest) {
 // Conflict detection, self-lockout protection and broad-range
 // warnings are all evaluated on the server before anything applies.
 export async function POST(req: NextRequest) {
-  if (roleOf(req) !== "administrator") {
-    return NextResponse.json(
-      { code: "permission_denied", message: "Network policies are restricted to security administrators." },
-      { status: 403 },
-    );
-  }
+  const actor = await identityFrom(req);
+  if (!actor.ok) return actor.response;
+  const denied = adminOnly(actor.identity.role);
+  if (denied) return denied;
 
   let body: { name?: string; cidr?: string; action?: string; scope?: string; environment?: string; priority?: number; confirmBroad?: boolean };
   try {
@@ -40,7 +51,7 @@ export async function POST(req: NextRequest) {
     environment: body.environment ?? "Production",
   };
 
-  const result = createPolicy({ ...input, priority: body.priority ?? 60, actor: "Sagar Singh" });
+  const result = createPolicy({ ...input, priority: body.priority ?? 60, actor: actor.identity.name });
   if (!result.ok) {
     return NextResponse.json({ code: result.code, message: result.message, conflicts: "conflicts" in result ? result.conflicts : undefined }, { status: result.status });
   }
@@ -50,7 +61,9 @@ export async function POST(req: NextRequest) {
 // PATCH /api/security/policies — dry-run validation for the form's
 // live conflict preview (no side effects).
 export async function PATCH(req: NextRequest) {
-  if (roleOf(req) !== "administrator") {
+  const actor = await identityFrom(req);
+  if (!actor.ok) return actor.response;
+  if (actor.identity.role !== "administrator") {
     return NextResponse.json({ code: "permission_denied", message: "Restricted to security administrators." }, { status: 403 });
   }
   let body: { name?: string; cidr?: string; action?: string; scope?: string; environment?: string };

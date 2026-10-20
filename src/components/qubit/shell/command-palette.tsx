@@ -28,6 +28,7 @@ import {
 import { SCREENS, ScreenId, ScreenParams, screensByModule } from "@/lib/qubit/screens";
 import { useQubitNav } from "../nav-context";
 import { useRole, VIEW_AS_ROLES } from "../role-context";
+import { authedFetch } from "@/lib/qubit/api";
 
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { navigate } = useQubitNav();
@@ -252,11 +253,10 @@ function RecordsSection({ onSelect }: { onSelect: (screen: ScreenId, params?: Sc
     const timer = setTimeout(() => {
       void (async () => {
         try {
-          const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
-            headers: { "X-Qubit-Role": role }, // demo boundary hint; production derives role from the session
-            cache: "no-store",
+          const res = await authedFetch(`/api/search?q=${encodeURIComponent(query)}`, {
+            headers: { "X-Qubit-Role": role }, // display hint; authorization is session-derived server-side
             signal: controller.signal,
-          });
+          }, role);
           const data = (await res.json()) as RecordSearchResponse | { ok?: false };
           // Stale-response guard: only the latest query may render results.
           if (controller.signal.aborted || latestQuery.current !== query) return;

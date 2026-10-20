@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireIdentity } from "@/lib/qubit/auth-server";
 import {
   listMail,
   markMail,
@@ -8,13 +9,22 @@ import {
   type WorkspaceRole,
 } from "@/lib/qubit/workspace-server";
 
-const roleFrom = (req: NextRequest): WorkspaceRole =>
-  (req.headers.get("X-Qubit-Role") as WorkspaceRole) ?? "administrator";
+// Phase 21: the acting role is derived from the signed session cookie
+// (server-verified) — a client-declared role header is never trusted.
+// Fail-closed: requests without a valid session receive 401.
+async function identityFrom(req: NextRequest): Promise<{ ok: true; role: WorkspaceRole } | { ok: false; response: NextResponse }> {
+  const auth = await requireIdentity(req);
+  return auth.ok
+    ? { ok: true, role: auth.identity.role as WorkspaceRole }
+    : { ok: false, response: auth.response };
+}
 
 // GET /api/workspace/mail — authorized mailbox scope, server-filtered.
 export async function GET(req: NextRequest) {
+  const actor = await identityFrom(req);
+  if (!actor.ok) return actor.response;
   const sp = req.nextUrl.searchParams;
-  const result = listMail(roleFrom(req), {
+  const result = listMail(actor.role, {
     folder: sp.get("folder") ?? "inbox",
     q: sp.get("q") ?? undefined,
     unreadOnly: sp.get("unread") === "1",
@@ -26,6 +36,8 @@ export async function GET(req: NextRequest) {
 
 // POST /api/workspace/mail — send | draft | retry | mark.
 export async function POST(req: NextRequest) {
+  const actor = await identityFrom(req);
+  if (!actor.ok) return actor.response;
   let body: {
     action?: string;
     to?: string[];
@@ -48,7 +60,7 @@ export async function POST(req: NextRequest) {
 
   switch (body.action) {
     case "send": {
-      const result = sendMail(roleFrom(req), {
+      const result = sendMail(actor.role, {
         to: body.to ?? [],
         cc: body.cc,
         bcc: body.bcc,
@@ -59,17 +71,17 @@ export async function POST(req: NextRequest) {
       return result.ok ? NextResponse.json(result) : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
     }
     case "draft": {
-      const result = saveDraft(roleFrom(req), body as never);
+      const result = saveDraft(actor.role, body as never);
       return NextResponse.json(result);
     }
     case "retry": {
       if (!body.id) return NextResponse.json({ code: "bad_request", message: "Message id required." }, { status: 400 });
-      const result = retryMail(roleFrom(req), body.id);
+      const result = retryMail(actor.role, body.id);
       return result.ok ? NextResponse.json(result) : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
     }
     case "mark": {
       if (!body.id) return NextResponse.json({ code: "bad_request", message: "Message id required." }, { status: 400 });
-      const result = markMail(roleFrom(req), body.id, { read: body.read, starred: body.starred, archive: body.archive });
+      const result = markMail(actor.role, body.id, { read: body.read, starred: body.starred, archive: body.archive });
       return result.ok ? NextResponse.json(result) : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
     }
     default:

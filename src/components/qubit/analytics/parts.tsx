@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { ensureSession } from "@/lib/qubit/api";
 import { AlertTriangle, ArrowRight, BarChart3, CalendarClock, Database, Download, Info, RefreshCw, ShieldCheck } from "lucide-react";
 import {
   Area,
@@ -63,6 +64,7 @@ async function parse<T>(res: Response): Promise<T> {
 }
 
 export async function analyticsGet<T>(section: string, role: string, params?: Record<string, string | undefined>): Promise<T> {
+  await ensureSession(role);
   const qs = new URLSearchParams({ section });
   for (const [k, v] of Object.entries(params ?? {})) if (v) qs.set(k, v);
   const res = await fetch(`/api/analytics?${qs.toString()}`, {
@@ -77,6 +79,7 @@ export async function analyticsPost<T = { ok: boolean; message?: string }>(
   input: Record<string, unknown>,
   role: string,
 ): Promise<T> {
+  await ensureSession(role);
   const res = await fetch("/api/analytics", {
     method: "POST",
     headers: { "X-Qubit-Role": role, "Content-Type": "application/json" },

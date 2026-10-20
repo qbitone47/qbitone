@@ -87,7 +87,15 @@ function store(): WorkspaceStore {
       notifications: NOTIFICATIONS.map((n) => structuredClone(n)),
     };
   }
-  return g.__qubitWorkspaceStore;
+  const s = g.__qubitWorkspaceStore;
+  // Phase 21 (M3) lazy schema migration: a process-lifetime store seeded by
+  // pre-recipientId code (dev hot reload) holds notifications without the
+  // field. The seed was always this single session user's mailbox, so the
+  // missing recipient is the session user by definition.
+  if (s.notifications.some((n) => n.recipientId === undefined)) {
+    for (const n of s.notifications) if (n.recipientId === undefined) n.recipientId = SESSION_USER_ID;
+  }
+  return s;
 }
 
 const emailLike = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
@@ -427,6 +435,24 @@ export function documentAction(
     return { ok: false as const, status: 403, code: "restricted", message: "This document is restricted. Access is managed by HR — request access from the document owner." };
   }
 
+  // Phase 21 (audit L7): Confidential download/share was previously only
+  // gated for the employee role — the same document was exposed to every
+  // other non-owner role. The matrix is now symmetric with Restricted:
+  // only the document owner, an administrator or a department head may
+  // download or share a Confidential document; everyone else gets the
+  // same structured 403 with an audited denial. Restricted behavior above
+  // is unchanged (refused for all non-HR scope).
+  if (
+    SENSITIVE_DOC_ACTIONS.has(input.action) &&
+    doc.sensitivity === "Confidential" &&
+    doc.ownerId !== SESSION_USER_ID &&
+    role !== "administrator" &&
+    role !== "dept-head"
+  ) {
+    writeAudit({ actorId: SESSION_USER_ID, action: `Document ${input.action} denied`, resource: doc.name, result: "Blocked", severity: "Warning", context: "Confidential document — only the owner, an administrator or a department head may download or share it" });
+    return { ok: false as const, status: 403, code: "confidential", message: "Confidential documents can be downloaded or shared only by the document owner or an administrator — request access from the owner." };
+  }
+
   if (input.action === "download") {
     writeAudit({ actorId: SESSION_USER_ID, action: "Document downloaded", resource: doc.name, result: "Success", context: `Sensitivity: ${doc.sensitivity}` });
     return { ok: true as const, doc };
@@ -435,9 +461,6 @@ export function documentAction(
   if (input.action === "share") {
     if (!input.toEmployeeId || !employees.some((e) => e.id === input.toEmployeeId)) {
       return { ok: false as const, status: 422, code: "invalid_recipient", message: "Choose a colleague to share with." };
-    }
-    if (doc.sensitivity === "Confidential" && role === "employee") {
-      return { ok: false as const, status: 403, code: "forbidden", message: "Confidential documents cannot be shared from this role." };
     }
     writeAudit({ actorId: SESSION_USER_ID, action: "Document shared", resource: doc.name, result: "Success", context: `Shared with ${employees.find((e) => e.id === input.toEmployeeId)?.name}` });
     return { ok: true as const, doc };
@@ -607,6 +630,7 @@ function notifyMeetingParticipants(meeting: Meeting, kind: "created" | "cancelle
     const when = `${fmtDate(meeting.start)} · ${fmtTime(meeting.start)}–${fmtTime(meeting.end)}`;
     const notification: WorkspaceNotification = {
       id,
+      recipientId: pid, // Phase 21 (M3): addressed to THIS participant only
       title: kind === "created" ? `Meeting invite — "${meeting.title}"` : `"${meeting.title}" was cancelled`,
       body:
         kind === "created"
@@ -625,12 +649,18 @@ function notifyMeetingParticipants(meeting: Meeting, kind: "created" | "cancelle
   return notified;
 }
 
-/** Notification center — the store's seed (fixture) plus live meeting
- *  notifications, newest first. The mobile read-state overlay stays in
- *  mobile-server (store().notifRead) on top of this list. */
+/** Notification center — the session user's OWN mailbox: the store's seed
+ *  (fixture) plus live meeting notifications, newest first. Phase 21 (audit
+ *  M3): every notification carries an explicit recipientId and this read is
+ *  scoped to the session identity (SESSION_USER_ID) — a participant's
+ *  invite is never returned to another viewer, whatever role they preview.
+ *  The mobile read-state overlay stays in mobile-server (store().notifRead)
+ *  on top of this list. */
 export function listNotifications(role: WorkspaceRole) {
   const s = store();
-  const notifications = [...s.notifications].sort((a, b) => b.ts - a.ts);
+  const notifications = s.notifications
+    .filter((n) => n.recipientId === SESSION_USER_ID)
+    .sort((a, b) => b.ts - a.ts);
   const scoped = role === "employee" || role === "sales-exec";
   return {
     notifications,

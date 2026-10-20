@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { authedFetch } from "@/lib/qubit/api";
 import { ALL_MAIL, fmtDateTime } from "@/lib/qubit/workspace-data";
 import { getEmployee } from "@/lib/qubit/data";
 import { useQubitNav } from "../nav-context";
@@ -141,7 +142,7 @@ export function ComposeMailScreen() {
       if (!dirtyRef.current || status === "sending") return;
       setDraftState("saving");
       try {
-        await fetch("/api/workspace/mail", {
+        await authedFetch("/api/workspace/mail", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -223,7 +224,7 @@ export function ComposeMailScreen() {
     setStatus("sending");
     setSendError(null);
     try {
-      const res = await fetch("/api/workspace/mail", {
+      const res = await authedFetch("/api/workspace/mail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireIdentity } from "@/lib/qubit/auth-server";
 import {
   alertAction,
   decideExecutiveApproval,
@@ -27,8 +28,15 @@ import {
   type ExecutiveOverviewPayload,
 } from "@/lib/qubit/executive-data";
 
-const roleFrom = (req: NextRequest): WorkspaceRole =>
-  (req.headers.get("X-Qubit-Role") as WorkspaceRole) ?? "administrator";
+// Phase 21: the acting role is derived from the signed session cookie
+// (server-verified) — a client-declared role header is never trusted.
+// Fail-closed: requests without a valid session receive 401.
+async function identityFrom(req: NextRequest): Promise<{ ok: true; role: WorkspaceRole } | { ok: false; response: NextResponse }> {
+  const auth = await requireIdentity(req);
+  return auth.ok
+    ? { ok: true, role: auth.identity.role as WorkspaceRole }
+    : { ok: false, response: auth.response };
+}
 
 const denied = () =>
   NextResponse.json(
@@ -40,7 +48,9 @@ const denied = () =>
 // canonical business blocks. Sections let each screen load only what
 // it needs (spec §17); the overview returns its curated cut.
 export async function GET(req: NextRequest) {
-  const role = roleFrom(req);
+  const actor = await identityFrom(req);
+  if (!actor.ok) return actor.response;
+  const role = actor.role;
   const gate = requireExecutive(role);
   if (!gate.ok) return denied();
 
@@ -123,6 +133,8 @@ export async function GET(req: NextRequest) {
 // Authorization, step-up and note rules are enforced server-side
 // by executive-server; every accepted action is audited.
 export async function POST(req: NextRequest) {
+  const actor = await identityFrom(req);
+  if (!actor.ok) return actor.response;
   let body: {
     action?: string;
     id?: string;
@@ -141,7 +153,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ code: "bad_request", message: "Invalid request." }, { status: 400 });
   }
 
-  const role = roleFrom(req);
+  const role = actor.role;
 
   switch (body.action) {
     case "alert.acknowledge":

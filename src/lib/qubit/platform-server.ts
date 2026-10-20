@@ -196,7 +196,8 @@ async function probeDatabase(): Promise<{ health: ServiceHealth; latencyMs: numb
     return {
       health: "unavailable",
       latencyMs: null,
-      note: `Database probe failed: ${err instanceof Error ? err.message : "unknown error"}. Shown as unavailable, never faked.`,
+      // §33: no internal error text to the client — diagnostics live in server logs.
+      note: "Database probe failed. Shown as unavailable, never faked.",
     };
   }
 }
@@ -298,7 +299,7 @@ async function verifyBackupFile(file: string): Promise<{ ok: boolean; sha256?: s
     const digest = createHash("sha256").update(buf).digest("hex");
     return { ok: true, sha256: digest, sizeBytes: buf.length, detail: "SQLite header valid; checksum computed." };
   } catch (err) {
-    return { ok: false, detail: `Verification failed: ${err instanceof Error ? err.message : "read error"}` };
+    return { ok: false, detail: "Verification failed — the backup file could not be read. Details are recorded in the audit trail." };
   }
 }
 
@@ -345,7 +346,7 @@ async function runBackup(trigger: "manual" | "qa"): Promise<{ ok: boolean; messa
       severity: "High",
       context: err instanceof Error ? err.message : "copy error",
     });
-    return { ok: false, message: `Backup failed: ${err instanceof Error ? err.message : "unknown error"}. The failure is recorded, never hidden.` };
+    return { ok: false, message: "Backup failed. The failure is recorded, never hidden — see the audit trail for details." };
   }
 }
 
@@ -854,7 +855,7 @@ export async function platformPost(role: WorkspaceRole, action: PlatformAction):
         });
         return { ok: v.ok, message: v.ok ? "Restore test PASSED — the backup restores into a staging copy; production was never touched." : `Restore test FAILED — ${v.detail}`, test: t } as { ok: true; message: string; test: RestoreTest } | { ok: false; status: number; code: string; message: string };
       } catch (err) {
-        return { ok: false, status: 500, code: "restore_test_failed", message: `Restore test failed: ${err instanceof Error ? err.message : "copy error"}` };
+        return { ok: false, status: 500, code: "restore_test_failed", message: "Restore test failed — the failure detail is recorded in the audit trail." };
       }
     }
     case "restore.request": {

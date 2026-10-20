@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  // Phase 21 (§31): do not advertise the framework version.
+  poweredByHeader: false,
 };
 
 export default nextConfig;

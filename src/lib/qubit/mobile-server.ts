@@ -38,6 +38,8 @@ import {
   listMeetings,
   getMeeting,
   listNotifications,
+  saveMeetingNotes,
+  addMeetingAction,
   type WorkspaceRole,
 } from "./workspace-server";
 import {
@@ -440,8 +442,10 @@ function meetingsPayload(role: WorkspaceRole, meetingId?: string) {
     const s = store();
     // The workspace store is the record authority (notes/actions materialized
     // onto the meeting); the mobile meetingNotes/meetingActions maps remain
-    // the Phase 18 field-note overlay (participants can record from mobile
-    // without organizer rights) and are merged after the workspace record.
+    // only as a legacy in-memory overlay from earlier Phase 18 sessions —
+    // since Phase 21 (audit M7) mobile meeting writes ride the SAME desktop
+    // enforcement (saveMeetingNotes/addMeetingAction), so no new entries are
+    // created here. The merge stays for entries recorded before the change.
     const notes = s.meetingNotes.get(meetingId) ?? [];
     const extraActions = s.meetingActions.get(meetingId) ?? [];
     return ok({
@@ -1082,36 +1086,29 @@ export async function mobilePost(role: WorkspaceRole, action: MobileAction): Pro
       return { ok: true, message: `Request ${decision.toLowerCase()}. The decision is recorded in the enterprise audit trail.`, approval: res.approval };
     }
     case "meeting.note": {
+      // Phase 21 (audit M7): mobile used to write a weaker parallel path —
+      // any participant, any meeting state, into the mobile-only store.
+      // Minutes now ride the desktop enforcement (saveMeetingNotes):
+      // organizer-only, completed-meetings rule, ONE shared store, one
+      // audit event — the same rules mobile saw on the desktop UI.
       const id = str(action.input, "id");
       const text = str(action.input, "text");
-      const m = id ? MEETINGS.find((x) => x.id === id) : undefined;
-      if (!id || !m) return { ok: false, status: 404, code: "not_found", message: "Meeting not found." };
-      if (!m.participantIds.includes(SESSION_USER_ID) && m.organizerId !== SESSION_USER_ID) {
-        return { ok: false, status: 403, code: "forbidden", message: "Only participants can add notes to this meeting." };
-      }
-      if (!text || text.length < 2) return { ok: false, status: 422, code: "invalid_note", message: "A note of at least 2 characters is required." };
-      const notes = s.meetingNotes.get(id) ?? [];
-      notes.push({ at: Date.now(), by: ACTOR_NAME, text });
-      s.meetingNotes.set(id, notes);
-      writeAudit({ actorId: SESSION_USER_ID, action: "Mobile meeting note", resource: m.title, result: "Success", source: "Mobile", context: "Note appended to the meeting record" });
-      return { ok: true, message: "Note added to the meeting record.", notes };
+      if (!id || !text || text.length < 2) return { ok: false, status: 422, code: "invalid_note", message: "A note of at least 2 characters is required." };
+      const res = saveMeetingNotes(role, { id, text });
+      if (!res.ok) return { ok: false, status: res.status, code: res.code, message: res.message };
+      return { ok: true, message: res.message };
     }
     case "meeting.actionitem": {
+      // Phase 21 (audit M7): same delegation as meeting.note — the desktop
+      // organizer/state/owner rules apply verbatim from mobile.
       const id = str(action.input, "id");
       const title = str(action.input, "title");
-      const m = id ? MEETINGS.find((x) => x.id === id) : undefined;
-      if (!id || !m) return { ok: false, status: 404, code: "not_found", message: "Meeting not found." };
-      if (!m.participantIds.includes(SESSION_USER_ID) && m.organizerId !== SESSION_USER_ID) {
-        return { ok: false, status: 403, code: "forbidden", message: "Only participants can add action items." };
-      }
-      if (!title || title.length < 4) return { ok: false, status: 422, code: "invalid_title", message: "Describe the action item (4+ characters)." };
+      if (!id || !title || title.length < 4) return { ok: false, status: 422, code: "invalid_title", message: "Describe the action item (4+ characters)." };
       const ownerId = str(action.input, "ownerId") ?? SESSION_USER_ID;
       if (!employees.some((e) => e.id === ownerId)) return { ok: false, status: 422, code: "invalid_owner", message: "Choose a valid owner." };
-      const items = s.meetingActions.get(id) ?? [];
-      items.push({ title, ownerId, due: num(action.input, "due") ?? null, at: Date.now() });
-      s.meetingActions.set(id, items);
-      writeAudit({ actorId: SESSION_USER_ID, action: "Mobile meeting action item", resource: `${m.title} — ${title}`, result: "Success", source: "Mobile", context: `Owner: ${nameOf(ownerId)}` });
-      return { ok: true, message: "Action item recorded on the meeting.", items };
+      const res = addMeetingAction(role, { id, title, ownerId, due: num(action.input, "due") ?? null });
+      if (!res.ok) return { ok: false, status: res.status, code: res.code, message: res.message };
+      return { ok: true, message: res.message };
     }
     case "meeting.join": {
       const id = str(action.input, "id");

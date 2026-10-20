@@ -12,6 +12,7 @@
 // ============================================================
 
 import * as React from "react";
+import { ensureSession } from "@/lib/qubit/api";
 import { ChevronLeft, ChevronRight, RefreshCcw, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,7 @@ export async function mobileGet<T>(
   role: string,
   params?: Record<string, string | undefined>,
 ): Promise<T> {
+  await ensureSession(role ?? "administrator");
   const qs = params
     ? Object.entries(params)
         .filter(([, v]) => v !== undefined && v !== "")
@@ -76,6 +78,7 @@ export async function mobilePost<T = { ok: boolean; message?: string }>(
   input?: Record<string, unknown>,
   role?: string,
 ): Promise<T> {
+  await ensureSession(role ?? "administrator");
   const res = await fetch("/api/mobile", {
     method: "POST",
     headers: mobileHeaders(role ?? "administrator"),

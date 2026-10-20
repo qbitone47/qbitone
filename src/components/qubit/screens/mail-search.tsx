@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { authedFetch } from "@/lib/qubit/api";
 import type { MailMessage } from "@/lib/qubit/workspace-data";
 import { AUTHORIZED_MAIL_COUNT } from "@/lib/qubit/workspace-data";
 import { useQubitNav } from "../nav-context";
@@ -71,7 +72,7 @@ export function MailSearchScreen() {
           scopes.map((folder) => {
             const qs = new URLSearchParams({ folder, limit: "200" });
             if (q) qs.set("q", q);
-            return fetch(`/api/workspace/mail?${qs.toString()}`, { cache: "no-store" });
+            return authedFetch(`/api/workspace/mail?${qs.toString()}`);
           }),
         );
         if (responses.some((r) => !r.ok)) throw new Error("search failed");

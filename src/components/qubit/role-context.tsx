@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { ensureSession } from "@/lib/qubit/api";
 
 /**
  * Permission-aware UX: the signed-in administrator can preview the product
@@ -47,6 +48,14 @@ const RoleContext = createContext<RoleContextValue | null>(null);
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
   const [role, setRoleState] = useState<ViewAsRole>("administrator");
+
+  // Phase 21: the role preview is backed by a server-issued session.
+  // Bootstrap the session on mount and re-issue it on every role switch
+  // (the server validates role membership; the client never declares it).
+  useEffect(() => {
+    ensureSession(role).catch(() => undefined);
+  }, [role]);
+
   const setRole = useCallback((r: ViewAsRole) => setRoleState(r), []);
   const can = useCallback((c: Capability) => ROLE_CAPABILITIES[role].includes(c), [role]);
   const value = useMemo(

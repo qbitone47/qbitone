@@ -358,6 +358,8 @@ export interface ScreenParams {
   focusNodeId?: string;
   /** MFA challenge id passed from Login (31) to MFA Verification (32) */
   challengeId?: string;
+  /** Demo authenticator code (Phase 21): the simulated TOTP value issued with the challenge */
+  demoCode?: string;
   /** Alert / audit correlation focus */
   correlationId?: string;
   /** Workspace deep links (Phase 4) */

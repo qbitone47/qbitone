@@ -10,6 +10,7 @@
 // ============================================================
 
 import * as React from "react";
+import { ensureSession } from "@/lib/qubit/api";
 import { AlertTriangle, ArrowUpRight, CheckCircle2, CircleSlash, MinusCircle, RefreshCcw, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,7 @@ export class PlatformApiError extends Error {
 }
 
 export async function platformGet<T>(section: string, role: string): Promise<T> {
+  await ensureSession(role);
   const res = await fetch(`/api/platform?section=${encodeURIComponent(section)}`, {
     headers: { "Content-Type": "application/json", "X-Qubit-Role": role },
     cache: "no-store",
@@ -54,6 +56,7 @@ export async function platformPost<T = { ok: boolean; message?: string }>(
   role?: string,
   confirm?: boolean,
 ): Promise<T> {
+  await ensureSession(role);
   const res = await fetch("/api/platform", {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-Qubit-Role": role ?? "administrator" },

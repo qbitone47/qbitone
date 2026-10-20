@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireIdentity } from "@/lib/qubit/auth-server";
 import { changePassword } from "@/lib/qubit/security-server";
 
-// POST /api/security/password — change password.
+// POST /api/security/password — change password (session required).
 // The server re-checks the organization password policy and the
 // current-password challenge; success signs out other sessions.
 export async function POST(req: NextRequest) {
+  const auth = await requireIdentity(req);
+  if (!auth.ok) return auth.response;
+
   let body: { current?: string; next?: string };
   try {
     body = await req.json();

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { ensureSession } from "@/lib/qubit/api";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -84,6 +85,7 @@ async function parse<T>(res: Response): Promise<T> {
 }
 
 export async function execGet<T>(section: string, role: string): Promise<T> {
+  await ensureSession(role);
   const res = await fetch(`/api/executive?section=${encodeURIComponent(section)}`, {
     headers: { "X-Qubit-Role": role, "Content-Type": "application/json" },
     cache: "no-store",
@@ -95,6 +97,7 @@ export async function execPost<T = { ok: boolean }>(
   body: Record<string, unknown>,
   role: string,
 ): Promise<T> {
+  await ensureSession(role);
   const res = await fetch("/api/executive", {
     method: "POST",
     headers: { "X-Qubit-Role": role, "Content-Type": "application/json" },

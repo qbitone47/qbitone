@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { authedFetch } from "@/lib/qubit/api";
 import { getEmployee } from "@/lib/qubit/data";
 import { fmtDateTime, relTime, WORKSPACE_NOW, type ApprovalRequest } from "@/lib/qubit/workspace-data";
 import { apiGet, ApiError } from "@/lib/qubit/api";
@@ -89,11 +90,11 @@ export function MyApprovalsScreen() {
   const decide = async (target: ApprovalRequest, decision: "Approved" | "Rejected" | "Changes requested", reqNote?: string, stepUp?: string) => {
     setBusyId(target.id);
     try {
-      const res = await fetch("/api/workspace/approvals", {
+      const res = await authedFetch("/api/workspace/approvals", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Qubit-Role": role },
         body: JSON.stringify({ id: target.id, decision, note: reqNote, stepUpPassword: stepUp }),
-      });
+      }, role);
       const data = await res.json();
       if (!res.ok) {
         toast({ variant: "destructive", title: "Decision not recorded", description: data?.message ?? "The approval service rejected this decision. The request is unchanged." });

@@ -51,6 +51,9 @@ export function MfaVerificationScreen() {
   const { toast } = useToast();
 
   const [challengeId] = React.useState(() => params.challengeId ?? `chl-preview-${Date.now()}`);
+  // Phase 21: the simulated authenticator's current code, issued by the
+  // server at challenge time — wrong codes now genuinely fail (audit H1).
+  const demoCode = typeof params.demoCode === "string" ? params.demoCode : undefined;
   const [method, setMethod] = React.useState<Method>("authenticator-app");
   const [code, setCode] = React.useState("");
   const [recovery, setRecovery] = React.useState("");
@@ -240,6 +243,11 @@ export function MfaVerificationScreen() {
               <Label htmlFor="otp" className="text-xs font-medium text-slate-700">
                 Enter the 6-digit code from your authenticator app
               </Label>
+              {demoCode && (
+                <p className="mt-1.5 rounded-md bg-slate-50 px-2.5 py-1.5 text-[11px] text-slate-500">
+                  Demo authenticator · current code <span className="font-mono font-semibold text-slate-700">{demoCode}</span>
+                </p>
+              )}
               <div className="mt-3 flex justify-center">
                 <InputOTP
                   id="otp"

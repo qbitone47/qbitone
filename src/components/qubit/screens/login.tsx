@@ -24,6 +24,7 @@ interface LoginResponse {
   maskedEmail: string;
   expiresInSeconds: number;
   methods: string[];
+  demoAuthenticatorCode?: string;
 }
 
 const SIM_OPTIONS = [
@@ -71,7 +72,7 @@ export function LoginScreen() {
     try {
       const res = await apiPost<LoginResponse>("/auth/login", { email, password, simulate: simulate === "none" ? undefined : simulate });
       toast({ title: "Password verified", description: "Complete two-step verification to continue." });
-      navigate("mfa-verification", { challengeId: res.challengeId });
+      navigate("mfa-verification", { challengeId: res.challengeId, demoCode: res.demoAuthenticatorCode });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Sign-in failed. Please try again.";
       setBanner({ title: message, body: bannerBody(simulate) });

@@ -16,6 +16,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { authedFetch } from "@/lib/qubit/api";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { getEmployee } from "@/lib/qubit/data";
@@ -397,7 +398,7 @@ export function useMailStore() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/workspace/mail?folder=all&limit=200", { cache: "no-store" });
+      const res = await authedFetch("/api/workspace/mail?folder=all&limit=200");
       if (!res.ok) throw new Error(`Mail service returned ${res.status}.`);
       const data = await res.json();
       setMail(data.items);
@@ -415,7 +416,7 @@ export function useMailStore() {
   const markRead = React.useCallback(async (id: string, read = true) => {
     setMail((ms) => (ms ? ms.map((m) => (m.id === id ? { ...m, read } : m)) : ms));
     try {
-      await fetch("/api/workspace/mail", {
+      await authedFetch("/api/workspace/mail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "mark", id, read }),
@@ -433,7 +434,7 @@ export function useMailStore() {
       return ms.map((m) => (m.id === id ? { ...m, starred: next } : m));
     });
     try {
-      await fetch("/api/workspace/mail", {
+      await authedFetch("/api/workspace/mail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "mark", id, starred: next }),
@@ -446,7 +447,7 @@ export function useMailStore() {
   const archive = React.useCallback(async (id: string) => {
     setMail((ms) => (ms ? ms.map((m) => (m.id === id ? { ...m, folder: "archive" } : m)) : ms));
     try {
-      await fetch("/api/workspace/mail", {
+      await authedFetch("/api/workspace/mail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "mark", id, archive: true }),
@@ -459,7 +460,7 @@ export function useMailStore() {
   const retry = React.useCallback(
     async (id: string): Promise<{ ok: boolean; message?: string }> => {
       try {
-        const res = await fetch("/api/workspace/mail", {
+        const res = await authedFetch("/api/workspace/mail", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "retry", id }),
