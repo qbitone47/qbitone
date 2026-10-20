@@ -1,0 +1,859 @@
+     1→// ============================================================
+     2→// Qubit One — Core Employee Workspace data (Phase 4)
+     3→// ============================================================
+     4→// The employee's daily workspace reads from the SAME enterprise
+     5→// model as every other phase: employees, departments, roles and
+     6→// reporting lines come from ./data.ts — never duplicated here.
+     7→//
+     8→// Fixed demo clock (matches Phase 3 security fixtures):
+     9→//   Friday, 13 November 2026, 09:42 IST
+    10→// All relative times are hydration-stable because the clock is.
+    11→// ============================================================
+    12→
+    13→import type { ScreenId, ScreenParams } from "./screens";
+    14→import { employees } from "./data";
+    15→
+    16→// ---------- Demo clock ----------
+    17→export const WORKSPACE_NOW = Date.parse("2026-11-13T09:42:00+05:30");
+    18→export const WORKSPACE_NOW_LABEL = "Friday, 13 November 2026";
+    19→const MIN = 60_000;
+    20→const HOUR = 3_600_000;
+    21→const DAY = 86_400_000;
+    22→
+    23→/** Build an IST timestamp: dayOffset from today (0 = today), fixed wall-clock time. */
+    24→const at = (dayOffset: number, hour: number, minute = 0): number =>
+    25→  WORKSPACE_NOW - (9 * HOUR + 42 * MIN) + dayOffset * DAY + hour * HOUR + minute * MIN;
+    26→
+    27→export const ist = (ts: number) => new Date(ts + 330 * 60_000); // shift to IST, read via UTC getters
+    28→
+    29→export const fmtDateTime = (ts: number): string => {
+    30→  const d = ist(ts);
+    31→  const date = `${String(d.getUTCDate()).padStart(2, "0")} ${d.toLocaleDateString("en-IN", { month: "short", timeZone: "UTC" })} ${d.getUTCFullYear()}`;
+    32→  const time = `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+    33→  return `${date}, ${time}`;
+    34→};
+    35→
+    36→const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    37→
+    38→export const fmtDate = (ts: number): string => {
+    39→  const d = ist(ts);
+    40→  return `${String(d.getUTCDate()).padStart(2, "0")} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+    41→};
+    42→
+    43→export const fmtTime = (ts: number): string => {
+    44→  const d = ist(ts);
+    45→  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+    46→};
+    47→
+    48→/** Stable relative label against the fixed demo clock. */
+    49→export const relTime = (ts: number): string => {
+    50→  const diff = WORKSPACE_NOW - ts;
+    51→  if (diff < 0) {
+    52→    const ahead = -diff;
+    53→    if (ahead < HOUR) return `in ${Math.max(1, Math.round(ahead / MIN))} min`;
+    54→    if (ahead < DAY) return `in ${Math.round(ahead / HOUR)} h`;
+    55→    return `in ${Math.round(ahead / DAY)} d`;
+    56→  }
+    57→  if (diff < MIN) return "just now";
+    58→  if (diff < HOUR) return `${Math.round(diff / MIN)} min ago`;
+    59→  if (diff < DAY) return `${Math.round(diff / HOUR)} h ago`;
+    60→  const days = Math.round(diff / DAY);
+    61→  if (days === 1) return "yesterday";
+    62→  if (days < 7) return `${days} days ago`;
+    63→  return fmtDate(ts);
+    64→};
+    65→
+    66→// ============================================================
+    67→// Tasks (Screen 43)
+    68→// ============================================================
+    69→
+    70→export type TaskStatus = "Not Started" | "In Progress" | "Blocked" | "Waiting" | "Completed" | "Cancelled";
+    71→export type TaskPriority = "High" | "Medium" | "Low";
+    72→export type TaskSource =
+    73→  | "Meeting action item"
+    74→  | "Workflow"
+    75→  | "Manager assignment"
+    76→  | "Sales activity"
+    77→  | "Service activity"
+    78→  | "HR workflow"
+    79→  | "Automation"
+    80→  | "AI recommendation"
+    81→  | "Approval process"
+    82→  | "Manual";
+    83→
+    84→export interface Task {
+    85→  id: string;
+    86→  title: string;
+    87→  detail: string;
+    88→  status: TaskStatus;
+    89→  priority: TaskPriority;
+    90→  /** null = no due date */
+    91→  due: number | null;
+    92→  source: TaskSource;
+    93→  /** who assigned / owns the origin */
+    94→  ownerId: string;
+    95→  assigneeId: string;
+    96→  /** business object this task relates to */
+    97→  related?: { label: string; kind: "Customer" | "Project" | "Workflow" | "Employee" | "Meeting" | "Ticket"; ref?: string };
+    98→  /** AI-generated tasks must be clearly identified */
+    99→  aiGenerated?: boolean;
+   100→  completedAt?: number;
+   101→}
+   102→
+   103→export const TASKS: Task[] = [
+   104→  {
+   105→    id: "task-118", title: "Review Q4 board deck — revenue & pipeline section",
+   106→    detail: "Anita shared the draft for the December board meeting. Check the pipeline assumptions against the Q3 close before Friday.",
+   107→    status: "In Progress", priority: "High", due: at(0, 17, 0), source: "Manager assignment", ownerId: "sagar", assigneeId: "sagar",
+   108→    related: { label: "Board Meeting — Dec 2026", kind: "Meeting" },
+   109→  },
+   110→  {
+   111→    id: "task-121", title: "Finalise Acme Corp renewal terms with Rahul",
+   112→    detail: "Acme asked for a 12% discount on the 3-year renewal. Rahul needs the floor price before the client call on Monday.",
+   113→    status: "In Progress", priority: "High", due: at(0, 16, 0), source: "Sales activity", ownerId: "rahul", assigneeId: "sagar",
+   114→    related: { label: "Acme Corp · Renewal FY27", kind: "Customer" },
+   115→  },
+   116→  {
+   117→    id: "task-127", title: "Approve revised vendor contract — Brightline Logistics",
+   118→    detail: "Legal cleared the liability clause. Finance confirmed payment terms of Net-45. Ready for signature.",
+   119→    status: "Waiting", priority: "Medium", due: at(1, 12, 0), source: "Workflow", ownerId: "priya", assigneeId: "sagar",
+   120→    related: { label: "Vendor onboarding workflow", kind: "Workflow" },
+   121→  },
+   122→  {
+   123→    id: "task-131", title: "Sign off Q4 hiring plan — 14 open requisitions",
+   124→    detail: "Neha's team prepared the hiring plan. Two senior roles (Finance, Service) are behind schedule.",
+   125→    status: "Not Started", priority: "Medium", due: at(2, 11, 0), source: "HR workflow", ownerId: "neha", assigneeId: "sagar",
+   126→    related: { label: "HR & People · Hiring FY27 Q4", kind: "Project" },
+   127→  },
+   128→  {
+   129→    id: "task-134", title: "Review Qubit AI access-policy proposal",
+   130→    detail: "Arjun proposed tightening AI data scopes for the Service module. Needs your approval before the December rollout.",
+   131→    status: "Not Started", priority: "Medium", due: at(3, 15, 0), source: "Approval process", ownerId: "arjun", assigneeId: "sagar",
+   132→    related: { label: "IT & Technology", kind: "Project" },
+   133→  },
+   134→  {
+   135→    id: "task-139", title: "Prepare town-hall talking points",
+   136→    detail: "Quarterly town hall on Monday. Cover: FY27 targets, Bengaluru office expansion, service quality wins.",
+   137→    status: "Not Started", priority: "Medium", due: at(3, 10, 0), source: "Manual", ownerId: "sagar", assigneeId: "sagar",
+   138→  },
+   139→  {
+   140→    id: "task-142", title: "Escalation review — Site visit SLA breach (Zenith Manufacturing)",
+   141→    detail: "Two field visits breached the 48-hour SLA last week. Vikram prepared the corrective-action summary.",
+   142→    status: "Blocked", priority: "High", due: at(-1, 15, 0), source: "Service activity", ownerId: "vikramj", assigneeId: "sagar",
+   143→    related: { label: "Zenith Manufacturing · Ticket SV-2214", kind: "Ticket" },
+   144→  },
+   145→  {
+   146→    id: "task-147", title: "Review Bengaluru office lease renewal draft",
+   147→    detail: "Operations flagged a 18% rent escalation. Compare with the Whitefield alternative before the ops review.",
+   148→    status: "Not Started", priority: "Low", due: at(6, 12, 0), source: "Manual", ownerId: "sanjay", assigneeId: "sagar",
+   149→    related: { label: "Operations · Facilities", kind: "Project" },
+   150→  },
+   151→  {
+   152→    id: "task-151", title: "Consolidate department OKRs for FY27",
+   153→    detail: "All 8 departments submitted drafts. Consolidate into the company scorecard for the leadership offsite.",
+   154→    status: "In Progress", priority: "Medium", due: at(8, 17, 0), source: "Manual", ownerId: "sagar", assigneeId: "sagar",
+   155→  },
+   156→  {
+   157→    id: "task-155", title: "Ping Ankit Sharma — week 2 onboarding check-in",
+   158→    detail: "Qubit AI noticed the new sales trainee has not opened the product handbook. Suggested: a 15-minute check-in.",
+   159→    status: "Not Started", priority: "Low", due: at(1, 10, 30), source: "AI recommendation", ownerId: "sagar", assigneeId: "sagar",
+   160→    aiGenerated: true,
+   161→    related: { label: "Ankit Sharma · Onboarding", kind: "Employee" },
+   162→  },
+   163→  {
+   164→    id: "task-158", title: "Complete annual ethics & compliance declaration",
+   165→    detail: "Automation: your FY27 declaration is due before payroll lock on 30 November.",
+   166→    status: "Not Started", priority: "Medium", due: at(17, 18, 0), source: "Automation", ownerId: "neha", assigneeId: "sagar",
+   167→  },
+   168→  {
+   169→    id: "task-102", title: "Sign Q3 financial statements",
+   170→    detail: "Priya's team closed Q3 on 31 Oct. Statements audited and ready for signature.",
+   171→    status: "Completed", priority: "High", due: at(-6, 17, 0), source: "Approval process", ownerId: "priya", assigneeId: "sagar",
+   172→    completedAt: at(-5, 11, 20),
+   173→  },
+   174→  {
+   175→    id: "task-106", title: "Keynote dry run — Partner Summit",
+   176→    detail: "20-minute dry run with marketing. Slides reviewed, demo environment confirmed.",
+   177→    status: "Completed", priority: "Medium", due: at(-8, 15, 0), source: "Meeting action item", ownerId: "amit", assigneeId: "sagar",
+   178→    completedAt: at(-8, 16, 40),
+   179→    related: { label: "Partner Summit 2026", kind: "Meeting" },
+   180→  },
+   181→  {
+   182→    id: "task-109", title: "Approve Diwali bonus framework",
+   183→    detail: "HR proposal for FY26 festival bonus. Superseded by the revised compensation cycle.",
+   184→    status: "Cancelled", priority: "Low", due: null, source: "HR workflow", ownerId: "neha", assigneeId: "sagar",
+   185→  },
+   186→];
+   187→
+   188→// Team tasks (for Employee 360 / manager scope — read-only context)
+   189→export const TEAM_TASKS: Task[] = [
+   190→  { id: "task-201", title: "Send revised proposal to Zenith Manufacturing", detail: "Include the corrected service-level table and the 2-year pricing option.", status: "In Progress", priority: "High", due: at(0, 14, 0), source: "Sales activity", ownerId: "rahul", assigneeId: "rohitv", related: { label: "Zenith Manufacturing", kind: "Customer" } },
+   191→  { id: "task-202", title: "Collect Q3 GST documentation from branches", detail: "Bengaluru and Delhi branches pending. Payroll lock on 30 Nov.", status: "Blocked", priority: "High", due: at(-2, 17, 0), source: "Workflow", ownerId: "priya", assigneeId: "tanvi", related: { label: "Finance · Taxation", kind: "Project" } },
+   192→  { id: "task-203", title: "Onboarding checklist — Ankit Sharma (day 10)", detail: "ID card issued, mailbox active, product handbook pending acknowledgement.", status: "In Progress", priority: "Medium", due: at(1, 16, 0), source: "HR workflow", ownerId: "neha", assigneeId: "anita", related: { label: "Ankit Sharma", kind: "Employee" } },
+   193→  { id: "task-204", title: "Warehouse B stock-take reconciliation", detail: "Second count scheduled for Saturday. Variance currently at 1.8%.", status: "In Progress", priority: "Medium", due: at(2, 18, 0), source: "Manual", ownerId: "karan", assigneeId: "siddharth", related: { label: "Inventory · Warehouse B", kind: "Project" } },
+   194→];
+   195→
+   196→export const allTasksFor = (employeeId: string): Task[] =>
+   197→  [...TASKS, ...TEAM_TASKS].filter((t) => t.assigneeId === employeeId);
+   198→
+   199→// ============================================================
+   200→// Meetings (Screens 44 · 45)
+   201→// ============================================================
+   202→
+   203→export type MeetingStatus = "Scheduled" | "In Progress" | "Completed" | "Cancelled";
+   204→
+   205→export interface Meeting {
+   206→  id: string;
+   207→  title: string;
+   208→  start: number;
+   209→  end: number;
+   210→  organizerId: string;
+   211→  participantIds: string[];
+   212→  location: string; // room, or platform
+   213→  platform: "Qubit Meet" | "Zoom" | "Microsoft Teams" | "In person";
+   214→  status: MeetingStatus;
+   215→  agenda?: string;
+   216→  notes?: string;
+   217→  actionItems?: { title: string; ownerId: string; due: number | null }[];
+   218→  /** AI meeting summary — only generated for completed meetings, permission-aware */
+   219→  aiSummary?: string;
+   220→  /** linked calendar event id */
+   221→  eventId?: string;
+   222→}
+   223→
+   224→export const MEETINGS: Meeting[] = [
+   225→  {
+   226→    id: "mtg-311", title: "Leadership standup", start: at(0, 9, 30), end: at(0, 10, 0),
+   227→    organizerId: "sagar", participantIds: ["rahul", "priya", "neha", "arjun", "sanjay", "sagar"],
+   228→    location: "Qubit Meet · Room 8A", platform: "Qubit Meet", status: "In Progress",
+   229→    agenda: "Daily alignment — revenue, hiring, service escalations.",
+   230→    eventId: "ev-500",
+   231→  },
+   232→  {
+   233→    id: "mtg-312", title: "Acme Corp renewal — internal alignment", start: at(0, 11, 30), end: at(0, 12, 15),
+   234→    organizerId: "rahul", participantIds: ["rahul", "pankaj", "sagar"],
+   235→    location: "Microsoft Teams", platform: "Microsoft Teams", status: "Scheduled",
+   236→    agenda: "Agree discount floor before Monday's client call. Finance joined for margin check.",
+   237→    eventId: "ev-501",
+   238→  },
+   239→  {
+   240→    id: "mtg-313", title: "1:1 — Neha Patel (HR)", start: at(0, 15, 0), end: at(0, 15, 45),
+   241→    organizerId: "sagar", participantIds: ["neha", "sagar"],
+   242→    location: "Room 8C · Mumbai HQ", platform: "In person", status: "Scheduled",
+   243→    agenda: "Q4 hiring plan, HR policy refresh, engagement survey results.",
+   244→    eventId: "ev-502",
+   245→  },
+   246→  {
+   247→    id: "mtg-314", title: "Quarterly town hall — Q3 FY26", start: at(3, 16, 0), end: at(3, 17, 0),
+   248→    organizerId: "sagar", participantIds: ["rahul", "priya", "neha", "amit", "vikramj", "karan", "arjun", "sanjay"],
+   249→    location: "Qubit Meet · All-hands", platform: "Qubit Meet", status: "Scheduled",
+   250→    agenda: "FY27 targets, Bengaluru expansion, service quality wins, AMA.",
+   251→    eventId: "ev-503",
+   252→  },
+   253→  {
+   254→    id: "mtg-315", title: "Board prep — revenue deep dive", start: at(1, 11, 0), end: at(1, 12, 30),
+   255→    organizerId: "priya", participantIds: ["priya", "sagar", "rahul"],
+   256→    location: "Zoom", platform: "Zoom", status: "Scheduled",
+   257→    agenda: "Walk the revenue section of the board deck; stress-test pipeline assumptions.",
+   258→    eventId: "ev-504",
+   259→  },
+   260→  {
+   261→    id: "mtg-316", title: "IT security review — Qubit AI rollout", start: at(4, 10, 0), end: at(4, 11, 0),
+   262→    organizerId: "arjun", participantIds: ["arjun", "sagar", "nikhil"],
+   263→    location: "Qubit Meet · Room 3B", platform: "Qubit Meet", status: "Scheduled",
+   264→    agenda: "AI data scopes, audit trail coverage, December rollout gate.",
+   265→    eventId: "ev-505",
+   266→  },
+   267→  {
+   268→    id: "mtg-308", title: "Q3 close review", start: at(-1, 16, 0), end: at(-1, 17, 0),
+   269→    organizerId: "priya", participantIds: ["priya", "sagar", "kavita", "tanvi"],
+   270→    location: "Qubit Meet", platform: "Qubit Meet", status: "Completed",
+   271→    agenda: "Q3 results, tax position, procurement savings.",
+   272→    notes: "Q3 closed at ₹42.8 Cr net revenue, +11% YoY. Taxation raised two compliance items before 30 Nov. Procurement delivered ₹1.2 Cr savings vs plan.",
+   273→    actionItems: [
+   274→      { title: "Share Q3 summary with department heads", ownerId: "priya", due: at(0, 18, 0) },
+   275→      { title: "Review taxation compliance items", ownerId: "tanvi", due: at(4, 17, 0) },
+   276→    ],
+   277→    aiSummary: "Q3 closed strong at ₹42.8 Cr (+11% YoY). Two tax compliance items must be resolved before the 30 Nov payroll lock. Procurement exceeded its savings target by ₹0.3 Cr. No audit flags raised.",
+   278→    eventId: "ev-495",
+   279→  },
+   280→  {
+   281→    id: "mtg-309", title: "Vendor negotiation — Brightline Logistics", start: at(-2, 11, 0), end: at(-2, 12, 0),
+   282→    organizerId: "sagar", participantIds: ["sagar", "priya", "sanjay"],
+   283→    location: "Room 8A · Mumbai HQ", platform: "In person", status: "Completed",
+   284→    agenda: "Final liability and payment terms for the 3-year logistics contract.",
+   285→    notes: "Brightline accepted Net-45 with 2% early-payment discount. Liability cap raised to 2x contract value.",
+   286→    actionItems: [{ title: "Route contract for signature", ownerId: "sanjay", due: at(-1, 17, 0) }],
+   287→    eventId: "ev-492",
+   288→  },
+   289→  {
+   290→    id: "mtg-310", title: "Partner Summit keynote dry run", start: at(-8, 15, 0), end: at(-8, 16, 0),
+   291→    organizerId: "amit", participantIds: ["amit", "deepak", "sagar"],
+   292→    location: "Qubit Meet", platform: "Qubit Meet", status: "Completed",
+   293→    agenda: "Dry run of the 20-minute keynote; demo environment check.",
+   294→    notes: "Demo ran clean. Marketing to record the backup video on Monday.",
+   295→    aiSummary: "Keynote is ready. One risk: live demo depends on the staging environment — marketing will record a backup video. Suggested adding the service-quality story slide after customer wins.",
+   296→    eventId: "ev-470",
+   297→  },
+   298→];
+   299→
+   300→// ============================================================
+   301→// Calendar events (Screen 44) — reference meetings + extra types
+   302→// ============================================================
+   303→
+   304→export type EventType = "Meeting" | "Deadline" | "Company event" | "Leave" | "Focus time";
+   305→
+   306→export interface CalendarEvent {
+   307→  id: string;
+   308→  title: string;
+   309→  type: EventType;
+   310→  start: number;
+   311→  end: number;
+   312→  allDay?: boolean;
+   313→  organizerId: string;
+   314→  /** employees who can see details; others see "Busy" */
+   315→  visibleTo?: "all" | "organizer-only";
+   316→  location?: string;
+   317→  meetingId?: string;
+   318→  taskId?: string;
+   319→  related?: string;
+   320→}
+   321→
+   322→export const EVENTS: CalendarEvent[] = [
+   323→  // ——— this week (Mon 9 – Fri 13) ———
+   324→  { id: "ev-490", title: "Vendor negotiation — Brightline Logistics", type: "Meeting", start: at(-2, 11, 0), end: at(-2, 12, 0), organizerId: "sagar", meetingId: "mtg-309", location: "Room 8A · Mumbai HQ" },
+   325→  { id: "ev-491", title: "Warehouse B stock-take prep", type: "Meeting", start: at(-2, 15, 0), end: at(-2, 15, 45), organizerId: "karan", location: "Qubit Meet" },
+   326→  { id: "ev-492", title: "Board deck — numbers lock", type: "Deadline", start: at(-1, 18, 0), end: at(-1, 18, 30), organizerId: "priya", taskId: "task-118", related: "task-118" },
+   327→  { id: "ev-493", title: "Q3 close review", type: "Meeting", start: at(-1, 16, 0), end: at(-1, 17, 0), organizerId: "priya", meetingId: "mtg-308", location: "Qubit Meet" },
+   328→  { id: "ev-494", title: "Diwali celebration — Mumbai HQ", type: "Company event", start: at(-3, 15, 0), end: at(-3, 18, 0), organizerId: "neha", allDay: false, location: "Atrium · Mumbai HQ", related: "Organised by HR & People" },
+   329→  { id: "ev-495", title: "Divya Nair — approved leave", type: "Leave", start: at(-3, 0, 0), end: at(1, 23, 59), allDay: true, organizerId: "divya", visibleTo: "all", related: "Approved · HR & People" },
+   330→  { id: "ev-496", title: "Focus time — board deck review", type: "Focus time", start: at(0, 14, 0), end: at(0, 15, 0), organizerId: "sagar", related: "Held for task-118" },
+   331→  { id: "ev-500", title: "Leadership standup", type: "Meeting", start: at(0, 9, 30), end: at(0, 10, 0), organizerId: "sagar", meetingId: "mtg-311", location: "Qubit Meet · Room 8A" },
+   332→  { id: "ev-501", title: "Acme Corp renewal — internal alignment", type: "Meeting", start: at(0, 11, 30), end: at(0, 12, 15), organizerId: "rahul", meetingId: "mtg-312", location: "Microsoft Teams" },
+   333→  { id: "ev-502", title: "1:1 — Neha Patel (HR)", type: "Meeting", start: at(0, 15, 0), end: at(0, 15, 45), organizerId: "sagar", meetingId: "mtg-313", location: "Room 8C · Mumbai HQ" },
+   334→  { id: "ev-506", title: "Expenses — Q3 card statement", type: "Deadline", start: at(1, 17, 0), end: at(1, 17, 30), organizerId: "priya", related: "Finance deadline" },
+   335→  { id: "ev-504", title: "Board prep — revenue deep dive", type: "Meeting", start: at(1, 11, 0), end: at(1, 12, 30), organizerId: "priya", meetingId: "mtg-315", location: "Zoom" },
+   336→  { id: "ev-503", title: "Quarterly town hall — Q3 FY26", type: "Meeting", start: at(3, 16, 0), end: at(3, 17, 0), organizerId: "sagar", meetingId: "mtg-314", location: "Qubit Meet · All-hands" },
+   337→  { id: "ev-505", title: "IT security review — Qubit AI rollout", type: "Meeting", start: at(4, 10, 0), end: at(4, 11, 0), organizerId: "arjun", meetingId: "mtg-316", location: "Qubit Meet · Room 3B" },
+   338→  { id: "ev-507", title: "Brightline contract — signature deadline", type: "Deadline", start: at(4, 17, 0), end: at(4, 17, 30), organizerId: "sanjay", related: "task-127" },
+   339→  // ——— next week ———
+   340→  { id: "ev-510", title: "Acme Corp — client call", type: "Meeting", start: at(4, 15, 0), end: at(4, 15, 45), organizerId: "rahul", location: "Microsoft Teams" },
+   341→  { id: "ev-511", title: "Payroll lock — November", type: "Deadline", start: at(16, 23, 59), end: at(16, 23, 59), allDay: true, organizerId: "priya" },
+   342→  { id: "ev-512", title: "Leadership offsite — FY27 planning", type: "Company event", start: at(20, 9, 0), end: at(21, 18, 0), allDay: true, organizerId: "sagar", location: "Lonavala" },
+   343→  { id: "ev-513", title: "Compensation review — prep", type: "Meeting", start: at(1, 9, 0), end: at(1, 9, 45), organizerId: "neha", visibleTo: "organizer-only", location: "Room 2F" },
+   344→];
+   345→
+   346→// ============================================================
+   347→// Approvals (Screen 46) — the approver's inbox.
+   348→// Distinct from the Approval Matrix (screen 09), which is the
+   349→// org-level configuration this queue is validated against.
+   350→// ============================================================
+   351→
+   352→export type ApprovalKind =
+   353→  | "Leave request"
+   354→  | "Expense claim"
+   355→  | "Purchase request"
+   356→  | "Quotation discount"
+   357→  | "Access request"
+   358→  | "Employee workflow"
+   359→  | "Contract approval";
+   360→
+   361→export type ApprovalState = "Pending" | "Approved" | "Rejected" | "Changes requested";
+   362→
+   363→export interface ApprovalRequest {
+   364→  id: string;
+   365→  kind: ApprovalKind;
+   366→  title: string;
+   367→  requesterId: string;
+   368→  department: string;
+   369→  amount?: number; // INR
+   370→  submitted: number;
+   371→  priority: "High" | "Medium" | "Low";
+   372→  status: ApprovalState;
+   373→  /** approval-matrix rule that routed this request (screen 09 reference) */
+   374→  rule: string;
+   375→  sla: string;
+   376→  /** sensitive approvals require step-up authentication before decision */
+   377→  stepUpRequired?: boolean;
+   378→  detail: string;
+   379→  history?: { at: number; actor: string; event: string }[];
+   380→  decidedAt?: number;
+   381→  decisionNote?: string;
+   382→  decidedBy?: string;
+   383→}
+   384→
+   385→export const APPROVALS: ApprovalRequest[] = [
+   386→  {
+   387→    id: "apr-508", kind: "Expense claim", title: "Client entertainment — Zenith Manufacturing visit",
+   388→    requesterId: "rohitv", department: "Sales", amount: 18400, submitted: at(-4, 11, 20),
+   389→    priority: "Medium", status: "Pending", rule: "Expense · ₹10,001–₹50,000 → Department Head", sla: "3 working days",
+   390→    detail: "Dinner with Zenith procurement team during the site visit on 8 Nov. 4 people · GST invoice attached.",
+   391→    history: [{ at: at(-4, 11, 20), actor: "Rohit Verma", event: "Submitted" }, { at: at(-4, 12, 5), actor: "System", event: "Routed via Approval Matrix → Department Head (Sales)" }],
+   392→  },
+   393→  {
+   394→    id: "apr-509", kind: "Leave request", title: "Earned leave — Meera Iyer (5 days)",
+   395→    requesterId: "meera", department: "Sales", submitted: at(-1, 9, 15),
+   396→    priority: "Low", status: "Pending", rule: "Leave · Employee → Reporting manager", sla: "2 working days",
+   397→    detail: "23–27 November. Backup coverage: Pankaj Sharma. No customer meetings scheduled in the window.",
+   398→    history: [{ at: at(-1, 9, 15), actor: "Meera Iyer", event: "Submitted" }],
+   399→  },
+   400→  {
+   401→    id: "apr-510", kind: "Purchase request", title: "Warehouse automation — 4 conveyor units",
+   402→    requesterId: "karan", department: "Inventory", amount: 1275000, submitted: at(-3, 14, 40),
+   403→    priority: "High", status: "Pending", rule: "Purchase · > ₹10,00,000 → Final authority (CEO)", sla: "5 working days",
+   404→    stepUpRequired: true,
+   405→    detail: "Warehouse B expansion. Vendor: Streamline Systems. Includes installation and 3-year service. Finance pre-check passed; ROI model attached in the request workspace.",
+   406→    history: [{ at: at(-3, 14, 40), actor: "Karan Mehta", event: "Submitted" }, { at: at(-3, 15, 2), actor: "System", event: "Routed via Approval Matrix → Final authority (> ₹10,00,000)" }, { at: at(-2, 10, 0), actor: "Priya Sharma", event: "Finance pre-approval recorded" }],
+   407→  },
+   408→  {
+   409→    id: "apr-511", kind: "Quotation discount", title: "Acme Corp renewal — 12% discount request",
+   410→    requesterId: "rahul", department: "Sales", amount: 3840000, submitted: at(0, 8, 55),
+   411→    priority: "High", status: "Pending", rule: "Discount · > 10% → Sales Head + Final authority", sla: "1 working day",
+   412→    detail: "3-year renewal worth ₹3.84 Cr. Sales Head approves up to 10%; the extra 2% needs final authority. Rahul's note: competitive pressure from a new entrant; floor price already vetted by finance.",
+   413→    history: [{ at: at(0, 8, 55), actor: "Rahul Mehta", event: "Submitted" }, { at: at(0, 9, 1), actor: "System", event: "Routed via Approval Matrix → Final authority" }],
+   414→  },
+   415→  {
+   416→    id: "apr-512", kind: "Access request", title: "Role access — Finance Analyst → Finance Manager (temporary)",
+   417→    requesterId: "rameshb", department: "Finance", submitted: at(-2, 16, 30),
+   418→    priority: "Medium", status: "Pending", rule: "Access · Role elevation → Manager + Security review", sla: "2 working days",
+   419→    detail: "Kavita Joshi on maternity cover from 1 Dec for 60 days. Requesting temporary elevation with month-end close permissions. Justification and approval path recorded in the access request (req-118).",
+   420→    history: [{ at: at(-2, 16, 30), actor: "Ramesh Bhatt", event: "Submitted" }, { at: at(-2, 16, 31), actor: "System", event: "Security review required — routed with final authority" }],
+   421→  },
+   422→  {
+   423→    id: "apr-513", kind: "Employee workflow", title: "Probation confirmation — Sneha Gupta",
+   424→    requesterId: "neha", department: "Operations", submitted: at(0, 9, 10),
+   425→    priority: "Medium", status: "Pending", rule: "Lifecycle · Probation confirmation → Manager + HR Head", sla: "3 working days",
+   426→    detail: "Sneha joined 1 Oct 2025 (Business Analyst). Manager rating: meets expectations. HR recommends confirmation with the standard band increment.",
+   427→    history: [{ at: at(0, 9, 10), actor: "Neha Patel", event: "Submitted" }],
+   428→  },
+   429→  {
+   430→    id: "apr-505", kind: "Contract approval", title: "Brightline Logistics — 3-year contract",
+   431→    requesterId: "sanjay", department: "Operations", amount: 8640000, submitted: at(-2, 10, 5),
+   432→    priority: "High", status: "Pending", rule: "Contract · > ₹50,00,000 → Final authority", sla: "5 working days",
+   433→    stepUpRequired: true,
+   434→    detail: "Negotiated terms: Net-45 with 2% early-payment discount, liability cap at 2x contract value. Legal sign-off recorded 12 Nov.",
+   435→    history: [{ at: at(-2, 10, 5), actor: "Sanjay Gupta", event: "Submitted" }, { at: at(-1, 11, 0), actor: "System", event: "Legal sign-off attached" }],
+   436→  },
+   437→  // ——— decision history ———
+   438→  {
+   439→    id: "apr-498", kind: "Expense claim", title: "Partner Summit booth — final invoice",
+   440→    requesterId: "amit", department: "Marketing", amount: 465000, submitted: at(-6, 12, 0),
+   441→    priority: "Medium", status: "Approved", rule: "Expense · ₹50,001–₹5,00,000 → Finance Head + Final authority", sla: "4 working days",
+   442→    detail: "Summit booth balance payment to ExpoGen Events Pvt Ltd.",
+   443→    history: [{ at: at(-6, 12, 0), actor: "Amit Verma", event: "Submitted" }, { at: at(-5, 10, 30), actor: "Priya Sharma", event: "Finance approval recorded" }, { at: at(-5, 11, 45), actor: "Sagar Singh", event: "Approved" }],
+   444→    decidedAt: at(-5, 11, 45), decidedBy: "sagar", decisionNote: "Within summit budget. Approved.",
+   445→  },
+   446→  {
+   447→    id: "apr-499", kind: "Purchase request", title: "Standing desks — Bengaluru office (phase 2)",
+   448→    requesterId: "sanjay", department: "Operations", amount: 89000, submitted: at(-7, 15, 0),
+   449→    priority: "Low", status: "Changes requested", rule: "Purchase · ₹50,001–₹1,00,000 → Operations Head + Finance", sla: "4 working days",
+   450→    detail: "34 desks for the new Bengaluru floor.",
+   451→    history: [{ at: at(-7, 15, 0), actor: "Sanjay Gupta", event: "Submitted" }, { at: at(-6, 9, 40), actor: "Sagar Singh", event: "Changes requested — add the Whitefield comparison before re-submission" }],
+   452→    decidedAt: at(-6, 9, 40), decidedBy: "sagar", decisionNote: "Add the Whitefield comparison before re-submission.",
+   453→  },
+   454→  {
+   455→    id: "apr-500", kind: "Quotation discount", title: "Zenith Manufacturing — 15% discount (rejected)",
+   456→    requesterId: "rohitv", department: "Sales", amount: 980000, submitted: at(-9, 10, 0),
+   457→    priority: "High", status: "Rejected", rule: "Discount · > 10% → Sales Head + Final authority", sla: "1 working day",
+   458→    detail: "15% on the annual service contract. Margin impact -6.2%.",
+   459→    history: [{ at: at(-9, 10, 0), actor: "Rohit Verma", event: "Submitted" }, { at: at(-8, 14, 20), actor: "Sagar Singh", event: "Rejected — below margin floor; counter at 8% with reduced scope" }],
+   460→    decidedAt: at(-8, 14, 20), decidedBy: "sagar", decisionNote: "Below margin floor. Counter at 8% with reduced scope.",
+   461→  },
+   462→];
+   463→
+   464→// ============================================================
+   465→// Documents (Screen 47)
+   466→// ============================================================
+   467→
+   468→export type DocCategory = "Personal" | "Shared with me" | "HR" | "Company" | "Workflow";
+   469→
+   470→export interface WorkspaceDoc {
+   471→  id: string;
+   472→  name: string;
+   473→  type: "PDF" | "DOCX" | "XLSX" | "PPTX" | "PNG";
+   474→  category: DocCategory;
+   475→  ownerId: string;
+   476→  sizeKb: number;
+   477→  modified: number;
+   478→  sensitivity: "Public" | "Internal" | "Confidential" | "Restricted";
+   479→  starred?: boolean;
+   480→  linked?: { label: string; screen: ScreenId }[];
+   481→  description?: string;
+   482→}
+   483→
+   484→export const DOCUMENTS: WorkspaceDoc[] = [
+   485→  { id: "doc-701", name: "Q4 Board Deck — draft v4.pptx", type: "PPTX", category: "Shared with me", ownerId: "priya", sizeKb: 8420, modified: at(0, 8, 12), sensitivity: "Confidential", starred: true, description: "December board meeting draft. Revenue section owner: Sagar.", linked: [{ label: "task-118 · Review Q4 board deck", screen: "my-tasks" }] },
+   486→  { id: "doc-702", name: "Acme Corp — Renewal FY27 Proposal.pdf", type: "PDF", category: "Shared with me", ownerId: "rahul", sizeKb: 1240, modified: at(-1, 17, 30), sensitivity: "Confidential", description: "3-year renewal proposal with the 12% discount option.", linked: [{ label: "apr-511 · Quotation discount approval", screen: "my-approvals" }] },
+   487→  { id: "doc-703", name: "Employment agreement — Sagar Singh.pdf", type: "PDF", category: "HR", ownerId: "neha", sizeKb: 380, modified: at(-650, 10, 0), sensitivity: "Restricted", description: "Your signed employment agreement. Managed by HR; visible to you and HR only." },
+   488→  { id: "doc-704", name: "FY27 compensation letter.pdf", type: "PDF", category: "HR", ownerId: "neha", sizeKb: 210, modified: at(-120, 9, 0), sensitivity: "Restricted", description: "Annual compensation letter issued 15 Jul 2026." },
+   489→  { id: "doc-705", name: "Employee Handbook 2026.pdf", type: "PDF", category: "Company", ownerId: "neha", sizeKb: 5210, modified: at(-40, 11, 0), sensitivity: "Public", starred: true, description: "Policies, code of conduct, benefits. Latest revision 04 Oct 2026." },
+   490→  { id: "doc-706", name: "Qubit One — Brand Guidelines v3.pdf", type: "PDF", category: "Company", ownerId: "amit", sizeKb: 18400, modified: at(-75, 14, 0), sensitivity: "Internal", description: "Logo usage, voice, templates." },
+   491→  { id: "doc-707", name: "FY27 OKR worksheet — Executive.xlsx", type: "XLSX", category: "Personal", ownerId: "sagar", sizeKb: 96, modified: at(-2, 18, 40), sensitivity: "Internal", description: "Consolidation sheet for the leadership offsite (task-151)." },
+   492→  { id: "doc-708", name: "Town hall — talking points.docx", type: "DOCX", category: "Personal", ownerId: "sagar", sizeKb: 44, modified: at(0, 7, 55), sensitivity: "Internal", description: "Draft notes for Monday's town hall (task-139)." },
+   493→  { id: "doc-709", name: "Brightline Logistics — Contract final.pdf", type: "PDF", category: "Workflow", ownerId: "sanjay", sizeKb: 980, modified: at(-1, 11, 0), sensitivity: "Confidential", description: "3-year logistics contract pending signature (apr-505).", linked: [{ label: "apr-505 · Contract approval", screen: "my-approvals" }] },
+   494→  { id: "doc-710", name: "Warehouse automation — ROI model.xlsx", type: "XLSX", category: "Workflow", ownerId: "karan", sizeKb: 156, modified: at(-3, 15, 10), sensitivity: "Internal", description: "Attachment to purchase request apr-510." },
+   495→  { id: "doc-711", name: "Q3 FY26 — Financial statements.pdf", type: "PDF", category: "Shared with me", ownerId: "priya", sizeKb: 2100, modified: at(-5, 16, 0), sensitivity: "Confidential", description: "Audited Q3 statements (task-102 sign-off)." },
+   496→  { id: "doc-712", name: "Zenith SLA breach — corrective actions.docx", type: "DOCX", category: "Shared with me", ownerId: "vikramj", sizeKb: 88, modified: at(-1, 9, 30), sensitivity: "Internal", description: "Field service escalation summary (task-142)." },
+   497→  { id: "doc-713", name: "Org photo — Diwali 2026.png", type: "PNG", category: "Company", ownerId: "neha", sizeKb: 4200, modified: at(-3, 19, 0), sensitivity: "Internal", description: "Diwali celebration at Mumbai HQ." },
+   498→];
+   499→
+   500→// ============================================================
+   501→// Notifications (Screen 48) — deep-linked into the same OS
+   502→// ============================================================
+   503→
+   504→export type NotificationCategory =
+   505→  | "Tasks" | "Approvals" | "Meetings" | "HR" | "Sales" | "Finance" | "Service" | "System" | "Security" | "Collaboration";
+   506→
+   507→export interface WorkspaceNotification {
+   508→  id: string;
+   509→  title: string;
+   510→  body: string;
+   511→  category: NotificationCategory;
+   512→  ts: number;
+   513→  unread: boolean;
+   514→  priority: "High" | "Medium" | "Low";
+   515→  source: string;
+   516→  /** deep link into the same Qubit One operating system */
+   517→  link?: { screen: ScreenId; params?: ScreenParams };
+   518→}
+   519→
+   520→export const NOTIFICATIONS: WorkspaceNotification[] = [
+   521→  { id: "ntf-901", title: "Discount approval needs your decision", body: "Rahul Mehta requested a 12% discount on the Acme Corp renewal (₹38.4 L). Sales Head approved up to 10% — final authority required.", category: "Approvals", ts: at(0, 8, 56), unread: true, priority: "High", source: "Approvals", link: { params: { approvalId: "apr-511" }, screen: "my-approvals" } },
+   522→  { id: "ntf-902", title: "Two tasks are overdue", body: "Escalation review — Zenith Manufacturing was due yesterday. Review before the leadership standup tomorrow.", category: "Tasks", ts: at(0, 7, 30), unread: true, priority: "High", source: "Tasks", link: { params: { taskId: "task-142" }, screen: "my-tasks" } },
+   523→  { id: "ntf-903", title: "Leadership standup starts in 18 minutes", body: "Room 8A · Qubit Meet. 6 participants. Today: revenue, hiring, service escalations.", category: "Meetings", ts: at(0, 9, 12), unread: true, priority: "Medium", source: "Meetings", link: { params: { meetingId: "mtg-311" }, screen: "my-meetings" } },
+   524→  { id: "ntf-904", title: "New sign-in from an unrecognised device", body: "Chrome on Windows · Pune, India · 07:58 IST. If this was you, no action is needed. Reviewed in Security Center.", category: "Security", ts: at(0, 8, 2), unread: true, priority: "High", source: "Security", link: { screen: "security-center" } },
+   525→  { id: "ntf-905", title: "Q3 financial statements are ready", body: "Priya Sharma shared the audited Q3 statements. Your sign-off task was completed on 7 Nov.", category: "Finance", ts: at(-1, 16, 5), unread: false, priority: "Medium", source: "Finance", link: { screen: "my-documents" } },
+   526→  { id: "ntf-906", title: "Probation confirmation — Sneha Gupta", body: "HR recommends confirmation with the standard band increment. Manager rating recorded.", category: "HR", ts: at(0, 9, 11), unread: false, priority: "Medium", source: "HR & People", link: { params: { approvalId: "apr-513" }, screen: "my-approvals" } },
+   527→  { id: "ntf-907", title: "Priya Sharma mentioned you", body: "\u201c@Sagar — the revenue assumptions are on slide 12. Can you check the pipeline stress-test before Friday?\u201d", category: "Collaboration", ts: at(-1, 15, 22), unread: false, priority: "Low", source: "Board deck · Comments", link: { screen: "my-documents" } },
+   528→  { id: "ntf-908", title: "Acme Corp asked for revised terms", body: "Meera Iyer: \u201cClient wants the 12% on paper before Monday's call.\u201d Internal alignment at 11:30 today.", category: "Sales", ts: at(0, 8, 40), unread: false, priority: "High", source: "Sales · Acme Corp", link: { params: { meetingId: "mtg-312" }, screen: "my-meetings" } },
+   529→  { id: "ntf-909", title: "Site visit SLA breached — Zenith Manufacturing", body: "Two visits exceeded the 48-hour SLA. Corrective-action summary is ready for review.", category: "Service", ts: at(-1, 10, 0), unread: false, priority: "High", source: "Service", link: { params: { taskId: "task-142" }, screen: "my-tasks" } },
+   530→  { id: "ntf-910", title: "Scheduled maintenance — Saturday 14 Nov, 22:00–00:30 IST", body: "Qubit One will be read-only during the window. No action needed; mail and approvals resume after.", category: "System", ts: at(-2, 12, 0), unread: false, priority: "Low", source: "IT & Technology" },
+   531→  { id: "ntf-911", title: "Welcome to Qubit One, Ankit!", body: "Automation: the Sales Trainee onboarding journey started 5 Oct. Day-40 check-in suggestion is in your tasks.", category: "HR", ts: at(-2, 9, 0), unread: false, priority: "Low", source: "HR & People", link: { params: { taskId: "task-155" }, screen: "my-tasks" } },
+   532→  { id: "ntf-912", title: "Warehouse automation ROI passed pre-check", body: "Finance pre-approved the ₹12.75 L purchase request. Final authority decision is pending with you.", category: "Finance", ts: at(-2, 10, 0), unread: false, priority: "Medium", source: "Finance", link: { params: { approvalId: "apr-510" }, screen: "my-approvals" } },
+   533→];
+   534→
+   535→// ============================================================
+   536→// Activity (Screen 49) — personal timeline.
+   537→// Distinct from the enterprise Audit Log (screen 39): this is
+   538→// the employee-facing view of their own work events.
+   539→// ============================================================
+   540→
+   541→export type ActivityType =
+   542→  | "Task completed" | "Meeting attended" | "Document uploaded" | "Approval performed"
+   543→  | "Profile change" | "Workflow action" | "Comment" | "Mail sent" | "Security event" | "Access change";
+   544→
+   545→export interface ActivityEntry {
+   546→  id: string;
+   547→  type: ActivityType;
+   548→  title: string;
+   549→  detail: string;
+   550→  ts: number;
+   551→  related?: { label: string; screen: ScreenId; params?: ScreenParams };
+   552→  /** security events surface only the user's own events here, with a link to the authoritative audit trail */
+   553→  security?: boolean;
+   554→}
+   555→
+   556→export const ACTIVITY: ActivityEntry[] = [
+   557→  { id: "act-801", type: "Mail sent", title: "Sent \u201cQ3 board deck — final for review\u201d", detail: "To Priya Sharma, Rahul Mehta. 1 attachment.", ts: at(0, 8, 30), related: { label: "Open Sent mail", screen: "sent-mail" } },
+   558→  { id: "act-802", type: "Comment", title: "Commented on the Q4 board deck", detail: "\u201cSlide 12 — pipeline stress-test uses the conservative case. Sign-off after the Acme decision.\u201d", ts: at(0, 8, 10), related: { label: "Q4 Board Deck — draft v4", screen: "my-documents" } },
+   559→  { id: "act-803", type: "Document uploaded", title: "Uploaded \u201cTown hall — talking points.docx\u201d", detail: "Personal work document · visible to you.", ts: at(0, 7, 55), related: { label: "My Documents", screen: "my-documents" } },
+   560→  { id: "act-804", type: "Security event", title: "Signed in from a new device", detail: "Chrome · Windows · Pune, India. MFA verified with authenticator app. This is your event; the authoritative record lives in the Audit Log.", ts: at(0, 7, 58), security: true, related: { label: "View in Audit Log", screen: "audit-log" } },
+   561→  { id: "act-805", type: "Task completed", title: "Completed \u201cSign Q3 financial statements\u201d", detail: "Assigned by Priya Sharma · completed 1 day before due.", ts: at(-5, 11, 20), related: { label: "My Tasks", screen: "my-tasks" } },
+   562→  { id: "act-806", type: "Approval performed", title: "Approved \u201cPartner Summit booth — final invoice\u201d", detail: "₹4,65,000 · within summit budget. Decision recorded with audit reference.", ts: at(-5, 11, 45), related: { label: "My Approvals", screen: "my-approvals" } },
+   563→  { id: "act-807", type: "Meeting attended", title: "Attended \u201cQ3 close review\u201d", detail: "With Priya Sharma, Kavita Joshi, Tanvi Shah. AI summary available.", ts: at(-1, 16, 0), related: { label: "Open meeting", screen: "my-meetings" } },
+   564→  { id: "act-808", type: "Workflow action", title: "Requested changes on \u201cStanding desks — Bengaluru (phase 2)\u201d", detail: "\u201cAdd the Whitefield comparison before re-submission.\u201d", ts: at(-6, 9, 40), related: { label: "My Approvals", screen: "my-approvals" } },
+   565→  { id: "act-809", type: "Meeting attended", title: "Attended \u201cVendor negotiation — Brightline Logistics\u201d", detail: "Agreed Net-45 terms; liability cap 2x. Action item routed to Sanjay Gupta.", ts: at(-2, 11, 0), related: { label: "Open meeting", screen: "my-meetings" } },
+   566→  { id: "act-810", type: "Profile change", title: "Updated work phone number", detail: "Changed from +91 98200 10001 to +91 98200 10901. Change recorded in your activity.", ts: at(-4, 12, 10) },
+   567→  { id: "act-811", type: "Document uploaded", title: "Uploaded \u201cFY27 OKR worksheet — Executive.xlsx\u201d", detail: "Shared with department heads.", ts: at(-2, 18, 40), related: { label: "My Documents", screen: "my-documents" } },
+   568→  { id: "act-812", type: "Task completed", title: "Completed \u201cKeynote dry run — Partner Summit\u201d", detail: "Action item from Partner Summit planning meeting.", ts: at(-8, 16, 40), related: { label: "My Tasks", screen: "my-tasks" } },
+   569→  { id: "act-813", type: "Access change", title: "Reviewed Qubit AI access-policy proposal", detail: "Assigned by Arjun Nair. Decision pending (task-134).", ts: at(-3, 15, 5), related: { label: "My Tasks", screen: "my-tasks" } },
+   570→  { id: "act-814", type: "Meeting attended", title: "Attended \u201cPartner Summit keynote dry run\u201d", detail: "With Amit Verma, Deepak Kumar.", ts: at(-8, 15, 0), related: { label: "Open meeting", screen: "my-meetings" } },
+   571→];
+   572→
+   573→// ============================================================
+   574→// Mail (Screens 55–58)
+   575→// ============================================================
+   576→
+   577→export type MailFolder = "inbox" | "sent" | "drafts" | "archive";
+   578→export type MailLabel = "Board" | "Finance" | "Sales" | "HR" | "Legal" | "Service" | "IT" | "Marketing";
+   579→export type SentStatus = "Sent" | "Delivered" | "Pending" | "Failed";
+   580→
+   581→export interface MailAttachment {
+   582→  name: string;
+   583→  sizeKb: number;
+   584→  type: "PDF" | "XLSX" | "DOCX" | "PPTX" | "PNG";
+   585→}
+   586→
+   587→export interface MailMessage {
+   588→  id: string;
+   589→  folder: MailFolder;
+   590→  threadOf?: string;
+   591→  fromId: string | null; // null = external sender
+   592→  fromExternal?: { name: string; email: string };
+   593→  to: string[]; // employee ids or external emails
+   594→  cc?: string[];
+   595→  bcc?: string[];
+   596→  subject: string;
+   597→  preview: string;
+   598→  body: string;
+   599→  ts: number;
+   600→  read: boolean;
+   601→  starred?: boolean;
+   602→  priority?: "High" | "Low";
+   603→  labels?: MailLabel[];
+   604→  attachments?: MailAttachment[];
+   605→  /** sent-only */
+   606→  sendStatus?: SentStatus;
+   607→  sendDetail?: string;
+   608→}
+   609→
+   610→export const MAIL: MailMessage[] = [
+   611→  // ——— Inbox ———
+   612→  {
+   613→    id: "m-101", folder: "inbox", fromId: "priya", to: ["sagar"], subject: "Q4 board deck — final for review",
+   614→    preview: "Slide 12 has the pipeline stress-test. Two open items before we lock numbers on Friday: the Acme renewal assumption and the Brightline contract timing.",
+   615→    body: "Hi Sagar,\n\nSlide 12 now carries the pipeline stress-test (conservative case included). Two open items before we lock numbers on Friday:\n\n1. The Acme renewal assumption — currently modelled at 3 years, ₹3.84 Cr. If the discount lands at 12% instead of 10%, Q4 revenue shifts by ₹2.1 L.\n2. Brightline contract timing — if signature slips past 20 Nov, the FY26 cost line moves to January.\n\nEverything else matches the version we discussed on Tuesday. Comments are open on slide 12.\n\nThanks,\nPriya",
+   616→    ts: at(0, 8, 5), read: false, starred: true, labels: ["Board", "Finance"], priority: "High",
+   617→    attachments: [{ name: "Q4-Board-Deck-v4.pptx", sizeKb: 8420, type: "PPTX" }],
+   618→  },
+   619→  {
+   620→    id: "m-102", folder: "inbox", fromId: "rahul", to: ["sagar"], cc: ["pankaj"], subject: "RE: Acme Corp renewal — revised commercial terms",
+   621→    preview: "Client wants the 12% on paper before Monday's 10:30 call. Finance has vetted the floor price. Requesting final authority sign-off today.",
+   622→    body: "Sagar,\n\nUpdate from this morning's standup: the client wants the 12% on paper before Monday's 10:30 call. Finance has vetted the floor price (Priya is on CC).\n\nThe formal discount approval is already in your approvals queue — if you can decide today, we send the revised proposal this evening and hold the Monday slot for close.\n\nRahul",
+   623→    ts: at(0, 9, 15), read: false, labels: ["Sales"], priority: "High",
+   624→  },
+   625→  {
+   626→    id: "m-103", folder: "inbox", fromId: "arjun", to: ["sagar"], subject: "Qubit AI access-policy proposal — ready for your review",
+   627→    preview: "Tightened AI data scopes for the Service module: agents get AI summaries only for tickets they own. Audit trail coverage is complete. Task and proposal attached.",
+   628→    body: "Hi Sagar,\n\nThe Qubit AI access-policy proposal is ready for your review (task-134 in your workspace).\n\nKey changes:\n- Service agents receive AI summaries only for tickets they own — no cross-team leakage.\n- Sensitive AI actions (role data, financial summaries) require human approval, same as Phase 3 boundaries.\n- Every AI query writes an audit event; denials are recorded with reason codes.\n\nSecurity review is scheduled for Tuesday 10:00. Would like your approval before the December rollout gate.\n\nArjun",
+   629→    ts: at(-1, 17, 45), read: false, labels: ["IT"], attachments: [{ name: "AI-access-policy-proposal.pdf", sizeKb: 640, type: "PDF" }],
+   630→  },
+   631→  {
+   632→    id: "m-104", folder: "inbox", fromId: "neha", to: ["sagar"], subject: "Probation confirmation — Sneha Gupta (Operations)",
+   633→    preview: "Sneha completes probation on 31 Dec. Manager rating: meets expectations. Recommending confirmation with the standard band increment. Details in the approval.",
+   634→    body: "Hi Sagar,\n\nSneha Gupta (Business Analyst, Operations) completes probation on 31 December. Sanjay's rating: meets expectations; her stakeholder feedback from Finance is positive.\n\nRecommending confirmation with the standard band increment. The confirmation request is in your approvals queue — SLA is 3 working days.\n\nNeha",
+   635→    ts: at(0, 9, 11), read: true, labels: ["HR"],
+   636→  },
+   637→  {
+   638→    id: "m-105", folder: "inbox", fromId: "vikramj", to: ["sagar"], subject: "Zenith Manufacturing — SLA breach and corrective actions",
+   639→    preview: "Two field visits breached the 48-hour SLA last week (spare-part delay from the Pune hub). Corrective summary attached; escalation task is in your queue.",
+   640→    body: "Sagar,\n\nTwo Zenith Manufacturing visits breached the 48-hour SLA last week — root cause was a spare-part delay from the Pune hub (part SV-4471 was out of stock for 36 hours).\n\nCorrective actions: (1) minimum-stock threshold raised for the top 20 spare parts, (2) a backup supplier for SV-4471 is being onboarded, (3) the affected customer has been given a service credit.\n\nSummary attached. The escalation review task is in your queue.\n\nVikram",
+   641→    ts: at(-1, 9, 30), read: true, labels: ["Service"],
+   642→    attachments: [{ name: "Zenith-SLA-corrective-actions.docx", sizeKb: 88, type: "DOCX" }],
+   643→  },
+   644→  {
+   645→    id: "m-106", folder: "inbox", fromId: "sanjay", to: ["sagar"], cc: ["priya"], subject: "Brightline Logistics — contract ready for signature",
+   646→    preview: "Legal signed off yesterday. Net-45 with 2% early-payment discount, liability cap at 2x. Contract approval is in your queue; signature deadline is 17 Nov.",
+   647→    body: "Sagar,\n\nLegal signed off yesterday. Final terms: Net-45 with 2% early-payment discount; liability cap raised to 2x contract value (their original was 0.5x, so this is a strong outcome).\n\nThe contract approval is in your queue — signature deadline is 17 November to keep the 1 December go-live.\n\nSanjay",
+   648→    ts: at(-1, 11, 5), read: true, labels: ["Legal"], priority: "High",
+   649→  },
+   650→  {
+   651→    id: "m-107", folder: "inbox", fromExternal: { name: "Ananya Krishnan", email: "ananya.krishnan@acmecorp.in" }, fromId: null, to: ["sagar.singh@qubitone.in"],
+   652→    subject: "RE: Renewal discussion — confirming Monday 10:30 IST",
+   653→    preview: "Confirming Monday's call. Our procurement team will join. We would like the revised proposal shared 24 hours before the call, as discussed with Rahul.",
+   654→    body: "Dear Mr. Singh,\n\nConfirming Monday's call at 10:30 IST. Our procurement head, Mr. Deshpande, will join.\n\nAs discussed with Rahul, we would appreciate the revised proposal 24 hours before the call. The multi-year structure works for us provided the commercial terms are settled.\n\nBest regards,\nAnanya Krishnan\nProcurement Lead, Acme Corp",
+   655→    ts: at(-1, 14, 20), read: true, starred: true,
+   656→  },
+   657→  {
+   658→    id: "m-108", folder: "inbox", fromId: "amit", to: ["sagar"], subject: "Partner Summit — outcomes and follow-ups",
+   659→    preview: "214 partner leads captured, 38 qualified. Keynote NPS 72. Deck and lead list attached; the recap one-pager goes to all heads today.",
+   660→    body: "Sagar,\n\nPartner Summit wrap-up: 214 partner leads captured, 38 qualified for follow-up (list attached). Keynote NPS came in at 72.\n\nFollow-ups this week: recap one-pager to all department heads (today), qualified-lead routing to sales by Friday, and the backup demo video recorded Monday.\n\nAmit",
+   661→    ts: at(-3, 10, 15), read: true, labels: ["Marketing"],
+   662→    attachments: [{ name: "Summit-leads-qualified.xlsx", sizeKb: 214, type: "XLSX" }, { name: "Keynote-final.pptx", sizeKb: 15200, type: "PPTX" }],
+   663→  },
+   664→  {
+   665→    id: "m-109", folder: "inbox", fromId: "kavita", to: ["sagar"], subject: "November payroll calendar",
+   666→    preview: "Payroll lock on 30 Nov, 18:00. Leave approvals for the month must be decided by 28 Nov so accruals stay correct.",
+   667→    body: "Hi Sagar,\n\nPayroll lock is 30 November, 18:00. Leave approvals for November must be decided by the 28th for accruals to stay correct — Meera's request is already in your queue.\n\nAlso note the ethics declaration deadline (30 Nov) gates payroll for everyone including leadership.\n\nKavita",
+   668→    ts: at(-2, 9, 0), read: true, labels: ["Finance"],
+   669→  },
+   670→  {
+   671→    id: "m-110", folder: "inbox", fromExternal: { name: "Streamline Systems", email: "sales@streamline-systems.com" }, fromId: null, to: ["sagar.singh@qubitone.in"],
+   672→    subject: "Warehouse automation — revised quotation QTN-8841",
+   673→    preview: "Revised quotation attached: 4 conveyor units with installation and 3-year service. Valid until 30 November. Looking forward to the partnership.",
+   674→    body: "Dear Sir,\n\nPlease find the revised quotation QTN-8841 attached: four conveyor units including installation and a 3-year service plan, per the site survey of 6 November.\n\nThe quotation is valid until 30 November. We remain available for a technical call at your convenience.\n\nWarm regards,\nStreamline Systems Pvt Ltd",
+   675→    ts: at(-3, 16, 40), read: true,
+   676→    attachments: [{ name: "QTN-8841-revised.pdf", sizeKb: 512, type: "PDF" }],
+   677→  },
+   678→  {
+   679→    id: "m-111", folder: "inbox", fromId: "anita", to: ["sagar"], subject: "Welcome kit — Ankit Sharma, Sales Trainee",
+   680→    preview: "Ankit's ID card, mailbox and system access are all active. Product handbook acknowledgement is pending — Qubit AI flagged a check-in suggestion.",
+   681→    body: "Hi Sagar,\n\nQuick update on Ankit Sharma (Sales Trainee, started 5 Oct): ID card issued, mailbox active, Qubit One access provisioned with the Sales Executive base role.\n\nPending: product handbook acknowledgement. Qubit AI surfaced a check-in suggestion in your tasks — completely optional, but new joiners who get a week-2 check-in with leadership ramp faster.\n\nAnita",
+   682→    ts: at(-2, 11, 30), read: true, labels: ["HR"],
+   683→  },
+   684→  {
+   685→    id: "m-112", folder: "inbox", fromExternal: { name: "Qubit One IT", email: "it-notices@qubitone.in" }, fromId: null, to: ["all-employees@qubitone.in"],
+   686→    subject: "Scheduled maintenance — Saturday 14 Nov, 22:00–00:30 IST",
+   687→    preview: "Qubit One will be read-only during the maintenance window. Mail delivery is unaffected; approvals and edits resume after 00:30.",
+   688→    body: "Hello,\n\nQubit One will be read-only on Saturday 14 November between 22:00 and 00:30 IST while we upgrade the database cluster.\n\n- Mail delivery is unaffected.\n- Approvals, edits and exports resume after 00:30.\n- No action is required.\n\n— IT & Technology",
+   689→    ts: at(-2, 12, 0), read: true,
+   690→  },
+   691→  {
+   692→    id: "m-113", folder: "inbox", fromId: "deepak", to: ["sagar"], subject: "Photos from Diwali celebration",
+   693→    preview: "Sharing the album from Tuesday's celebration. The team put together a short montage for the town hall opener — 40 seconds, music licensed.",
+   694→    body: "Hi Sagar,\n\nSharing the Diwali album. The engagement team also cut a 40-second montage for the town hall opener (music is licensed, no attribution needed).\n\nDeepak",
+   695→    ts: at(-3, 19, 5), read: true, labels: ["Marketing"], starred: true,
+   696→    attachments: [{ name: "Diwali-2026-selects.png", sizeKb: 4200, type: "PNG" }],
+   697→  },
+   698→  {
+   699→    id: "m-114", folder: "inbox", fromId: "meera", to: ["sagar"], subject: "Field Sales — November pipeline note",
+   700→    preview: "Pipeline at ₹9.2 Cr for the quarter. Two at-risk deals (both procurement delays, not pricing). Will cover in Monday's revenue review if useful.",
+   701→    body: "Sagar,\n\nNovember pipeline stands at ₹9.2 Cr. Two deals are at risk — both due to procurement delays on the client side, not pricing. Everything else is on track.\n\nHappy to cover this in Monday's revenue review if useful.\n\nMeera",
+   702→    ts: at(-2, 15, 45), read: true, labels: ["Sales"],
+   703→  },
+   704→  {
+   705→    id: "m-115", folder: "inbox", fromId: "tanvi", to: ["sagar"], cc: ["priya"], subject: "GST documentation — two compliance items before 30 Nov",
+   706→    preview: "Bengaluru branch has 6 pending input-credit invoices; Delhi has a mismatch in the e-invoice series. Both are with branch accountants; escalation date 24 Nov.",
+   707→    body: "Dear Sir,\n\nTwo compliance items ahead of the 30 November payroll lock:\n\n1. Bengaluru: 6 pending input-credit invoices (₹3.1 L total).\n2. Delhi: e-invoice series mismatch for October — correction filed, acknowledgement expected by 20 Nov.\n\nBoth are with branch accountants. Escalation to finance head on 24 Nov if unresolved.\n\nRegards,\nTanvi Shah",
+   708→    ts: at(-4, 10, 30), read: true, labels: ["Finance"],
+   709→  },
+   710→  {
+   711→    id: "m-116", folder: "inbox", fromExternal: { name: "Qubit One Mail", email: "mailbox-daemon@qubitone.in" }, fromId: null, to: ["sagar.singh@qubitone.in"],
+   712→    subject: "Mail storage — 61% of quota used",
+   713→    preview: "Your mailbox uses 4.9 GB of 8 GB. Older items can be moved to Archive from Mail Search. Retention policy: 24 months online.",
+   714→    body: "Your mailbox currently uses 4.9 GB of the 8 GB enterprise quota.\n\nYou can free space by archiving older conversations (Mail Search → filter by date range → select → Archive).\n\nRetention policy: 24 months online, then 7 years in compliant cold storage per policy DLP-04.\n\n— Qubit One Mail",
+   715→    ts: at(-6, 8, 0), read: true,
+   716→  },
+   717→  // ——— Sent ———
+   718→  {
+   719→    id: "s-201", folder: "sent", fromId: "sagar", to: ["priya", "rahul"], subject: "Q3 board deck — final for review",
+   720→    preview: "Thanks Priya. Rahul — the Acme assumption should model the 10% case; if the 12% clears, we update the appendix, not the base case.",
+   721→    body: "Priya, Rahul,\n\nThanks Priya — reviewed slide 12 this morning. The conservative case reads well.\n\nRahul: the Acme assumption should model the 10% case. If the 12% clears, we update the appendix, not the base case — the board sees the conservative number.\n\nSign-off after today's Acme decision.\n\nSagar",
+   722→    ts: at(0, 8, 30), read: true, sendStatus: "Delivered", labels: ["Board"],
+   723→    attachments: [{ name: "Q4-Board-Deck-v4-comments.xlsx", sizeKb: 96, type: "XLSX" }],
+   724→  },
+   725→  {
+   726→    id: "s-202", folder: "sent", fromId: "sagar", to: ["all-heads@qubitone.in"], subject: "Town hall — Monday 16 Nov, 16:00",
+   727→    preview: "Agenda: FY27 targets, Bengaluru expansion, service quality wins, and open Q&A. Department heads: two slides each are due by Sunday evening.",
+   728→    body: "All,\n\nQuarterly town hall on Monday 16 November at 16:00 (Qubit Meet, all-hands).\n\nAgenda: FY27 targets, Bengaluru office expansion, service quality wins, open Q&A.\n\nDepartment heads: your two slides are due by Sunday evening — template is in the shared drive.\n\nSagar",
+   729→    ts: at(-1, 12, 0), read: true, sendStatus: "Delivered",
+   730→  },
+   731→  {
+   732→    id: "s-203", folder: "sent", fromId: "sagar", to: ["sneha"], subject: "Welcome to the leadership reviews — see you at the town hall",
+   733→    preview: "Your probation confirmation is in process. From November you'll join the monthly operations review — Sanjay will share the cadence.",
+   734→    body: "Sneha,\n\nYour probation confirmation is in process — congratulations, the feedback from Finance stakeholders has been excellent.\n\nFrom November you'll join the monthly operations review. Sanjay will share the cadence this week.\n\nSagar",
+   735→    ts: at(-3, 11, 0), read: true, sendStatus: "Sent",
+   736→  },
+   737→  {
+   738→    id: "s-204", folder: "sent", fromId: "sagar", to: ["rohitv"], subject: "RE: Zenith visit — expense claim",
+   739→    preview: "Claim received. It's in the standard queue with your department head — Rohit, route these to Pankaj first going forward; they route to me only above ₹50,000.",
+   740→    body: "Rohit,\n\nClaim received. One process note: route expense claims to Pankaj (department head) first — they route to me only above ₹50,000 or for exceptions.\n\nSagar",
+   741→    ts: at(-4, 12, 0), read: true, sendStatus: "Delivered",
+   742→  },
+   743→  {
+   744→    id: "s-205", folder: "sent", fromId: "sagar", to: ["ananya.krishnan@acmecorp.in"], subject: "RE: Renewal discussion — confirming Monday 10:30 IST",
+   745→    preview: "Confirmed for Monday 10:30 IST. Revised proposal will reach you by Sunday evening. Looking forward to continuing the partnership.",
+   746→    body: "Dear Ms. Krishnan,\n\nConfirmed for Monday 10:30 IST. Our Sales Head Rahul Mehta and Account Manager Pankaj Sharma will join.\n\nThe revised proposal will reach you by Sunday evening, as discussed.\n\nBest regards,\nSagar Singh\nChief Executive Officer, Qubit One Pvt Ltd",
+   747→    ts: at(-1, 14, 55), read: true, sendStatus: "Delivered",
+   748→  },
+   749→  {
+   750→    id: "s-206", folder: "sent", fromId: "sagar", to: ["arjun"], subject: "Qubit AI access policy — approved for the December gate",
+   751→    preview: "Policy approved with one addition: quarterly access recertification for AI data scopes, owned by your team. Add it to the rollout plan.",
+   752→    body: "Arjun,\n\nPolicy approved for the December gate, with one addition: quarterly access recertification for AI data scopes, owned by your team — same model as the role matrix reviews.\n\nAdd it to the rollout plan and we're set.\n\nSagar",
+   753→    ts: at(-5, 16, 20), read: true, sendStatus: "Sent",
+   754→  },
+   755→  {
+   756→    id: "s-207", folder: "sent", fromId: "sagar", to: ["accounts@brightline-logistics.in"], subject: "RE: Invoice INV-20261 — updated bank details",
+   757→    preview: "Verifying the bank detail change via our registered contact before we process. Sanjay Gupta will call your accounts team today.",
+   758→    body: "Team,\n\nWe received a request stating updated bank details for invoice INV-20261. Per our finance policy, we verify such changes via the registered contact before processing.\n\nSanjay Gupta (Operations Head) will call your accounts team today to confirm. Until then, the earlier details stand.\n\nSagar Singh\nQubit One Pvt Ltd",
+   759→    ts: at(-2, 13, 30), read: true, sendStatus: "Sent", priority: "High",
+   760→  },
+   761→  {
+   762→    id: "s-208", folder: "sent", fromId: "sagar", to: ["cfo.office@zenith-mfg.co.in"], subject: "Partnership renewal — meeting request",
+   763→    preview: "Requesting 30 minutes next week to discuss the renewal. Proposed Wednesday 11:00 IST; happy to adjust to your calendar.",
+   764→    body: "Dear CFO's office,\n\nRequesting 30 minutes next week to discuss our service renewal and the improvement plan following the recent SLA incidents.\n\nProposed Wednesday 11:00 IST — happy to adjust to your calendar.\n\nRegards,\nSagar Singh, Qubit One Pvt Ltd",
+   765→    ts: at(-4, 9, 45), read: true, sendStatus: "Failed", sendDetail: "Delivery failed — recipient domain (zenith-mfg.co.in) not reachable. The address may be outdated.",
+   766→  },
+   767→  {
+   768→    id: "s-209", folder: "sent", fromId: "sagar", to: ["nikhil"], subject: "Laptop refresh — aging devices report",
+   769→    preview: "Reviewed the aging report. Approve the refresh for devices older than 4 years in field service first — they carry the SLA risk.",
+   770→    body: "Nikhil,\n\nReviewed the aging report. Refresh for devices older than 4 years in field service first — they carry the SLA risk. HQ can follow in Q1.\n\nRaise the purchase request with IT & Technology as the budget owner.\n\nSagar",
+   771→    ts: at(-6, 17, 10), read: true, sendStatus: "Delivered",
+   772→  },
+   773→  // ——— Drafts ———
+   774→  {
+   775→    id: "d-301", folder: "drafts", fromId: "sagar", to: ["all-heads@qubitone.in"], subject: "FY27 OKRs — consolidation and offsite agenda",
+   776→    preview: "All eight department drafts are consolidated in the attached worksheet. Before the offsite: confirm your top-3 objectives and the one metric you don't want to miss\u2026",
+   777→    body: "All,\n\nAll eight department drafts are consolidated in the attached worksheet. Before the offsite (24–25 Nov, Lonavala):\n\n1. Confirm your top-3 objectives.\n2. Flag the one metric you don't want to miss.\n3. Note any cross-department dependency — those are where the offsite adds value.\n\nSagar",
+   778→    ts: at(0, 7, 40), read: true,
+   779→    attachments: [{ name: "FY27-OKR-worksheet.xlsx", sizeKb: 96, type: "XLSX" }],
+   780→  },
+   781→  {
+   782→    id: "d-302", folder: "drafts", fromId: "sagar", to: ["meera"], subject: "Field sales coverage during your leave",
+   783→    preview: "Plan for 23–27 Nov: Pankaj holds the Acme account, Arvind covers Jaipur visits. Send me the handover note by Friday and I'll approve the leave\u2026",
+   784→    body: "Meera,\n\nPlan for 23–27 Nov: Pankaj holds the Acme account, Arvind covers Jaipur visits.\n\nSend me the handover note by Friday and I'll approve the leave the same day.\n\nSagar",
+   785→    ts: at(-1, 10, 5), read: true,
+   786→  },
+   787→];
+   788→
+   789→/** Older archive messages — generated deterministically so Mail Search
+   790→ *  operates at a believable enterprise scale (spec §13). */
+   791→function mulberry32(seed: number) {
+   792→  return function () {
+   793→    let t = (seed += 0x6d2b79f5);
+   794→    t = Math.imul(t ^ (t >>> 15), t | 1);
+   795→    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+   796→    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+   797→  };
+   798→}
+   799→
+   800→const ARCHIVE_SENDERS = ["rahul", "priya", "neha", "amit", "vikramj", "karan", "arjun", "sanjay", "pankaj", "meera", "kavita", "deepak"];
+   801→const ARCHIVE_TOPICS: [string, string][] = [
+   802→  ["Weekly revenue snapshot — week %N", "Numbers for week %N attached. Pipeline conversion steady at 24%."],
+   803→  ["Service review — month %N", "SLA at 96.4% for month %N. Two chronic escalations discussed."],
+   804→  ["HR calendar — month %N", "Engagement survey opens Monday. Manager briefings on Wednesday."],
+   805→  ["Campaign report — %N", "Spend efficiency improved 8% vs %N. Creative refresh scheduled."],
+   806→  ["Inventory reconciliation — %N", "Variance down to 0.9% after the count policy change."],
+   807→  ["Security patch cycle — %N", "All endpoints patched for %N. Zero critical exceptions."],
+   808→  ["Vendor payment run — %N", "₹1.8 Cr released for %N. Two invoices held pending GST corrections."],
+   809→  ["Town hall follow-ups — %N", "Action items from the %N town hall with owners and dates."],
+   810→];
+   811→
+   812→const ARCHIVE_MESSAGES: MailMessage[] = (() => {
+   813→  const rnd = mulberry32(20261113);
+   814→  const out: MailMessage[] = [];
+   815→  for (let i = 0; i < 132; i++) {
+   816→    const sender = ARCHIVE_SENDERS[Math.floor(rnd() * ARCHIVE_SENDERS.length)];
+   817→    const [ts, body] = ARCHIVE_TOPICS[Math.floor(rnd() * ARCHIVE_TOPICS.length)];
+   818→    const n = 30 + Math.floor(rnd() * 90);
+   819→    const dayOffset = -(40 + i * 2 + Math.floor(rnd() * 2));
+   820→    out.push({
+   821→      id: `m-arc-${1000 + i}`,
+   822→      folder: "archive",
+   823→      fromId: sender,
+   824→      to: ["sagar"],
+   825→      subject: ts.replace("%N", String(n)),
+   826→      preview: body.replace("%N", String(n)),
+   827→      body: body.replace("%N", String(n)) + `\n\nDetails and attachments are available in the %N workspace.\n\n— sent via Qubit One Mail`,
+   828→      ts: at(dayOffset, 9 + Math.floor(rnd() * 9), Math.floor(rnd() * 60)),
+   829→      read: true,
+   830→      labels: [(["Finance", "Sales", "HR", "Service", "IT", "Marketing"] as MailLabel[])[Math.floor(rnd() * 6)]],
+   831→    });
+   832→  }
+   833→  return out;
+   834→})();
+   835→
+   836→export const ALL_MAIL: MailMessage[] = [...MAIL, ...ARCHIVE_MESSAGES];
+   837→
+   838→/** Authoritative count of the signed-in user's authorized mail scope,
+   839→ *  used by Mail Search for honest scale reporting. */
+   840→export const AUTHORIZED_MAIL_COUNT = ALL_MAIL.length;
+   841→
+   842→// ============================================================
+   843→// Workspace selectors
+   844→// ============================================================
+   845→
+   846→export const CURRENT_EMPLOYEE_ID = "sagar";
+   847→
+   848→export const overdueTasks = (list: Task[]): Task[] =>
+   849→  list.filter((t) => t.due !== null && t.due < WORKSPACE_NOW && t.status !== "Completed" && t.status !== "Cancelled");
+   850→
+   851→export const pendingApprovals = (list: ApprovalRequest[]): ApprovalRequest[] =>
+   852→  list.filter((a) => a.status === "Pending");
+   853→
+   854→export const employeeById = (id: string | null | undefined) =>
+   855→  employees.find((e) => e.id === id);
+   856→
+   857→export const mailboxUnreadCount = (list: MailMessage[]): number =>
+   858→  list.filter((m) => m.folder === "inbox" && !m.read).length;
+   859→

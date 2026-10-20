@@ -112,6 +112,24 @@ import { AiNextBestActionScreen } from "./screens/ai-next-best-action";
 import { AiPipelineReviewScreen } from "./screens/ai-pipeline-review";
 import { AiDailyBriefScreen } from "./screens/ai-daily-brief";
 import { AiSalesQaScreen } from "./screens/ai-sales-qa";
+import { AnalyticsHomeScreen } from "./screens/analytics-home";
+import { ExecutiveAnalyticsScreen } from "./screens/executive-analytics";
+import { SalesAnalyticsScreen } from "./screens/sales-analytics";
+import { FinanceAnalyticsScreen } from "./screens/finance-analytics";
+import { MarketingAnalyticsScreen } from "./screens/marketing-analytics";
+import { HrAnalyticsScreen } from "./screens/hr-analytics";
+import { ServiceAnalyticsScreen } from "./screens/service-analytics";
+import { InventoryAnalyticsScreen } from "./screens/inventory-analytics";
+import { EmployeeProductivityScreen } from "./screens/employee-productivity";
+import { TaskAnalyticsScreen } from "./screens/task-analytics";
+import { FunnelAnalyticsScreen } from "./screens/funnel-analytics";
+import { CohortAnalysisScreen } from "./screens/cohort-analysis";
+import { ReportBuilderScreen } from "./screens/report-builder";
+import { ReportDetailScreen } from "./screens/report-detail";
+import { AuditExplorerScreen } from "./screens/audit-explorer";
+import { DataExportScreen } from "./screens/data-export";
+import { ScheduledReportsScreen } from "./screens/scheduled-reports";
+import { AnalyticsSettingsScreen } from "./screens/analytics-settings";
 
 export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "org-structure": OrganizationStructureScreen,
@@ -224,4 +242,22 @@ export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "ai-pipeline-review": AiPipelineReviewScreen,
   "ai-daily-brief": AiDailyBriefScreen,
   "ai-sales-qa": AiSalesQaScreen,
+  "analytics-home": AnalyticsHomeScreen,
+  "executive-analytics": ExecutiveAnalyticsScreen,
+  "sales-analytics": SalesAnalyticsScreen,
+  "finance-analytics": FinanceAnalyticsScreen,
+  "marketing-analytics": MarketingAnalyticsScreen,
+  "hr-analytics": HrAnalyticsScreen,
+  "service-analytics": ServiceAnalyticsScreen,
+  "inventory-analytics": InventoryAnalyticsScreen,
+  "employee-productivity": EmployeeProductivityScreen,
+  "task-analytics": TaskAnalyticsScreen,
+  "funnel-analytics": FunnelAnalyticsScreen,
+  "cohort-analysis": CohortAnalysisScreen,
+  "report-builder": ReportBuilderScreen,
+  "report-detail": ReportDetailScreen,
+  "audit-explorer": AuditExplorerScreen,
+  "data-export": DataExportScreen,
+  "scheduled-reports": ScheduledReportsScreen,
+  "analytics-settings": AnalyticsSettingsScreen,
 };

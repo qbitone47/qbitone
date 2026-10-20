@@ -6,6 +6,7 @@
 // Phase 5: CEO Command Center (screens 59–72)
 // Phase 6: Sales Operating System (screens 73–102)
 // Phase 7: Sales AI (screens 103–110)
+// Phase 17: Analytics / Audit (screens 267–284)
 
 export type ScreenId =
   | "org-structure"
@@ -117,9 +118,27 @@ export type ScreenId =
   | "ai-next-best-action"
   | "ai-pipeline-review"
   | "ai-daily-brief"
-  | "ai-sales-qa";
+  | "ai-sales-qa"
+  | "analytics-home"
+  | "executive-analytics"
+  | "sales-analytics"
+  | "finance-analytics"
+  | "marketing-analytics"
+  | "hr-analytics"
+  | "service-analytics"
+  | "inventory-analytics"
+  | "employee-productivity"
+  | "task-analytics"
+  | "funnel-analytics"
+  | "cohort-analysis"
+  | "report-builder"
+  | "report-detail"
+  | "audit-explorer"
+  | "data-export"
+  | "scheduled-reports"
+  | "analytics-settings";
 
-export type ScreenModule = "enterprise" | "design-system" | "security" | "workspace" | "people" | "mail" | "executive" | "sales" | "sales-ai";
+export type ScreenModule = "enterprise" | "design-system" | "security" | "workspace" | "people" | "mail" | "executive" | "sales" | "sales-ai" | "analytics";
 
 /** Screens rendered without the app shell (standalone authentication) */
 export const AUTH_SCREENS: ScreenId[] = ["login", "mfa-verification", "sso-provider-selection"];
@@ -251,6 +270,25 @@ export const SCREENS: ScreenMeta[] = [
   { id: "ai-pipeline-review", num: "108", title: "AI Pipeline Review", shortTitle: "Pipeline Review", description: "Pipeline health with stalled-deal, aging and forecast-risk insights. Actual, forecast and AI estimate never mixed.", module: "sales-ai" },
   { id: "ai-daily-brief", num: "109", title: "AI Daily Brief", shortTitle: "Daily Brief", description: "A personalized, concise read of today — priorities, meetings, follow-ups, target progress and risks.", module: "sales-ai" },
   { id: "ai-sales-qa", num: "110", title: "AI Sales Q&A", shortTitle: "Sales Q&A", description: "Grounded answers over authorized sales data — key numbers, reasoning, sources, recommended actions.", module: "sales-ai" },
+  // ——— Phase 17 · Analytics / Audit ———
+  { id: "analytics-home", num: "267", title: "Analytics Home", shortTitle: "Home", description: "One unified entry point into Qubit One analytics — role-aware KPIs, reports, freshness and alerts.", module: "analytics" },
+  { id: "executive-analytics", num: "268", title: "Executive Analytics", shortTitle: "Executive", description: "Enterprise executive workspace — revenue, pipeline, cash, people and health, every figure sourced.", module: "analytics" },
+  { id: "sales-analytics", num: "269", title: "Sales Analytics", shortTitle: "Sales", description: "Centralized sales analytics over the authoritative Sales OS — funnel, win/loss, performance, revenue.", module: "analytics" },
+  { id: "finance-analytics", num: "270", title: "Finance Analytics", shortTitle: "Finance", description: "Finance analytics where Finance stays the source of truth — booked, recognized and collected never mixed.", module: "analytics" },
+  { id: "marketing-analytics", num: "271", title: "Marketing Analytics", shortTitle: "Marketing", description: "Campaign, channel and SEO performance with source-aware labels — attribution is never invented.", module: "analytics" },
+  { id: "hr-analytics", num: "272", title: "HR Analytics", shortTitle: "HR", description: "Privacy-safe people analytics — aggregated headcount, hiring, attendance and attrition only.", module: "analytics" },
+  { id: "service-analytics", num: "273", title: "Service Analytics", shortTitle: "Service", description: "Service health — tickets, SLA, response and resolution, engineer performance and visit completion.", module: "analytics" },
+  { id: "inventory-analytics", num: "274", title: "Inventory Analytics", shortTitle: "Inventory", description: "Stock levels, movement and dispatch — operational metrics kept separate from Finance-aligned valuation.", module: "analytics" },
+  { id: "employee-productivity", num: "275", title: "Employee Productivity", shortTitle: "Productivity", description: "Privacy-conscious productivity from work items you own — no surveillance, no fabricated scores.", module: "analytics" },
+  { id: "task-analytics", num: "276", title: "Task Analytics", shortTitle: "Tasks", description: "Analytics over the ONE workspace task store — status, priority, workload and overdue trends.", module: "analytics" },
+  { id: "funnel-analytics", num: "277", title: "Funnel Analytics", shortTitle: "Funnels", description: "One funnel engine over Sales, Recruitment, Service and Marketing — stages, conversion and drop-off.", module: "analytics" },
+  { id: "cohort-analysis", num: "278", title: "Cohort / Trend Analysis", shortTitle: "Cohorts & Trends", description: "Acquisition cohorts and trend analysis — honest sample sizes, no weak conclusions dressed as facts.", module: "analytics" },
+  { id: "report-builder", num: "279", title: "Custom Report Builder", shortTitle: "Report Builder", description: "Governed report building on the semantic layer — no SQL, server-enforced fields, rows and exports.", module: "analytics" },
+  { id: "report-detail", num: "280", title: "Report Detail", shortTitle: "Report Detail", description: "The saved report view — definitions, lineage, freshness and only the actions your role allows.", module: "analytics" },
+  { id: "audit-explorer", num: "281", title: "Audit Explorer", shortTitle: "Audit Explorer", description: "An advanced view over the ONE enterprise audit trail — search and filter, never edit.", module: "analytics" },
+  { id: "data-export", num: "282", title: "Data Export", shortTitle: "Data Export", description: "Secure, permission-controlled exports — reasons for sensitive data, expiring links, audited jobs.", module: "analytics" },
+  { id: "scheduled-reports", num: "283", title: "Scheduled Reports", shortTitle: "Scheduled Reports", description: "Scheduled report deliveries on the Qubit scheduler — validated recipients, audited, pausable.", module: "analytics" },
+  { id: "analytics-settings", num: "284", title: "Analytics Settings", shortTitle: "Settings", description: "Analytics administration — metric governance, refresh policies, retention and export rules.", module: "analytics" },
 ];
 
 export const screenMeta = (id: ScreenId): ScreenMeta =>
@@ -297,4 +335,9 @@ export interface ScreenParams {
   visitId?: string;
   expenseId?: string;
   travelId?: string;
+  /** Analytics deep links (Phase 17) */
+  datasetId?: string;
+  exportId?: string;
+  scheduleId?: string;
+  funnelId?: string;
 }
