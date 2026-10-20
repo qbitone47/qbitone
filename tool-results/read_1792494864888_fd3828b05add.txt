@@ -1,0 +1,719 @@
+     1→"use client";
+     2→
+     3→import * as React from "react";
+     4→import {
+     5→  Briefcase,
+     6→  CalendarDays,
+     7→  CalendarPlus,
+     8→  ChevronLeft,
+     9→  ChevronRight,
+    10→  Clock,
+    11→  Info,
+    12→  Lock,
+    13→  MapPin,
+    14→  Users,
+    15→  Video,
+    16→} from "lucide-react";
+    17→import { Button } from "@/components/ui/button";
+    18→import { Input } from "@/components/ui/input";
+    19→import { Label } from "@/components/ui/label";
+    20→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+    21→import { useToast } from "@/hooks/use-toast";
+    22→import { cn } from "@/lib/utils";
+    23→import { getEmployee } from "@/lib/qubit/data";
+    24→import {
+    25→  EVENTS,
+    26→  fmtDate,
+    27→  fmtTime,
+    28→  ist,
+    29→  MEETINGS,
+    30→  WORKSPACE_NOW,
+    31→  type CalendarEvent,
+    32→  type EventType,
+    33→} from "@/lib/qubit/workspace-data";
+    34→import { useQubitNav } from "../nav-context";
+    35→import { PageHeader } from "../page-header";
+    36→import { AvatarStack, SegmentedToggle } from "../workspace/parts";
+    37→import { EmptyState, SectionCard } from "../primitives";
+    38→import { FormDialog } from "../dialogs";
+    39→
+    40→// ============================================================
+    41→// Screen 44 · My Calendar — unified calendar with structured
+    42→// enterprise density. Privacy is real: events marked
+    43→// organizer-only render as "Busy" for anyone else.
+    44→// ============================================================
+    45→
+    46→const HOUR_H = 48; // px per hour in week grid
+    47→const DAY_START = 8; // 08:00
+    48→const DAY_END = 20; // 20:00
+    49→
+    50→const TYPE_STYLES: Record<EventType, { chip: string; dot: string; label: string }> = {
+    51→  Meeting: { chip: "border-blue-200 bg-blue-50 text-blue-800", dot: "bg-blue-600", label: "Meetings" },
+    52→  Deadline: { chip: "border-amber-200 bg-amber-50 text-amber-800", dot: "bg-amber-500", label: "Deadlines" },
+    53→  "Company event": { chip: "border-violet-200 bg-violet-50 text-violet-800", dot: "bg-violet-500", label: "Company events" },
+    54→  Leave: { chip: "border-emerald-200 bg-emerald-50 text-emerald-800", dot: "bg-emerald-500", label: "Approved leave" },
+    55→  "Focus time": { chip: "border-slate-200 bg-slate-50 text-slate-700", dot: "bg-slate-400", label: "Focus time" },
+    56→};
+    57→
+    58→const TYPE_ORDER: EventType[] = ["Meeting", "Deadline", "Company event", "Leave", "Focus time"];
+    59→const DAY_MS = 86_400_000;
+    60→const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    61→
+    62→/** Midnight IST (epoch) of the given timestamp's IST day. */
+    63→const istMidnight = (ts: number) => {
+    64→  const d = ist(ts);
+    65→  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - 330 * 60_000;
+    66→};
+    67→
+    68→export function MyCalendarScreen() {
+    69→  const nav = useQubitNav();
+    70→  const { toast } = useToast();
+    71→
+    72→  const [view, setView] = React.useState<"day" | "week" | "month">("week");
+    73→  const [anchor, setAnchor] = React.useState(WORKSPACE_NOW);
+    74→  const [types, setTypes] = React.useState<EventType[]>(TYPE_ORDER);
+    75→  const [extraEvents, setExtraEvents] = React.useState<CalendarEvent[]>([]);
+    76→  const [selected, setSelected] = React.useState<CalendarEvent | null>(null);
+    77→  const [createOpen, setCreateOpen] = React.useState(false);
+    78→
+    79→  const allEvents = React.useMemo(() => [...EVENTS, ...extraEvents], [extraEvents]);
+    80→  const visible = React.useMemo(() => allEvents.filter((e) => types.includes(e.type)), [allEvents, types]);
+    81→
+    82→  const anchorMid = istMidnight(anchor);
+    83→  const anchorDow = (ist(anchorMid).getUTCDay() + 6) % 7; // 0 = Monday
+    84→  const weekStart = anchorMid - anchorDow * DAY_MS;
+    85→  const weekDays = Array.from({ length: 7 }, (_, i) => weekStart + i * DAY_MS);
+    86→
+    87→  // month grid: Monday-start weeks covering the anchor's month
+    88→  const monthRef = ist(anchorMid);
+    89→  const monthStart = Date.UTC(monthRef.getUTCFullYear(), monthRef.getUTCMonth(), 1) - 330 * 60_000;
+    90→  const monthDow = (ist(monthStart).getUTCDay() + 6) % 7;
+    91→  const monthGridStart = monthStart - monthDow * DAY_MS;
+    92→  const monthGrid = Array.from({ length: 42 }, (_, i) => monthGridStart + i * DAY_MS);
+    93→  const monthLabel = ist(anchorMid).toLocaleDateString("en-IN", { month: "long", year: "numeric", timeZone: "UTC" });
+    94→
+    95→  const rangeLabel =
+    96→    view === "day"
+    97→      ? `${WEEKDAYS[(ist(anchorMid).getUTCDay() + 6) % 7]}, ${fmtDate(anchorMid)}`
+    98→      : view === "week"
+    99→        ? `${fmtDate(weekStart)} — ${fmtDate(weekStart + 6 * DAY_MS)}`
+   100→        : monthLabel;
+   101→
+   102→  const step = (dir: 1 | -1) => {
+   103→    if (view === "day") setAnchor((a) => istMidnight(a) + dir * DAY_MS);
+   104→    else if (view === "week") setAnchor((a) => istMidnight(a) + dir * 7 * DAY_MS);
+   105→    else {
+   106→      const d = ist(istMidnight(anchor));
+   107→      setAnchor(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + dir, 1) - 330 * 60_000);
+   108→    }
+   109→  };
+   110→
+   111→  const eventsOn = (dayMid: number) =>
+   112→    visible.filter((e) => {
+   113→      const sMid = istMidnight(e.start);
+   114→      const eMid = istMidnight(e.end);
+   115→      return dayMid >= sMid && dayMid <= eMid;
+   116→    });
+   117→
+   118→  const timedOn = (dayMid: number) =>
+   119→    eventsOn(dayMid)
+   120→      .filter((e) => !e.allDay && istMidnight(e.start) === dayMid)
+   121→      .sort((a, b) => a.start - b.start);
+   122→
+   123→  const allDayOn = (dayMid: number) => eventsOn(dayMid).filter((e) => e.allDay || istMidnight(e.start) !== istMidnight(e.end));
+   124→
+   125→  const isToday = (dayMid: number) => dayMid === istMidnight(WORKSPACE_NOW);
+   126→  const isPast = (dayMid: number) => dayMid < istMidnight(WORKSPACE_NOW);
+   127→
+   128→  const toggleType = (t: EventType) => setTypes((ts) => (ts.includes(t) ? ts.filter((x) => x !== t) : [...ts, t]));
+   129→
+   130→  return (
+   131→    <div>
+   132→      <PageHeader
+   133→        crumbs={[{ label: "Workspace" }, { label: "My time" }]}
+   134→        title="My Calendar"
+   135→        description="Meetings, deadlines, company events and approved leave in one enterprise calendar — with privacy you can rely on."
+   136→        actions={
+   137→          <Button className="h-9 gap-1.5" onClick={() => setCreateOpen(true)}>
+   138→            <CalendarPlus className="h-4 w-4" aria-hidden /> New event
+   139→          </Button>
+   140→        }
+   141→      />
+   142→
+   143→      {/* Toolbar */}
+   144→      <div className="mb-3 flex flex-wrap items-center gap-2">
+   145→        <div className="flex items-center gap-1">
+   146→          <Button variant="outline" size="sm" className="h-9" onClick={() => setAnchor(WORKSPACE_NOW)}>
+   147→            Today
+   148→          </Button>
+   149→          <Button variant="outline" size="icon" className="h-9 w-9" aria-label={view === "month" ? "Previous month" : view === "week" ? "Previous week" : "Previous day"} onClick={() => step(-1)}>
+   150→            <ChevronLeft className="h-4 w-4" aria-hidden />
+   151→          </Button>
+   152→          <Button variant="outline" size="icon" className="h-9 w-9" aria-label={view === "month" ? "Next month" : view === "week" ? "Next week" : "Next day"} onClick={() => step(1)}>
+   153→            <ChevronRight className="h-4 w-4" aria-hidden />
+   154→          </Button>
+   155→        </div>
+   156→        <p className="min-w-44 text-sm font-semibold text-slate-900" aria-live="polite">{rangeLabel}</p>
+   157→        <div className="ml-auto flex flex-wrap items-center gap-2">
+   158→          {TYPE_ORDER.map((t) => (
+   159→            <button
+   160→              key={t}
+   161→              type="button"
+   162→              aria-pressed={types.includes(t)}
+   163→              onClick={() => toggleType(t)}
+   164→              className={cn(
+   165→                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11.5px] font-medium transition-colors",
+   166→                types.includes(t) ? TYPE_STYLES[t].chip : "border-slate-200 bg-white text-slate-400",
+   167→              )}
+   168→            >
+   169→              <span className={cn("h-1.5 w-1.5 rounded-full", types.includes(t) ? TYPE_STYLES[t].dot : "bg-slate-300")} aria-hidden />
+   170→              {TYPE_STYLES[t].label}
+   171→            </button>
+   172→          ))}
+   173→          <SegmentedToggle
+   174→            ariaLabel="Calendar view"
+   175→            value={view}
+   176→            onChange={setView}
+   177→            options={[
+   178→              { value: "day", label: "Day" },
+   179→              { value: "week", label: "Week" },
+   180→              { value: "month", label: "Month" },
+   181→            ]}
+   182→          />
+   183→        </div>
+   184→      </div>
+   185→
+   186→      {view === "week" && <WeekGrid days={weekDays} timedOn={timedOn} allDayOn={allDayOn} onOpen={setSelected} />}
+   187→
+   188→      {view === "day" && (
+   189→        <DayView dayMid={anchorMid} timedOn={timedOn} allDayOn={allDayOn} onOpen={setSelected} />
+   190→      )}
+   191→
+   192→      {view === "month" && (
+   193→        <MonthGrid
+   194→          grid={monthGrid}
+   195→          anchorMonth={ist(anchorMid).getUTCMonth()}
+   196→          eventsOn={eventsOn}
+   197→          isToday={isToday}
+   198→          onOpenDay={(d) => {
+   199→            setAnchor(d);
+   200→            setView("day");
+   201→          }}
+   202→          onOpenEvent={setSelected}
+   203→        />
+   204→      )}
+   205→
+   206→      {/* Legend + privacy note */}
+   207→      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-slate-400">
+   208→        <span className="inline-flex items-center gap-1">
+   209→          <Lock className="h-3 w-3" aria-hidden /> Events marked private show as "Busy" to others
+   210→        </span>
+   211→        <span className="inline-flex items-center gap-1">
+   212→          <Clock className="h-3 w-3" aria-hidden /> Times shown in IST (Asia/Kolkata)
+   213→        </span>
+   214→      </div>
+   215→
+   216→      <EventDrawer event={selected} onClose={() => setSelected(null)} onNavigate={nav.navigate} />
+   217→
+   218→      <NewEventDialog
+   219→        open={createOpen}
+   220→        onOpenChange={setCreateOpen}
+   221→        defaultDay={anchorMid}
+   222→        onCreate={(ev) => {
+   223→          setExtraEvents((list) => [...list, ev]);
+   224→          toast({ title: "Event added to your calendar", description: "This session calendar is a workspace preview; your real calendar syncs through the Meetings module." });
+   225→        }}
+   226→      />
+   227→    </div>
+   228→  );
+   229→}
+   230→
+   231→// ---------- Week grid ----------
+   232→
+   233→const isPastDay = (d: number) => d < istMidnight(WORKSPACE_NOW);
+   234→
+   235→function WeekGrid({
+   236→  days,
+   237→  timedOn,
+   238→  allDayOn,
+   239→  onOpen,
+   240→}: {
+   241→  days: number[];
+   242→  timedOn: (d: number) => CalendarEvent[];
+   243→  allDayOn: (d: number) => CalendarEvent[];
+   244→  onOpen: (e: CalendarEvent) => void;
+   245→}) {
+   246→  const hours = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i);
+   247→  const nowOffsetMin = (ist(WORKSPACE_NOW).getUTCHours() - DAY_START) * 60 + ist(WORKSPACE_NOW).getUTCMinutes();
+   248→  const todayIdx = days.findIndex((d) => d === istMidnight(WORKSPACE_NOW));
+   249→
+   250→  return (
+   251→    <div className="qubit-card overflow-hidden">
+   252→      <div className="qubit-scroll overflow-x-auto">
+   253→        <div className="min-w-[860px]">
+   254→          {/* day headers */}
+   255→          <div className="grid border-b border-slate-200/90 bg-slate-50/80" style={{ gridTemplateColumns: `56px repeat(7, minmax(0, 1fr))` }}>
+   256→            <span aria-hidden />
+   257→            {days.map((d) => {
+   258→              const today = d === istMidnight(WORKSPACE_NOW);
+   259→              return (
+   260→                <div key={d} className={cn("border-l border-slate-100 px-2 py-2 text-center", today && "bg-blue-50/60")}>
+   261→                  <p className={cn("text-[10.5px] font-medium uppercase tracking-wide", today ? "text-blue-700" : "text-slate-400")}>
+   262→                    {WEEKDAYS[(ist(d).getUTCDay() + 6) % 7]}
+   263→                  </p>
+   264→                  <p className={cn("text-[15px] font-semibold tabular-nums", today ? "text-blue-700" : isPastDay(d) ? "text-slate-400" : "text-slate-800")}>
+   265→                    {ist(d).getUTCDate()}
+   266→                  </p>
+   267→                </div>
+   268→              );
+   269→            })}
+   270→          </div>
+   271→          {/* all-day strip */}
+   272→          <div className="grid border-b border-slate-100" style={{ gridTemplateColumns: `56px repeat(7, minmax(0, 1fr))` }}>
+   273→            <span className="pt-1.5 text-right pr-1.5 text-[9.5px] font-medium uppercase tracking-wide text-slate-400">All day</span>
+   274→            {days.map((d) => (
+   275→              <div key={d} className="min-h-9 space-y-1 border-l border-slate-100 p-1">
+   276→                {allDayOn(d).map((e) => (
+   277→                  <AllDayChip key={e.id} event={e} onOpen={() => onOpen(e)} />
+   278→                ))}
+   279→              </div>
+   280→            ))}
+   281→          </div>
+   282→          {/* timed grid */}
+   283→          <div className="relative grid" style={{ gridTemplateColumns: `56px repeat(7, minmax(0, 1fr))` }}>
+   284→            <div aria-hidden>
+   285→              {hours.map((h) => (
+   286→                <div key={h} className="relative" style={{ height: HOUR_H }}>
+   287→                  <span className="absolute -top-1.5 right-1.5 text-[10px] tabular-nums text-slate-400">{String(h).padStart(2, "0")}:00</span>
+   288→                </div>
+   289→              ))}
+   290→            </div>
+   291→            {days.map((d) => (
+   292→              <div key={d} className={cn("relative border-l border-slate-100", todayIdx >= 0 && d === days[todayIdx] && "bg-blue-50/25")}>
+   293→                {hours.map((h) => (
+   294→                  <div key={h} className="border-b border-slate-100/70" style={{ height: HOUR_H }} aria-hidden />
+   295→                ))}
+   296→                {timedOn(d).map((e) => (
+   297→                  <EventBlock key={e.id} event={e} dayMid={d} onOpen={() => onOpen(e)} />
+   298→                ))}
+   299→                {/* now indicator inside today's column */}
+   300→                {d === istMidnight(WORKSPACE_NOW) &&
+   301→                  nowOffsetMin >= 0 &&
+   302→                  nowOffsetMin <= (DAY_END - DAY_START) * 60 && (
+   303→                    <div aria-hidden className="pointer-events-none absolute left-0 right-0 z-10 flex items-center" style={{ top: (nowOffsetMin / 60) * HOUR_H }}>
+   304→                      <span className="h-2 w-2 -translate-x-1 rounded-full bg-red-500" />
+   305→                      <span className="h-px flex-1 bg-red-400" />
+   306→                    </div>
+   307→                  )}
+   308→              </div>
+   309→            ))}
+   310→          </div>
+   311→        </div>
+   312→      </div>
+   313→    </div>
+   314→  );
+   315→}
+   316→
+   317→function evMinutes(e: CalendarEvent) {
+   318→  const d = ist(e.start);
+   319→  return (d.getUTCHours() - DAY_START) * 60 + d.getUTCMinutes();
+   320→}
+   321→
+   322→function evDurationMin(e: CalendarEvent) {
+   323→  return Math.max(30, Math.round((e.end - e.start) / 60_000));
+   324→}
+   325→
+   326→function EventBlock({ event: e, dayMid, onOpen }: { event: CalendarEvent; dayMid: number; onOpen: () => void }) {
+   327→  const style = TYPE_STYLES[e.type];
+   328→  const privateEvent = e.visibleTo === "organizer-only" && e.organizerId !== "sagar";
+   329→  const top = (evMinutes(e) / 60) * HOUR_H;
+   330→  const height = Math.max(22, (evDurationMin(e) / 60) * HOUR_H - 2);
+   331→  return (
+   332→    <button
+   333→      type="button"
+   334→      onClick={onOpen}
+   335→      aria-label={privateEvent ? "Private event — Busy" : `${e.title}, ${fmtTime(e.start)} to ${fmtTime(e.end)}`}
+   336→      className={cn(
+   337→        "absolute left-0.5 right-1 z-[5] overflow-hidden rounded-md border px-1.5 py-0.5 text-left transition-all duration-150 hover:z-20 hover:shadow-md",
+   338→        privateEvent ? "border-slate-200 bg-slate-100/90" : style.chip,
+   339→      )}
+   340→      style={{ top, height }}
+   341→    >
+   342→      <span className="flex items-center gap-1">
+   343→        {privateEvent ? (
+   344→          <Lock className="h-2.5 w-2.5 shrink-0 text-slate-400" aria-hidden />
+   345→        ) : (
+   346→          <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", style.dot)} aria-hidden />
+   347→        )}
+   348→        <span className="truncate text-[10.5px] font-semibold leading-tight">{privateEvent ? "Busy" : e.title}</span>
+   349→      </span>
+   350→      {height > 34 && !privateEvent && (
+   351→        <span className="mt-px block truncate text-[9.5px] leading-tight opacity-75">
+   352→          {fmtTime(e.start)} · {e.location ?? e.type}
+   353→        </span>
+   354→      )}
+   355→    </button>
+   356→  );
+   357→}
+   358→
+   359→function AllDayChip({ event: e, onOpen }: { event: CalendarEvent; onOpen: () => void }) {
+   360→  const privateEvent = e.visibleTo === "organizer-only" && e.organizerId !== "sagar";
+   361→  const style = TYPE_STYLES[e.type];
+   362→  return (
+   363→    <button
+   364→      type="button"
+   365→      onClick={onOpen}
+   366→      aria-label={privateEvent ? "Private event — Busy" : `${e.title} (all day)`}
+   367→      className={cn("block w-full truncate rounded border px-1.5 py-0.5 text-left text-[10px] font-medium", privateEvent ? "border-slate-200 bg-slate-100 text-slate-500" : style.chip)}
+   368→    >
+   369→      {privateEvent ? "Busy" : e.title}
+   370→    </button>
+   371→  );
+   372→}
+   373→
+   374→// ---------- Day view ----------
+   375→
+   376→function DayView({
+   377→  dayMid,
+   378→  timedOn,
+   379→  allDayOn,
+   380→  onOpen,
+   381→}: {
+   382→  dayMid: number;
+   383→  timedOn: (d: number) => CalendarEvent[];
+   384→  allDayOn: (d: number) => CalendarEvent[];
+   385→  onOpen: (e: CalendarEvent) => void;
+   386→}) {
+   387→  const hours = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i);
+   388→  const timed = timedOn(dayMid);
+   389→  const allDay = allDayOn(dayMid);
+   390→  return (
+   391→    <div className="qubit-card overflow-hidden">
+   392→      {allDay.length > 0 && (
+   393→        <div className="flex flex-wrap gap-2 border-b border-slate-100 bg-slate-50/60 px-4 py-2.5">
+   394→          {allDay.map((e) => (
+   395→            <AllDayChip key={e.id} event={e} onOpen={() => onOpen(e)} />
+   396→          ))}
+   397→        </div>
+   398→      )}
+   399→      <ol className="divide-y divide-slate-100" aria-label="Day schedule">
+   400→        {hours.map((h) => {
+   401→          const slotEvents = timed.filter((e) => ist(e.start).getUTCHours() === h);
+   402→          return (
+   403→            <li key={h} className="flex gap-4 px-4 py-2">
+   404→              <span className="w-12 shrink-0 pt-0.5 text-right text-[11px] tabular-nums text-slate-400">{String(h).padStart(2, "0")}:00</span>
+   405→              <div className="flex-1 space-y-2">
+   406→                {slotEvents.length === 0 && <div className="h-6 rounded-md bg-slate-50/60" aria-hidden />}
+   407→                {slotEvents.map((e) => {
+   408→                  const privateEvent = e.visibleTo === "organizer-only" && e.organizerId !== "sagar";
+   409→                  return (
+   410→                    <button
+   411→                      key={e.id}
+   412→                      type="button"
+   413→                      onClick={() => onOpen(e)}
+   414→                      aria-label={privateEvent ? "Private event — Busy" : `${e.title}, ${fmtTime(e.start)}`}
+   415→                      className={cn(
+   416→                        "flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors hover:shadow-sm",
+   417→                        privateEvent ? "border-slate-200 bg-slate-100/80" : TYPE_STYLES[e.type].chip,
+   418→                      )}
+   419→                    >
+   420→                      <span className={cn("h-2 w-2 shrink-0 rounded-full", privateEvent ? "bg-slate-400" : TYPE_STYLES[e.type].dot)} aria-hidden />
+   421→                      <span className="min-w-0 flex-1">
+   422→                        <span className="block truncate text-[13px] font-semibold">{privateEvent ? "Busy — private event" : e.title}</span>
+   423→                        {!privateEvent && (
+   424→                          <span className="block truncate text-[11px] opacity-80">
+   425→                            {fmtTime(e.start)}–{fmtTime(e.end)}
+   426→                            {e.location ? ` · ${e.location}` : ""}
+   427→                          </span>
+   428→                        )}
+   429→                      </span>
+   430→                      {!privateEvent && e.meetingId && <Video className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden />}
+   431→                    </button>
+   432→                  );
+   433→                })}
+   434→              </div>
+   435→            </li>
+   436→          );
+   437→        })}
+   438→        {timed.length === 0 && allDay.length === 0 && (
+   439→          <li className="px-4 py-2">
+   440→            <EmptyState icon={<CalendarDays />} title="Nothing scheduled" message="This day is clear — a good place for focused work." className="py-8" />
+   441→          </li>
+   442→        )}
+   443→      </ol>
+   444→    </div>
+   445→  );
+   446→}
+   447→
+   448→// ---------- Month grid ----------
+   449→
+   450→function MonthGrid({
+   451→  grid,
+   452→  anchorMonth,
+   453→  eventsOn,
+   454→  isToday,
+   455→  onOpenDay,
+   456→  onOpenEvent,
+   457→}: {
+   458→  grid: number[];
+   459→  anchorMonth: number;
+   460→  eventsOn: (d: number) => CalendarEvent[];
+   461→  isToday: (d: number) => boolean;
+   462→  onOpenDay: (d: number) => void;
+   463→  onOpenEvent: (e: CalendarEvent) => void;
+   464→}) {
+   465→  return (
+   466→    <div className="qubit-card overflow-hidden">
+   467→      <div className="grid grid-cols-7 border-b border-slate-200/90 bg-slate-50/80">
+   468→        {WEEKDAYS.map((w) => (
+   469→          <span key={w} className="px-2 py-2 text-center text-[10.5px] font-medium uppercase tracking-wide text-slate-400">
+   470→            {w}
+   471→          </span>
+   472→        ))}
+   473→      </div>
+   474→      <div className="grid grid-cols-7">
+   475→        {grid.map((d, i) => {
+   476→          const inMonth = ist(d).getUTCMonth() === anchorMonth;
+   477→          const dayEvents = eventsOn(d);
+   478→          const shown = dayEvents.slice(0, 2);
+   479→          const rest = dayEvents.length - shown.length;
+   480→          return (
+   481→            <div
+   482→              key={d}
+   483→              className={cn(
+   484→                "min-h-24 border-b border-r border-slate-100 p-1.5 [&:nth-child(7n)]:border-r-0",
+   485→                !inMonth && "bg-slate-50/50",
+   486→                isToday(d) && "bg-blue-50/50",
+   487→              )}
+   488→            >
+   489→              <div className="mb-1 flex items-center justify-between">
+   490→                <button
+   491→                  type="button"
+   492→                  onClick={() => onOpenDay(d)}
+   493→                  aria-label={`Open ${fmtDate(d)}`}
+   494→                  className={cn(
+   495→                    "flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-semibold tabular-nums transition-colors",
+   496→                    isToday(d) ? "bg-blue-600 text-white" : inMonth ? "text-slate-700 hover:bg-slate-100" : "text-slate-400",
+   497→                  )}
+   498→                >
+   499→                  {ist(d).getUTCDate()}
+   500→                </button>
+   501→              </div>
+   502→              <div className="space-y-0.5">
+   503→                {shown.map((e) => {
+   504→                  const privateEvent = e.visibleTo === "organizer-only" && e.organizerId !== "sagar";
+   505→                  return (
+   506→                    <button
+   507→                      key={e.id}
+   508→                      type="button"
+   509→                      onClick={() => onOpenEvent(e)}
+   510→                      aria-label={privateEvent ? "Private event — Busy" : e.title}
+   511→                      className={cn("flex w-full items-center gap-1 truncate rounded px-1 py-0.5 text-left text-[10px] font-medium", privateEvent ? "bg-slate-100 text-slate-500" : TYPE_STYLES[e.type].chip)}
+   512→                    >
+   513→                      <span className={cn("h-1 w-1 shrink-0 rounded-full", privateEvent ? "bg-slate-400" : TYPE_STYLES[e.type].dot)} aria-hidden />
+   514→                      <span className="truncate">{privateEvent ? "Busy" : e.title}</span>
+   515→                    </button>
+   516→                  );
+   517→                })}
+   518→                {rest > 0 && (
+   519→                  <button type="button" onClick={() => onOpenDay(d)} className="w-full px-1 text-left text-[10px] font-medium text-slate-500 hover:text-blue-700">
+   520→                    +{rest} more
+   521→                  </button>
+   522→                )}
+   523→              </div>
+   524→              {i % 7 === 6 && <span className="sr-only">Week {Math.floor(i / 7) + 1} ends</span>}
+   525→            </div>
+   526→          );
+   527→        })}
+   528→      </div>
+   529→    </div>
+   530→  );
+   531→}
+   532→
+   533→// ---------- Event drawer ----------
+   534→
+   535→function EventDrawer({
+   536→  event,
+   537→  onClose,
+   538→  onNavigate,
+   539→}: {
+   540→  event: CalendarEvent | null;
+   541→  onClose: () => void;
+   542→  onNavigate: (s: Parameters<ReturnType<typeof useQubitNav>["navigate"]>[0], p?: Parameters<ReturnType<typeof useQubitNav>["navigate"]>[1]) => void;
+   543→}) {
+   544→  const { toast } = useToast();
+   545→  if (!event) return null;
+   546→  const privateEvent = event.visibleTo === "organizer-only" && event.organizerId !== "sagar";
+   547→  const organizer = getEmployee(event.organizerId);
+   548→  const meeting = event.meetingId ? MEETINGS.find((m) => m.id === event.meetingId) : undefined;
+   549→  return (
+   550→    <SectionCard className="fixed inset-x-4 bottom-4 z-40 mx-auto max-w-lg p-0 shadow-xl md:right-6 md:left-auto md:w-96" noPadding>
+   551→      <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
+   552→        <div className="min-w-0">
+   553→          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide" aria-hidden>
+   554→            <span className={cn("h-1.5 w-1.5 rounded-full", privateEvent ? "bg-slate-400" : TYPE_STYLES[event.type].dot)} />
+   555→            <span className={privateEvent ? "text-slate-500" : ""}>{privateEvent ? "Private event" : event.type}</span>
+   556→          </p>
+   557→          <h2 className="mt-0.5 truncate text-[15px] font-semibold tracking-tight text-slate-900">
+   558→            {privateEvent ? "Busy" : event.title}
+   559→          </h2>
+   560→        </div>
+   561→        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Close event details" onClick={onClose}>
+   562→          <Info className="hidden" aria-hidden />
+   563→          <span aria-hidden className="text-slate-400">×</span>
+   564→        </Button>
+   565→      </div>
+   566→      <div className="space-y-3 px-4 py-4 text-[13px] text-slate-700">
+   567→        {privateEvent ? (
+   568→          <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs leading-relaxed text-slate-600">
+   569→            The organizer has marked this event private. You can see when they are unavailable — not why.
+   570→          </p>
+   571→        ) : (
+   572→          <>
+   573→            <p className="flex items-center gap-2">
+   574→              <Clock className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+   575→              {event.allDay ? "All day" : `${fmtTime(event.start)} – ${fmtTime(event.end)}`} · {fmtDate(event.start)}
+   576→            </p>
+   577→            {event.location && (
+   578→              <p className="flex items-center gap-2">
+   579→                <MapPin className="h-3.5 w-3.5 text-slate-400" aria-hidden /> {event.location}
+   580→              </p>
+   581→            )}
+   582→            {organizer && (
+   583→              <p className="flex items-center gap-2">
+   584→                <Briefcase className="h-3.5 w-3.5 text-slate-400" aria-hidden /> Organized by {organizer.name}
+   585→              </p>
+   586→            )}
+   587→            {meeting && (
+   588→              <p className="flex items-center gap-2">
+   589→                <Users className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+   590→                <AvatarStack names={meeting.participantIds.map((id) => getEmployee(id)?.name ?? "")} max={5} />
+   591→                <span className="text-xs text-slate-500">{meeting.participantIds.length} participants</span>
+   592→              </p>
+   593→            )}
+   594→            {event.related && <p className="text-xs text-slate-500">{event.related}</p>}
+   595→            <div className="flex flex-wrap gap-2 pt-1">
+   596→              {meeting && (
+   597→                <Button size="sm" className="h-8 gap-1.5" onClick={() => { onClose(); onNavigate("my-meetings", { meetingId: meeting.id }); }}>
+   598→                  <Video className="h-3.5 w-3.5" aria-hidden /> Open meeting
+   599→                </Button>
+   600→              )}
+   601→              {event.type === "Deadline" && (
+   602→                <Button size="sm" variant="outline" className="h-8" onClick={() => { onClose(); onNavigate("my-tasks"); }}>
+   603→                  Related work in My Tasks
+   604→                </Button>
+   605→              )}
+   606→              <Button
+   607→                size="sm"
+   608→                variant="ghost"
+   609→                className="h-8 text-slate-500"
+   610→                onClick={() => toast({ title: "Reschedule", description: "Rescheduling runs through the Meetings module with organizer permissions." })}
+   611→              >
+   612→                Reschedule
+   613→              </Button>
+   614→            </div>
+   615→          </>
+   616→        )}
+   617→      </div>
+   618→    </SectionCard>
+   619→  );
+   620→}
+   621→
+   622→// ---------- New event dialog ----------
+   623→
+   624→function NewEventDialog({
+   625→  open,
+   626→  onOpenChange,
+   627→  defaultDay,
+   628→  onCreate,
+   629→}: {
+   630→  open: boolean;
+   631→  onOpenChange: (o: boolean) => void;
+   632→  defaultDay: number;
+   633→  onCreate: (e: CalendarEvent) => void;
+   634→}) {
+   635→  const [title, setTitle] = React.useState("");
+   636→  const [type, setType] = React.useState<EventType>("Meeting");
+   637→  const [time, setTime] = React.useState("14:00");
+   638→  const [duration, setDuration] = React.useState("30");
+   639→  const [location, setLocation] = React.useState("");
+   640→  const [error, setError] = React.useState<string | null>(null);
+   641→
+   642→  React.useEffect(() => {
+   643→    if (open) {
+   644→      setTitle("");
+   645→      setType("Meeting");
+   646→      setTime("14:00");
+   647→      setDuration("30");
+   648→      setLocation("");
+   649→      setError(null);
+   650→    }
+   651→  }, [open]);
+   652→
+   653→  const submit = () => {
+   654→    if (title.trim().length < 3) {
+   655→      setError("Give the event a title (at least 3 characters).");
+   656→      return;
+   657→    }
+   658→    const [h, m] = time.split(":").map(Number);
+   659→    const dur = Number(duration);
+   660→    const start = defaultDay + h * 3_600_000 + m * 60_000;
+   661→    onCreate({
+   662→      id: `ev-local-${Date.now()}`,
+   663→      title: title.trim(),
+   664→      type,
+   665→      start,
+   666→      end: start + dur * 60_000,
+   667→      organizerId: "sagar",
+   668→      location: location.trim() || undefined,
+   669→    });
+   670→    onOpenChange(false);
+   671→  };
+   672→
+   673→  return (
+   674→    <FormDialog open={open} onOpenChange={onOpenChange} title="New event" description="Adds to your calendar for this session. Meeting invites with participants run through the Meetings module." submitLabel="Add event" onSubmit={submit}>
+   675→      <div className="space-y-1.5">
+   676→        <Label htmlFor="ev-title" className="text-xs font-medium text-slate-700">
+   677→          Title <span className="text-red-500" aria-hidden>*</span>
+   678→        </Label>
+   679→        <Input id="ev-title" value={title} onChange={(e) => { setTitle(e.target.value); setError(null); }} placeholder="e.g. Focus time — board deck" autoFocus aria-invalid={Boolean(error)} />
+   680→        {error && <p role="alert" className="text-[11.5px] font-medium text-red-600">{error}</p>}
+   681→      </div>
+   682→      <div className="grid gap-3 sm:grid-cols-3">
+   683→        <div className="space-y-1.5 sm:col-span-1">
+   684→          <Label className="text-xs font-medium text-slate-700">Type</Label>
+   685→          <Select value={type} onValueChange={(v) => setType(v as EventType)}>
+   686→            <SelectTrigger aria-label="Event type"><SelectValue /></SelectTrigger>
+   687→            <SelectContent>
+   688→              <SelectItem value="Meeting">Meeting</SelectItem>
+   689→              <SelectItem value="Deadline">Deadline</SelectItem>
+   690→              <SelectItem value="Focus time">Focus time</SelectItem>
+   691→            </SelectContent>
+   692→          </Select>
+   693→        </div>
+   694→        <div className="space-y-1.5">
+   695→          <Label htmlFor="ev-time" className="text-xs font-medium text-slate-700">Start (IST)</Label>
+   696→          <Input id="ev-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+   697→        </div>
+   698→        <div className="space-y-1.5">
+   699→          <Label htmlFor="ev-duration" className="text-xs font-medium text-slate-700">Duration</Label>
+   700→          <Select value={duration} onValueChange={setDuration}>
+   701→            <SelectTrigger id="ev-duration" aria-label="Duration"><SelectValue /></SelectTrigger>
+   702→            <SelectContent>
+   703→              <SelectItem value="15">15 min</SelectItem>
+   704→              <SelectItem value="30">30 min</SelectItem>
+   705→              <SelectItem value="45">45 min</SelectItem>
+   706→              <SelectItem value="60">1 hour</SelectItem>
+   707→              <SelectItem value="120">2 hours</SelectItem>
+   708→            </SelectContent>
+   709→          </Select>
+   710→        </div>
+   711→      </div>
+   712→      <div className="space-y-1.5">
+   713→        <Label htmlFor="ev-location" className="text-xs font-medium text-slate-700">Location</Label>
+   714→        <Input id="ev-location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Room, link or platform" />
+   715→      </div>
+   716→    </FormDialog>
+   717→  );
+   718→}
+   719→

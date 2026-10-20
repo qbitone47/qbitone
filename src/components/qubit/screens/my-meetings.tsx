@@ -7,22 +7,19 @@ import {
   FileText,
   ListChecks,
   MapPin,
+  RefreshCw,
   Sparkles,
   Users,
   Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { getEmployee } from "@/lib/qubit/data";
-import {
-  fmtDate,
-  fmtTime,
-  ist,
-  MEETINGS,
-  WORKSPACE_NOW,
-  type Meeting,
-} from "@/lib/qubit/workspace-data";
+import { fmtDate, fmtTime, ist, type Meeting } from "@/lib/qubit/workspace-data";
+import { apiGet, ApiError } from "@/lib/qubit/api";
 import { useQubitNav } from "../nav-context";
 import { useRole } from "../role-context";
 import { PageHeader } from "../page-header";
@@ -37,7 +34,21 @@ import { SegmentedToggle } from "../workspace/parts";
 // calendar clone). Past meetings carry notes, AI summaries and
 // action items; those flow onward to My Tasks (integration
 // point for the Meetings module, Phase 11).
+//
+// The list is served by /api/workspace/meetings and scoped
+// server-side (participation boundary + organizer-permission
+// cancellation); the screen holds no client-only business
+// state — cancellation is a server mutation written to the
+// enterprise audit trail, never a local array.
 // ============================================================
+
+interface MeetingsPayload {
+  meetings: Meeting[];
+  scope: "own";
+  note: string | null;
+  asOf: string;
+  now: number;
+}
 
 type Bucket = "today" | "upcoming" | "past";
 
@@ -47,26 +58,47 @@ export function MyMeetingsScreen() {
   const { role } = useRole();
   const params = nav.params as { meetingId?: string };
 
+  const [data, setData] = React.useState<MeetingsPayload | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(true);
   const [bucket, setBucket] = React.useState<Bucket>("today");
   const [selected, setSelected] = React.useState<Meeting | null>(null);
   const [cancelTarget, setCancelTarget] = React.useState<Meeting | null>(null);
+  const [cancelReason, setCancelReason] = React.useState("");
   const [cancelling, setCancelling] = React.useState(false);
-  const [cancelled, setCancelled] = React.useState<string[]>([]);
+
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const payload = await apiGet<MeetingsPayload>("/meetings", undefined, role, "/api/workspace");
+      setData(payload);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "The meetings service is unreachable right now.");
+    } finally {
+      setLoading(false);
+    }
+  }, [role]);
 
   React.useEffect(() => {
-    if (params.meetingId) {
-      const m = MEETINGS.find((x) => x.id === params.meetingId);
+    load();
+  }, [load]);
+
+  React.useEffect(() => {
+    if (data && params.meetingId) {
+      const m = data.meetings.find((x) => x.id === params.meetingId);
       if (m) setSelected(m);
     }
-  }, [params.meetingId]);
+  }, [data, params.meetingId]);
 
-  const live = React.useMemo(() => MEETINGS.filter((m) => !cancelled.includes(m.id)), [cancelled]);
+  const now = data?.now ?? 0;
+  const live = data?.meetings ?? [];
 
   const todays = live
-    .filter((m) => ist(m.start).toDateString() === ist(WORKSPACE_NOW).toDateString())
+    .filter((m) => ist(m.start).toDateString() === ist(now).toDateString())
     .sort((a, b) => a.start - b.start);
-  const upcoming = live.filter((m) => m.start > WORKSPACE_NOW).sort((a, b) => a.start - b.start);
-  const past = live.filter((m) => m.end < WORKSPACE_NOW && !todays.includes(m)).sort((a, b) => b.start - a.start);
+  const upcoming = live.filter((m) => m.start > now).sort((a, b) => a.start - b.start);
+  const past = live.filter((m) => m.end < now && !todays.includes(m)).sort((a, b) => b.start - a.start);
 
   const bucketList = bucket === "today" ? todays : bucket === "upcoming" ? upcoming : past;
 
@@ -75,14 +107,36 @@ export function MyMeetingsScreen() {
   const doCancel = async () => {
     if (!cancelTarget) return;
     setCancelling(true);
-    // Meeting lifecycle is a server concern in production; here the
-    // cancel is recorded locally and the audit trail notes the intent.
-    await new Promise((r) => setTimeout(r, 700));
-    setCancelled((ids) => [...ids, cancelTarget.id]);
-    setCancelling(false);
-    setCancelTarget(null);
-    setSelected(null);
-    toast({ title: "Meeting cancelled", description: "Participants have been notified and the calendar has been updated." });
+    try {
+      const res = await fetch("/api/workspace/meetings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Qubit-Role": role },
+        body: JSON.stringify({ action: "cancel", id: cancelTarget.id, reason: cancelReason }),
+      });
+      const resData = await res.json().catch(() => null);
+      if (!res.ok) {
+        // No optimistic fake success — the server owns the lifecycle.
+        toast({
+          variant: "destructive",
+          title: "Meeting not cancelled",
+          description: resData?.message ?? "The meetings service rejected this cancellation. The meeting is unchanged.",
+        });
+        return;
+      }
+      toast({ title: "Meeting cancelled", description: resData?.message ?? "The meeting was cancelled." });
+      setSelected(null);
+      await load();
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "Meeting not cancelled",
+        description: "The meetings service is unreachable. Nothing was changed — retry when you're back online.",
+      });
+    } finally {
+      setCancelling(false);
+      setCancelTarget(null);
+      setCancelReason("");
+    }
   };
 
   return (
@@ -98,57 +152,72 @@ export function MyMeetingsScreen() {
         }
       />
 
-      {/* Today strip */}
-      {todays.length > 0 && (
-        <SectionCard
-          className="mb-4"
-          title="Today"
-          description={`${fmtDate(WORKSPACE_NOW)} · ${todays.length} meeting${todays.length === 1 ? "" : "s"}`}
-        >
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {todays.map((m) => (
-              <MeetingCard key={m.id} meeting={m} onOpen={() => setSelected(m)} compact />
-            ))}
-          </div>
-        </SectionCard>
+      {error && (
+        <div className="qubit-card mb-3 flex flex-wrap items-center justify-between gap-3 border-red-200 bg-red-50/60 px-4 py-3" role="alert">
+          <p className="text-sm font-medium text-red-700">{error}</p>
+          <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={load}>
+            <RefreshCw className="h-3.5 w-3.5" aria-hidden /> Retry
+          </Button>
+        </div>
       )}
 
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <SegmentedToggle
-          ariaLabel="Meeting buckets"
-          value={bucket}
-          onChange={setBucket}
-          options={[
-            { value: "today", label: `Today (${todays.length})` },
-            { value: "upcoming", label: `Upcoming (${upcoming.length})` },
-            { value: "past", label: `Past (${past.length})` },
-          ]}
-        />
-      </div>
-
-      {bucketList.length === 0 ? (
-        <SectionCard>
-          <EmptyState
-            icon={<Video />}
-            title={bucket === "past" ? "No past meetings in this range" : "Nothing scheduled here"}
-            message={
-              bucket === "past"
-                ? "Completed meetings with notes and summaries will appear here."
-                : "Schedule from the calendar, or propose a time by mail."
-            }
-            action={
-              <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={() => nav.navigate("compose-mail")}>
-                Propose a time by mail
-              </Button>
-            }
-          />
-        </SectionCard>
+      {loading ? (
+        <MeetingsSkeleton />
       ) : (
-        <div className="space-y-3">
-          {bucketList.map((m) => (
-            <MeetingCard key={m.id} meeting={m} onOpen={() => setSelected(m)} isOrganizer={isOrganizer(m)} onCancel={() => setCancelTarget(m)} role={role} />
-          ))}
-        </div>
+        <>
+          {/* Today strip */}
+          {todays.length > 0 && (
+            <SectionCard
+              className="mb-4"
+              title="Today"
+              description={`${fmtDate(now)} · ${todays.length} meeting${todays.length === 1 ? "" : "s"}`}
+            >
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {todays.map((m) => (
+                  <MeetingCard key={m.id} meeting={m} onOpen={() => setSelected(m)} compact />
+                ))}
+              </div>
+            </SectionCard>
+          )}
+
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <SegmentedToggle
+              ariaLabel="Meeting buckets"
+              value={bucket}
+              onChange={setBucket}
+              options={[
+                { value: "today", label: `Today (${todays.length})` },
+                { value: "upcoming", label: `Upcoming (${upcoming.length})` },
+                { value: "past", label: `Past (${past.length})` },
+              ]}
+            />
+          </div>
+
+          {bucketList.length === 0 ? (
+            <SectionCard>
+              <EmptyState
+                icon={<Video />}
+                title={bucket === "past" ? "No past meetings in this range" : "Nothing scheduled here"}
+                message={
+                  bucket === "past"
+                    ? "Completed meetings with notes and summaries will appear here."
+                    : "Schedule from the calendar, or propose a time by mail."
+                }
+                action={
+                  <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={() => nav.navigate("compose-mail")}>
+                    Propose a time by mail
+                  </Button>
+                }
+              />
+            </SectionCard>
+          ) : (
+            <div className="space-y-3">
+              {bucketList.map((m) => (
+                <MeetingCard key={m.id} meeting={m} onOpen={() => setSelected(m)} isOrganizer={isOrganizer(m)} onCancel={() => setCancelTarget(m)} role={role} />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Detail drawer */}
@@ -304,13 +373,74 @@ export function MyMeetingsScreen() {
 
       <ConfirmDialog
         open={Boolean(cancelTarget)}
-        onOpenChange={(o) => !o && setCancelTarget(null)}
+        onOpenChange={(o) => {
+          if (!o) {
+            setCancelTarget(null);
+            setCancelReason("");
+          }
+        }}
         title="Cancel this meeting?"
         description={cancelTarget ? `"${cancelTarget.title}" will be removed from ${cancelTarget.participantIds.length} calendars and participants will be notified.` : ""}
         confirmLabel={cancelling ? "Cancelling…" : "Cancel meeting"}
         destructive
         onConfirm={doCancel}
-      />
+      >
+        <div className="space-y-1.5 py-2">
+          <Label htmlFor="cancel-reason" className="text-xs font-medium text-slate-700">
+            Reason <span className="text-red-500" aria-hidden>*</span>
+          </Label>
+          <Textarea
+            id="cancel-reason"
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            placeholder="e.g. Key stakeholder is unavailable — new times will be proposed by mail."
+            className="min-h-20"
+            autoFocus
+          />
+          {cancelReason.trim().length > 0 && cancelReason.trim().length < 4 && (
+            <p className="text-[11px] text-red-600">Give a slightly longer reason (at least 4 characters).</p>
+          )}
+        </div>
+      </ConfirmDialog>
+    </div>
+  );
+}
+
+function MeetingsSkeleton() {
+  return (
+    <div>
+      <div className="qubit-card mb-4 p-4" aria-hidden>
+        <div className="h-4 w-44 animate-pulse rounded bg-slate-100" />
+        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="rounded-xl border border-slate-100 p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 animate-pulse rounded-xl bg-slate-100" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-2/3 animate-pulse rounded bg-slate-100" />
+                  <div className="h-3 w-1/2 animate-pulse rounded bg-slate-100" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="mb-3 h-9 w-72 animate-pulse rounded-lg bg-slate-100" aria-hidden />
+      <div className="space-y-3" aria-hidden>
+        {[0, 1].map((i) => (
+          <div key={i} className="qubit-card p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 animate-pulse rounded-xl bg-slate-100" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-2/3 animate-pulse rounded bg-slate-100" />
+                <div className="h-3 w-1/2 animate-pulse rounded bg-slate-100" />
+              </div>
+              <div className="h-8 w-24 animate-pulse rounded-lg bg-slate-100" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <span className="sr-only" role="status">Loading meetings…</span>
     </div>
   );
 }

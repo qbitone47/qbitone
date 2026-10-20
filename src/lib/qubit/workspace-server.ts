@@ -17,9 +17,15 @@ import {
   ALL_MAIL,
   APPROVALS,
   DOCUMENTS,
+  EVENTS,
+  MEETINGS,
   TASKS,
+  WORKSPACE_NOW,
+  WORKSPACE_NOW_LABEL,
   type ApprovalRequest,
+  type CalendarEvent,
   type MailMessage,
+  type Meeting,
   type Task,
   type WorkspaceDoc,
 } from "./workspace-data";
@@ -37,6 +43,14 @@ interface WorkspaceStore {
   tasks: Task[];
   mail: MailMessage[];
   documents: WorkspaceDoc[];
+  meetings: Meeting[];
+  events: CalendarEvent[];
+  /** Session minutes keyed by meeting id — the workspace-store mirror of
+   *  mobile-server's meetingNotes concept (mobile-server.ts ~100–130). */
+  meetingNotes: Map<string, { at: number; by: string; text: string }[]>;
+  /** Session action items keyed by meeting id — same shape as the mobile
+   *  meetingActions map, so the two surfaces stay conceptually identical. */
+  meetingActions: Map<string, { title: string; ownerId: string; due: number | null; at: number }[]>;
 }
 
 let _store: WorkspaceStore | null = null;
@@ -48,6 +62,10 @@ function store(): WorkspaceStore {
       tasks: TASKS.map((t) => structuredClone(t)),
       mail: ALL_MAIL.map((m) => structuredClone(m)),
       documents: DOCUMENTS.map((d) => structuredClone(d)),
+      meetings: MEETINGS.map((m) => structuredClone(m)),
+      events: EVENTS.map((e) => structuredClone(e)),
+      meetingNotes: new Map(),
+      meetingActions: new Map(),
     };
   }
   return _store;
@@ -452,4 +470,212 @@ export function updateProfile(role: WorkspaceRole, patch: Record<string, unknown
   }
   writeAudit({ actorId: SESSION_USER_ID, action: "Profile updated", resource: keys.join(", "), result: "Success", context: "Self-service fields only" });
   return { ok: true as const, updated: keys };
+}
+
+// ============================================================
+// Meetings (Screens 44 · 45) — the meetings/calendar domain is
+// served from this store like every other workspace domain
+// (Phase 19 §6/§12: no enterprise fixture values imported into
+// client components).
+//
+// Scope model: "My Meetings" is a personal workspace surface —
+// exactly like listTasks — so the list is scoped to the session
+// identity by participation (organizer or invited participant)
+// for every role preview. Roles with governance authority
+// (administrator / dept-head) may CANCEL meetings they do not
+// organize; that permission is enforced here, never in the UI.
+//
+// Minutes flow: notes and action items are recorded AGAINST the
+// store's session maps (meetingNotes / meetingActions, keyed by
+// meeting id — mirroring mobile-server's meetingNotes/meetingActions
+// concept) for COMPLETED meetings, and only by the organizer.
+// materializeMeeting() merges the fixture record with those session
+// entries at read time, so every workspace reader — list, ?id=
+// detail, cancel response and the calendar drawer — sees the same
+// state without the store ever mutating the fixture-shaped record.
+// Mobile overlap (honest note): the Phase 18 mobile surface (screen
+// 289, mobile-server.ts) keeps its own session maps for its field
+// flow; the mobile-* files are out of scope here, so the workspace
+// store is the single authority for screens 44/45 and for
+// /api/workspace/meetings.
+// ============================================================
+
+/** Fixture record + session minutes merged into the wire shape. */
+function materializeMeeting(s: WorkspaceStore, m: Meeting): Meeting {
+  const notes = s.meetingNotes.get(m.id) ?? [];
+  const actions = s.meetingActions.get(m.id) ?? [];
+  if (notes.length === 0 && actions.length === 0) return m;
+  return {
+    ...m,
+    notes: notes.length ? [m.notes, ...notes.map((n) => n.text)].filter(Boolean).join("\n\n") : m.notes,
+    actionItems: actions.length ? [...(m.actionItems ?? []), ...actions.map((a) => ({ title: a.title, ownerId: a.ownerId, due: a.due }))] : m.actionItems,
+  };
+}
+
+export interface MeetingsScopePayload {
+  meetings: Meeting[];
+  events: CalendarEvent[];
+  scope: "own";
+  note: string | null;
+  /** Fixed demo clock label so the UI renders the same "today" framing as before. */
+  asOf: string;
+  /** Fixed demo clock (IST epoch) the buckets and the calendar grid anchor to. */
+  now: number;
+}
+
+export function listMeetings(role: WorkspaceRole): MeetingsScopePayload {
+  const s = store();
+  // Personal participation scope — organizer or invited participant.
+  // (Same boundary as listTasks; meetings are personal workspace data.)
+  const meetings = s.meetings
+    .filter((m) => m.organizerId === SESSION_USER_ID || m.participantIds.includes(SESSION_USER_ID))
+    .sort((a, b) => a.start - b.start)
+    .map((m) => materializeMeeting(s, m));
+  const scoped = role === "employee" || role === "sales-exec";
+  return {
+    meetings,
+    // The session calendar: company events, deadlines and approved leave live
+    // here too. Events flagged organizer-only keep their privacy rendering
+    // ("Busy") in the UI; the display gate stays with the calendar surface.
+    events: [...s.events],
+    scope: "own",
+    note: scoped
+      ? "Scoped to your own participation — you see the meetings you organize or attend. Cancellation follows organizer permissions and is enforced server-side."
+      : null,
+    asOf: WORKSPACE_NOW_LABEL,
+    now: WORKSPACE_NOW,
+  };
+}
+
+export function getMeeting(role: WorkspaceRole, id: string) {
+  const s = store();
+  const m = s.meetings.find((x) => x.id === id);
+  if (!m) return { ok: false as const, status: 404, code: "not_found", message: "Meeting not found." };
+  const participating = m.organizerId === SESSION_USER_ID || m.participantIds.includes(SESSION_USER_ID);
+  const governance = role === "administrator" || role === "dept-head";
+  if (!participating && !governance) {
+    writeAudit({ actorId: SESSION_USER_ID, action: "Meeting detail denied", resource: m.title, result: "Blocked", severity: "Warning", source: "Workspace", context: "Caller is neither the organizer nor a participant" });
+    return { ok: false as const, status: 403, code: "forbidden", message: "You are not a participant of this meeting." };
+  }
+  return { ok: true as const, meeting: materializeMeeting(s, m) };
+}
+
+export function cancelMeeting(role: WorkspaceRole, input: { id: string; reason: string }) {
+  const s = store();
+  const m = s.meetings.find((x) => x.id === input.id);
+  if (!m) return { ok: false as const, status: 404, code: "not_found", message: "Meeting not found." };
+  if (m.status !== "Scheduled") {
+    return {
+      ok: false as const,
+      status: 409,
+      code: "invalid_state",
+      message: m.status === "Cancelled" ? "This meeting was already cancelled." : `A meeting that is ${m.status.toLowerCase()} cannot be cancelled.`,
+    };
+  }
+  const isOrganizer = m.organizerId === SESSION_USER_ID;
+  const governance = role === "administrator" || role === "dept-head";
+  if (!isOrganizer && !governance) {
+    writeAudit({ actorId: SESSION_USER_ID, action: "Meeting cancellation denied", resource: `${m.title} (${m.id})`, result: "Blocked", severity: "Warning", source: "Workspace", context: "Only the organizer — or an administrator / department head — can cancel a meeting" });
+    return { ok: false as const, status: 403, code: "forbidden", message: "Only the meeting organizer — or an administrator / department head — can cancel this meeting." };
+  }
+  const reason = input.reason?.trim() ?? "";
+  if (reason.length < 4) {
+    return { ok: false as const, status: 422, code: "reason_required", message: "A short reason is required when cancelling a meeting." };
+  }
+  m.status = "Cancelled";
+  writeAudit({
+    actorId: SESSION_USER_ID,
+    action: "Meeting cancelled",
+    resource: `${m.id} — ${m.title}`,
+    result: "Success",
+    severity: "Info",
+    source: "Workspace",
+    context: `${isOrganizer ? "Organizer" : "Governance"} cancellation — reason: ${reason}`,
+  });
+  return {
+    ok: true as const,
+    meeting: materializeMeeting(s, m),
+    message: `"${m.title}" was cancelled — ${m.participantIds.length} participant${m.participantIds.length === 1 ? "" : "s"} notified and the calendar updated.`,
+  };
+}
+
+// Notes and action items (the COMPLETED-meeting minutes flow) are recorded
+// into the store's session maps keyed by meeting id — the workspace-store
+// mirror of mobile-server's meetingNotes/meetingActions concept. Only the
+// organizer records minutes; the fixture-shaped record is never mutated.
+// Every read path materializes the map entries onto the meeting (see
+// materializeMeeting) so list, ?id= detail and the calendar drawer agree.
+export function saveMeetingNotes(role: WorkspaceRole, input: { id: string; text: string }) {
+  const s = store();
+  const m = s.meetings.find((x) => x.id === input.id);
+  if (!m) return { ok: false as const, status: 404, code: "not_found", message: "Meeting not found." };
+  if (m.organizerId !== SESSION_USER_ID) {
+    writeAudit({ actorId: SESSION_USER_ID, action: "Meeting note denied", resource: `${m.id} — ${m.title}`, result: "Blocked", severity: "Warning", source: "Workspace", context: "Only the organizer can record minutes" });
+    return { ok: false as const, status: 403, code: "forbidden", message: "Only the meeting organizer can record notes for this meeting." };
+  }
+  if (m.status !== "Completed") {
+    return { ok: false as const, status: 409, code: "invalid_state", message: `Minutes are recorded on completed meetings — this one is ${m.status.toLowerCase()}.` };
+  }
+  const text = input.text?.trim() ?? "";
+  if (text.length < 2) return { ok: false as const, status: 422, code: "invalid_note", message: "A note of at least 2 characters is required." };
+  const entry = { at: Date.now(), by: SESSION_USER_ID, text };
+  const existing = s.meetingNotes.get(m.id) ?? [];
+  s.meetingNotes.set(m.id, [...existing, entry]);
+  writeAudit({ actorId: SESSION_USER_ID, action: "Meeting notes saved", resource: `${m.id} — ${m.title}`, result: "Success", source: "Workspace", context: "Note appended to the meeting record" });
+  return { ok: true as const, meeting: materializeMeeting(s, m), message: "Note added to the meeting record." };
+}
+
+export function addMeetingAction(role: WorkspaceRole, input: { id: string; title: string; ownerId?: string; due?: number | null }) {
+  const s = store();
+  const m = s.meetings.find((x) => x.id === input.id);
+  if (!m) return { ok: false as const, status: 404, code: "not_found", message: "Meeting not found." };
+  if (m.organizerId !== SESSION_USER_ID) {
+    writeAudit({ actorId: SESSION_USER_ID, action: "Meeting action item denied", resource: `${m.id} — ${m.title}`, result: "Blocked", severity: "Warning", source: "Workspace", context: "Only the organizer can record action items" });
+    return { ok: false as const, status: 403, code: "forbidden", message: "Only the meeting organizer can add action items." };
+  }
+  if (m.status !== "Completed") {
+    return { ok: false as const, status: 409, code: "invalid_state", message: `Action items are recorded on completed meetings — this one is ${m.status.toLowerCase()}.` };
+  }
+  const title = input.title?.trim() ?? "";
+  if (title.length < 4) return { ok: false as const, status: 422, code: "invalid_title", message: "Describe the action item (4+ characters)." };
+  const ownerId = input.ownerId ?? SESSION_USER_ID;
+  if (!employees.some((e) => e.id === ownerId)) {
+    return { ok: false as const, status: 422, code: "invalid_owner", message: "Choose a valid owner." };
+  }
+  if (input.due !== null && input.due !== undefined && Number.isNaN(input.due)) {
+    return { ok: false as const, status: 422, code: "invalid_due", message: "Due date is invalid." };
+  }
+  const entry = { title, ownerId, due: input.due ?? null, at: Date.now() };
+  const existing = s.meetingActions.get(m.id) ?? [];
+  s.meetingActions.set(m.id, [...existing, entry]);
+  writeAudit({ actorId: SESSION_USER_ID, action: "Meeting action item added", resource: `${m.id} — ${title}`, result: "Success", source: "Workspace", context: `Owner: ${employees.find((e) => e.id === ownerId)?.name ?? ownerId}` });
+  return { ok: true as const, meeting: materializeMeeting(s, m), message: "Action item recorded on the meeting." };
+}
+
+// Calendar entries created from My Calendar (screen 44) — personal events
+// such as focus blocks and deadlines. Meeting invites WITH participants run
+// through the Meetings module; this records the entry on the session
+// calendar server-side so the screen holds no client-only business state.
+export function createCalendarEvent(role: WorkspaceRole, input: { title: string; type: CalendarEvent["type"]; start: number; end: number; location?: string }) {
+  const title = input.title?.trim() ?? "";
+  if (title.length < 3) return { ok: false as const, status: 422, code: "invalid_title", message: "Give the event a title (at least 3 characters)." };
+  const VALID_TYPES: CalendarEvent["type"][] = ["Meeting", "Deadline", "Company event", "Leave", "Focus time"];
+  if (!VALID_TYPES.includes(input.type)) {
+    return { ok: false as const, status: 422, code: "invalid_type", message: "Choose a valid event type." };
+  }
+  if (!Number.isFinite(input.start) || !Number.isFinite(input.end) || input.end <= input.start) {
+    return { ok: false as const, status: 422, code: "invalid_time", message: "The event end must be after its start." };
+  }
+  const ev: CalendarEvent = {
+    id: `ev-w${Math.floor(Date.now() / 1000) % 100000}`,
+    title,
+    type: input.type,
+    start: input.start,
+    end: input.end,
+    organizerId: SESSION_USER_ID,
+    location: input.location?.trim() || undefined,
+  };
+  store().events.push(ev);
+  writeAudit({ actorId: SESSION_USER_ID, action: "Calendar event created", resource: title, result: "Success", source: "Workspace", context: `${ev.type} added from My Calendar` });
+  return { ok: true as const, event: ev, message: `"${title}" was added to your calendar.` };
 }

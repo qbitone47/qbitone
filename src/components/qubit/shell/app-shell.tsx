@@ -1,8 +1,12 @@
 "use client";
 
 import * as React from "react";
+import { TriangleAlert } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { AUTH_SCREENS, SCREENS } from "@/lib/qubit/screens";
+import { Button } from "@/components/ui/button";
+import { AUTH_SCREENS, SCREENS, type ScreenId } from "@/lib/qubit/screens";
+import { PageHeader } from "../page-header";
+import { EmptyState, SectionCard } from "../primitives";
 import { useQubitNav } from "../nav-context";
 import { SidebarContent, SIDEBAR_MODULES, MODULE_PHASE } from "./sidebar";
 import { TopBar } from "./topbar";
@@ -26,6 +30,34 @@ function ShellFooter({ phase }: { phase: string }) {
   );
 }
 
+/** Defense-in-depth: a registered screen whose implementation failed to load
+ * renders an honest error card — never a React crash, never a blank area.
+ * After registry wiring this should never trigger. */
+function ScreenLoadError({ screen, title }: { screen: ScreenId; title: string }) {
+  const { navigate } = useQubitNav();
+  return (
+    <div>
+      <PageHeader
+        crumbs={[{ label: "System" }, { label: "Screen unavailable" }]}
+        title={title}
+        description="This screen is registered but its implementation failed to load. The rest of Qubit One is unaffected."
+      />
+      <SectionCard>
+        <EmptyState
+          icon={<TriangleAlert />}
+          title="Screen could not be loaded"
+          message={`The “${title}” screen (${screen}) is registered but its implementation failed to load. Navigation, the command palette and every other module continue to work.`}
+          action={
+            <Button type="button" onClick={() => navigate("employee-home")}>
+              Back to Home
+            </Button>
+          }
+        />
+      </SectionCard>
+    </div>
+  );
+}
+
 export function AppShell() {
   const { screen, navKey } = useQubitNav();
   const [collapsed, setCollapsed] = React.useState(false);
@@ -43,6 +75,7 @@ export function AppShell() {
   // Authentication screens (31–33) render standalone — the real
   // sign-in experience has no workspace chrome around it.
   if (AUTH_SCREENS.includes(screen)) {
+    if (!ScreenComp) return <ScreenLoadError screen={screen} title={meta.title} />;
     return (
       <div key={`${screen}-${navKey}`} className="h-dvh overflow-hidden">
         <ScreenComp />
@@ -52,10 +85,12 @@ export function AppShell() {
 
   const content = previewModule ? (
     <ModulePlaceholder moduleId={previewModule} moduleName={previewModuleName} />
-  ) : (
+  ) : ScreenComp ? (
     <div key={`${screen}-${navKey}`} className="qubit-screen-enter">
       <ScreenComp />
     </div>
+  ) : (
+    <ScreenLoadError screen={screen} title={meta.title} />
   );
 
   return (

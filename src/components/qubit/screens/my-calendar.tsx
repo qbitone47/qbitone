@@ -11,6 +11,7 @@ import {
   Info,
   Lock,
   MapPin,
+  RefreshCw,
   Users,
   Video,
 } from "lucide-react";
@@ -21,17 +22,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { getEmployee } from "@/lib/qubit/data";
-import {
-  EVENTS,
-  fmtDate,
-  fmtTime,
-  ist,
-  MEETINGS,
-  WORKSPACE_NOW,
-  type CalendarEvent,
-  type EventType,
-} from "@/lib/qubit/workspace-data";
+import { fmtDate, fmtTime, ist, type CalendarEvent, type EventType, type Meeting } from "@/lib/qubit/workspace-data";
+import { apiGet, ApiError } from "@/lib/qubit/api";
 import { useQubitNav } from "../nav-context";
+import { useRole } from "../role-context";
 import { PageHeader } from "../page-header";
 import { AvatarStack, SegmentedToggle } from "../workspace/parts";
 import { EmptyState, SectionCard } from "../primitives";
@@ -41,7 +35,21 @@ import { FormDialog } from "../dialogs";
 // Screen 44 · My Calendar — unified calendar with structured
 // enterprise density. Privacy is real: events marked
 // organizer-only render as "Busy" for anyone else.
+//
+// Events and meetings are served by /api/workspace/meetings and
+// scoped server-side; the screen holds no client-only business
+// state — new events are recorded through the same API (and the
+// enterprise audit trail), never in a local array.
 // ============================================================
+
+interface CalendarPayload {
+  meetings: Meeting[];
+  events: CalendarEvent[];
+  scope: "own";
+  note: string | null;
+  asOf: string;
+  now: number;
+}
 
 const HOUR_H = 48; // px per hour in week grid
 const DAY_START = 8; // 08:00
@@ -68,16 +76,92 @@ const istMidnight = (ts: number) => {
 export function MyCalendarScreen() {
   const nav = useQubitNav();
   const { toast } = useToast();
+  const { role } = useRole();
 
+  const [data, setData] = React.useState<CalendarPayload | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(true);
   const [view, setView] = React.useState<"day" | "week" | "month">("week");
-  const [anchor, setAnchor] = React.useState(WORKSPACE_NOW);
+  const [anchor, setAnchor] = React.useState<number | null>(null);
   const [types, setTypes] = React.useState<EventType[]>(TYPE_ORDER);
-  const [extraEvents, setExtraEvents] = React.useState<CalendarEvent[]>([]);
   const [selected, setSelected] = React.useState<CalendarEvent | null>(null);
   const [createOpen, setCreateOpen] = React.useState(false);
 
-  const allEvents = React.useMemo(() => [...EVENTS, ...extraEvents], [extraEvents]);
-  const visible = React.useMemo(() => allEvents.filter((e) => types.includes(e.type)), [allEvents, types]);
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const payload = await apiGet<CalendarPayload>("/meetings", undefined, role, "/api/workspace");
+      setData(payload);
+      setAnchor((prev) => prev ?? payload.now);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "The calendar service is unreachable right now.");
+    } finally {
+      setLoading(false);
+    }
+  }, [role]);
+
+  React.useEffect(() => {
+    load();
+  }, [load]);
+
+  const createEvent = async (input: { title: string; type: EventType; start: number; end: number; location?: string }) => {
+    try {
+      const res = await fetch("/api/workspace/meetings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Qubit-Role": role },
+        body: JSON.stringify({ action: "create-event", ...input }),
+      });
+      const resData = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast({
+          variant: "destructive",
+          title: "Event not added",
+          description: resData?.message ?? "The calendar service rejected this event. Nothing was changed.",
+        });
+        return;
+      }
+      toast({ title: "Event added to your calendar", description: resData?.message ?? "The event was added." });
+      await load();
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "Event not added",
+        description: "The calendar service is unreachable. Nothing was changed — retry when you're back online.",
+      });
+    }
+  };
+
+  if (loading || !data || anchor === null) {
+    return (
+      <div>
+        <PageHeader
+          crumbs={[{ label: "Workspace" }, { label: "My time" }]}
+          title="My Calendar"
+          description="Meetings, deadlines, company events and approved leave in one enterprise calendar — with privacy you can rely on."
+          actions={
+            <Button className="h-9 gap-1.5" onClick={() => setCreateOpen(true)}>
+              <CalendarPlus className="h-4 w-4" aria-hidden /> New event
+            </Button>
+          }
+        />
+        {error && (
+          <div className="qubit-card mb-3 flex flex-wrap items-center justify-between gap-3 border-red-200 bg-red-50/60 px-4 py-3" role="alert">
+            <p className="text-sm font-medium text-red-700">{error}</p>
+            <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={load}>
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden /> Retry
+            </Button>
+          </div>
+        )}
+        {loading && <CalendarSkeleton />}
+      </div>
+    );
+  }
+
+  const now = data.now;
+  const allEvents = data.events;
+  const visible = allEvents.filter((e) => types.includes(e.type));
+  const meetingsById = new Map(data.meetings.map((m) => [m.id, m]));
 
   const anchorMid = istMidnight(anchor);
   const anchorDow = (ist(anchorMid).getUTCDay() + 6) % 7; // 0 = Monday
@@ -100,11 +184,14 @@ export function MyCalendarScreen() {
         : monthLabel;
 
   const step = (dir: 1 | -1) => {
-    if (view === "day") setAnchor((a) => istMidnight(a) + dir * DAY_MS);
-    else if (view === "week") setAnchor((a) => istMidnight(a) + dir * 7 * DAY_MS);
+    if (view === "day") setAnchor((a) => (a === null ? a : istMidnight(a) + dir * DAY_MS));
+    else if (view === "week") setAnchor((a) => (a === null ? a : istMidnight(a) + dir * 7 * DAY_MS));
     else {
-      const d = ist(istMidnight(anchor));
-      setAnchor(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + dir, 1) - 330 * 60_000);
+      setAnchor((a) => {
+        if (a === null) return a;
+        const d = ist(istMidnight(a));
+        return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + dir, 1) - 330 * 60_000;
+      });
     }
   };
 
@@ -122,8 +209,8 @@ export function MyCalendarScreen() {
 
   const allDayOn = (dayMid: number) => eventsOn(dayMid).filter((e) => e.allDay || istMidnight(e.start) !== istMidnight(e.end));
 
-  const isToday = (dayMid: number) => dayMid === istMidnight(WORKSPACE_NOW);
-  const isPast = (dayMid: number) => dayMid < istMidnight(WORKSPACE_NOW);
+  const isToday = (dayMid: number) => dayMid === istMidnight(now);
+  const isPast = (dayMid: number) => dayMid < istMidnight(now);
 
   const toggleType = (t: EventType) => setTypes((ts) => (ts.includes(t) ? ts.filter((x) => x !== t) : [...ts, t]));
 
@@ -140,10 +227,19 @@ export function MyCalendarScreen() {
         }
       />
 
+      {error && (
+        <div className="qubit-card mb-3 flex flex-wrap items-center justify-between gap-3 border-red-200 bg-red-50/60 px-4 py-3" role="alert">
+          <p className="text-sm font-medium text-red-700">{error}</p>
+          <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={load}>
+            <RefreshCw className="h-3.5 w-3.5" aria-hidden /> Retry
+          </Button>
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-1">
-          <Button variant="outline" size="sm" className="h-9" onClick={() => setAnchor(WORKSPACE_NOW)}>
+          <Button variant="outline" size="sm" className="h-9" onClick={() => setAnchor(now)}>
             Today
           </Button>
           <Button variant="outline" size="icon" className="h-9 w-9" aria-label={view === "month" ? "Previous month" : view === "week" ? "Previous week" : "Previous day"} onClick={() => step(-1)}>
@@ -183,7 +279,7 @@ export function MyCalendarScreen() {
         </div>
       </div>
 
-      {view === "week" && <WeekGrid days={weekDays} timedOn={timedOn} allDayOn={allDayOn} onOpen={setSelected} />}
+      {view === "week" && <WeekGrid days={weekDays} timedOn={timedOn} allDayOn={allDayOn} onOpen={setSelected} now={now} />}
 
       {view === "day" && (
         <DayView dayMid={anchorMid} timedOn={timedOn} allDayOn={allDayOn} onOpen={setSelected} />
@@ -213,16 +309,13 @@ export function MyCalendarScreen() {
         </span>
       </div>
 
-      <EventDrawer event={selected} onClose={() => setSelected(null)} onNavigate={nav.navigate} />
+      <EventDrawer event={selected} meetingsById={meetingsById} onClose={() => setSelected(null)} onNavigate={nav.navigate} />
 
       <NewEventDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
         defaultDay={anchorMid}
-        onCreate={(ev) => {
-          setExtraEvents((list) => [...list, ev]);
-          toast({ title: "Event added to your calendar", description: "This session calendar is a workspace preview; your real calendar syncs through the Meetings module." });
-        }}
+        onCreate={createEvent}
       />
     </div>
   );
@@ -230,22 +323,23 @@ export function MyCalendarScreen() {
 
 // ---------- Week grid ----------
 
-const isPastDay = (d: number) => d < istMidnight(WORKSPACE_NOW);
-
 function WeekGrid({
   days,
   timedOn,
   allDayOn,
   onOpen,
+  now,
 }: {
   days: number[];
   timedOn: (d: number) => CalendarEvent[];
   allDayOn: (d: number) => CalendarEvent[];
   onOpen: (e: CalendarEvent) => void;
+  now: number;
 }) {
   const hours = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i);
-  const nowOffsetMin = (ist(WORKSPACE_NOW).getUTCHours() - DAY_START) * 60 + ist(WORKSPACE_NOW).getUTCMinutes();
-  const todayIdx = days.findIndex((d) => d === istMidnight(WORKSPACE_NOW));
+  const todayMid = istMidnight(now);
+  const nowOffsetMin = (ist(now).getUTCHours() - DAY_START) * 60 + ist(now).getUTCMinutes();
+  const todayIdx = days.findIndex((d) => d === todayMid);
 
   return (
     <div className="qubit-card overflow-hidden">
@@ -255,13 +349,13 @@ function WeekGrid({
           <div className="grid border-b border-slate-200/90 bg-slate-50/80" style={{ gridTemplateColumns: `56px repeat(7, minmax(0, 1fr))` }}>
             <span aria-hidden />
             {days.map((d) => {
-              const today = d === istMidnight(WORKSPACE_NOW);
+              const today = d === todayMid;
               return (
                 <div key={d} className={cn("border-l border-slate-100 px-2 py-2 text-center", today && "bg-blue-50/60")}>
                   <p className={cn("text-[10.5px] font-medium uppercase tracking-wide", today ? "text-blue-700" : "text-slate-400")}>
                     {WEEKDAYS[(ist(d).getUTCDay() + 6) % 7]}
                   </p>
-                  <p className={cn("text-[15px] font-semibold tabular-nums", today ? "text-blue-700" : isPastDay(d) ? "text-slate-400" : "text-slate-800")}>
+                  <p className={cn("text-[15px] font-semibold tabular-nums", today ? "text-blue-700" : d < todayMid ? "text-slate-400" : "text-slate-800")}>
                     {ist(d).getUTCDate()}
                   </p>
                 </div>
@@ -297,7 +391,7 @@ function WeekGrid({
                   <EventBlock key={e.id} event={e} dayMid={d} onOpen={() => onOpen(e)} />
                 ))}
                 {/* now indicator inside today's column */}
-                {d === istMidnight(WORKSPACE_NOW) &&
+                {d === todayMid &&
                   nowOffsetMin >= 0 &&
                   nowOffsetMin <= (DAY_END - DAY_START) * 60 && (
                     <div aria-hidden className="pointer-events-none absolute left-0 right-0 z-10 flex items-center" style={{ top: (nowOffsetMin / 60) * HOUR_H }}>
@@ -534,10 +628,12 @@ function MonthGrid({
 
 function EventDrawer({
   event,
+  meetingsById,
   onClose,
   onNavigate,
 }: {
   event: CalendarEvent | null;
+  meetingsById: Map<string, Meeting>;
   onClose: () => void;
   onNavigate: (s: Parameters<ReturnType<typeof useQubitNav>["navigate"]>[0], p?: Parameters<ReturnType<typeof useQubitNav>["navigate"]>[1]) => void;
 }) {
@@ -545,7 +641,7 @@ function EventDrawer({
   if (!event) return null;
   const privateEvent = event.visibleTo === "organizer-only" && event.organizerId !== "sagar";
   const organizer = getEmployee(event.organizerId);
-  const meeting = event.meetingId ? MEETINGS.find((m) => m.id === event.meetingId) : undefined;
+  const meeting = event.meetingId ? meetingsById.get(event.meetingId) : undefined;
   return (
     <SectionCard className="fixed inset-x-4 bottom-4 z-40 mx-auto max-w-lg p-0 shadow-xl md:right-6 md:left-auto md:w-96" noPadding>
       <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
@@ -630,7 +726,7 @@ function NewEventDialog({
   open: boolean;
   onOpenChange: (o: boolean) => void;
   defaultDay: number;
-  onCreate: (e: CalendarEvent) => void;
+  onCreate: (input: { title: string; type: EventType; start: number; end: number; location?: string }) => void;
 }) {
   const [title, setTitle] = React.useState("");
   const [type, setType] = React.useState<EventType>("Meeting");
@@ -659,12 +755,10 @@ function NewEventDialog({
     const dur = Number(duration);
     const start = defaultDay + h * 3_600_000 + m * 60_000;
     onCreate({
-      id: `ev-local-${Date.now()}`,
       title: title.trim(),
       type,
       start,
       end: start + dur * 60_000,
-      organizerId: "sagar",
       location: location.trim() || undefined,
     });
     onOpenChange(false);
@@ -714,5 +808,42 @@ function NewEventDialog({
         <Input id="ev-location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Room, link or platform" />
       </div>
     </FormDialog>
+  );
+}
+
+// ---------- Loading skeleton ----------
+
+function CalendarSkeleton() {
+  return (
+    <div className="qubit-card overflow-hidden" aria-hidden>
+      <div className="grid border-b border-slate-200/90 bg-slate-50/80" style={{ gridTemplateColumns: "56px repeat(7, minmax(0, 1fr))" }}>
+        <span />
+        {Array.from({ length: 7 }).map((_, i) => (
+          <div key={i} className="border-l border-slate-100 px-2 py-2">
+            <div className="mx-auto h-2.5 w-8 animate-pulse rounded bg-slate-100" />
+            <div className="mx-auto mt-1.5 h-4 w-6 animate-pulse rounded bg-slate-100" />
+          </div>
+        ))}
+      </div>
+      <div className="grid" style={{ gridTemplateColumns: "56px repeat(7, minmax(0, 1fr))" }}>
+        <div className="space-y-3 p-2">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="ml-auto h-2.5 w-9 animate-pulse rounded bg-slate-100" />
+          ))}
+        </div>
+        {Array.from({ length: 7 }).map((_, d) => (
+          <div key={d} className="min-h-80 space-y-2 border-l border-slate-100 p-1.5">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className={cn("h-9 animate-pulse rounded-md", (d + i) % 3 === 0 ? "bg-blue-50" : (d + i) % 3 === 1 ? "bg-amber-50" : "bg-slate-100")}
+                style={{ marginTop: i === 0 ? (d % 3) * 24 : 0 }}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+      <span className="sr-only" role="status">Loading calendar…</span>
+    </div>
   );
 }
