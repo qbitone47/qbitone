@@ -1,0 +1,1748 @@
+     1→# QUBIT ONE — PHASE 18 MASTER IMPLEMENTATION PROMPT
+     2→# ENTERPRISE HARDENING + MOBILE
+     3→# SCREENS 285–308
+     4→# EXACT SCREEN COUNT: 24
+     5→# FINAL UI / PRODUCT PHASE
+     6→
+     7→You are continuing the existing Qubit One enterprise platform.
+     8→
+     9→Qubit One is NOT a new project.
+    10→
+    11→The platform already contains Phases 1–17 and screens 1–284.
+    12→
+    13→Your responsibility in Phase 18 is to complete the final product/UI phase by adding:
+    14→
+    15→1. Dedicated mobile experiences
+    16→2. Responsive enterprise behavior
+    17→3. Performance validation
+    18→4. Accessibility validation
+    19→5. Security hardening
+    20→6. Backup and recovery visibility
+    21→7. Monitoring
+    22→8. Release management
+    23→9. System status
+    24→
+    25→DO NOT rebuild Qubit One.
+    26→
+    27→DO NOT redesign Qubit One from scratch.
+    28→
+    29→DO NOT create duplicate systems.
+    30→
+    31→DO NOT break existing functionality.
+    32→
+    33→==================================================
+    34→1. CURRENT QUBIT ONE UI REFERENCE
+    35→==================================================
+    36→
+    37→ATTACH THE CURRENT APPROVED QUBIT ONE UI REFERENCE IMAGE TO THIS PROMPT.
+    38→
+    39→STRICTLY FOLLOW THIS UI/UX DESIGN.
+    40→
+    41→The attached image is the visual source of truth for the Qubit One design language.
+    42→
+    43→Match:
+    44→
+    45→- navigation
+    46→- typography
+    47→- spacing
+    48→- sidebar
+    49→- header
+    50→- page hierarchy
+    51→- buttons
+    52→- tables
+    53→- cards
+    54→- forms
+    55→- filters
+    56→- badges
+    57→- tabs
+    58→- drawers
+    59→- modals
+    60→- status indicators
+    61→- responsive behavior
+    62→- overall visual density
+    63→
+    64→Maintain the existing Qubit One visual identity.
+    65→
+    66→Use:
+    67→
+    68→- premium enterprise UI
+    69→- light workspace
+    70→- deep navy navigation
+    71→- restrained professional blue
+    72→- white surfaces
+    73→- neutral gray
+    74→- dark readable text
+    75→- subtle borders
+    76→- subtle shadows
+    77→- moderate radius
+    78→- clean hierarchy
+    79→- professional information density
+    80→
+    81→DO NOT introduce:
+    82→
+    83→- neon
+    84→- cyberpunk
+    85→- gaming UI
+    86→- excessive glassmorphism
+    87→- excessive gradients
+    88→- glowing UI
+    89→- unnecessary animations
+    90→- oversized decorative elements
+    91→- random colors
+    92→- inconsistent component styles
+    93→
+    94→Qubit One should remain a serious enterprise business operating system.
+    95→
+    96→==================================================
+    97→2. PHASE 18 OBJECTIVE
+    98→==================================================
+    99→
+   100→Phase 18 is the final screen/product phase.
+   101→
+   102→The goal is:
+   103→
+   104→Qubit One
+   105→→ Enterprise Desktop
+   106→→ Responsive Web
+   107→→ Dedicated Mobile Experience
+   108→→ Security Hardening
+   109→→ Performance Validation
+   110→→ Accessibility Validation
+   111→→ Backup/Recovery
+   112→→ Monitoring
+   113→→ Release Management
+   114→→ Production System Status
+   115→
+   116→This phase must NOT become a collection of disconnected admin pages.
+   117→
+   118→All operational screens must use existing Qubit One infrastructure.
+   119→
+   120→==================================================
+   121→3. EXACT SCREEN COUNT
+   122→==================================================
+   123→
+   124→Implement EXACTLY these 24 screens:
+   125→
+   126→285. Mobile Home
+   127→286. Mobile Sales Home
+   128→287. Mobile Lead Detail
+   129→288. Mobile WhatsApp
+   130→289. Mobile Meetings
+   131→290. Mobile Tasks
+   132→291. Mobile Service Home
+   133→292. Mobile Service Visit
+   134→293. Mobile Attendance
+   135→294. Mobile Approvals
+   136→295. Mobile Notifications
+   137→296. Mobile Profile
+   138→297. Mobile ID Card
+   139→298. Mobile Visiting Card
+   140→299. Mobile Mail
+   141→300. Mobile AI
+   142→301. Responsive QA Dashboard
+   143→302. Performance Dashboard
+   144→303. Accessibility Review
+   145→304. Security Hardening
+   146→305. Backup & Recovery
+   147→306. Monitoring
+   148→307. Release Management
+   149→308. System Status
+   150→
+   151→DO NOT add numbered screens beyond 308.
+   152→
+   153→DO NOT remove any.
+   154→
+   155→DO NOT duplicate any.
+   156→
+   157→==================================================
+   158→4. MOBILE DESIGN PRINCIPLE
+   159→==================================================
+   160→
+   161→Mobile is NOT a scaled-down desktop.
+   162→
+   163→Create a genuine mobile-first experience for field and daily employee workflows.
+   164→
+   165→Mobile must feel like:
+   166→
+   167→Qubit One Mobile
+   168→
+   169→while remaining visually and architecturally connected to the main Qubit One platform.
+   170→
+   171→Use:
+   172→
+   173→- compact navigation
+   174→- bottom navigation where appropriate
+   175→- contextual actions
+   176→- mobile-friendly cards
+   177→- swipe-friendly controls
+   178→- mobile sheets
+   179→- compact filters
+   180→- large enough touch targets
+   181→- fast actions
+   182→- clear hierarchy
+   183→- offline/degraded states only where actually supported
+   184→
+   185→DO NOT simply shrink desktop tables.
+   186→
+   187→==================================================
+   188→5. MOBILE SECURITY
+   189→==================================================
+   190→
+   191→Mobile experiences must inherit existing Qubit One:
+   192→
+   193→- authentication
+   194→- authorization
+   195→- RBAC
+   196→- ABAC
+   197→- MFA
+   198→- session management
+   199→- device/session controls
+   200→- audit logging
+   201→- security policies
+   202→
+   203→Do not create a second mobile authentication system.
+   204→
+   205→Mobile users receive exactly the permissions granted by the core Qubit One identity/security architecture.
+   206→
+   207→==================================================
+   208→6. SCREEN 285 — MOBILE HOME
+   209→==================================================
+   210→
+   211→Create the primary Qubit One mobile workspace.
+   212→
+   213→Purpose:
+   214→
+   215→Provide employees with a fast daily command center.
+   216→
+   217→Include:
+   218→
+   219→- greeting
+   220→- profile
+   221→- today's tasks
+   222→- meetings
+   223→- approvals
+   224→- notifications
+   225→- important messages
+   226→- quick actions
+   227→- recent activity
+   228→- role-specific shortcuts
+   229→
+   230→Quick actions may include:
+   231→
+   232→- Create Lead
+   233→- New Task
+   234→- Start Meeting
+   235→- Check Attendance
+   236→- View Approvals
+   237→- Open Mail
+   238→- Open AI
+   239→
+   240→Content must be permission-aware.
+   241→
+   242→Do not show irrelevant enterprise modules to ordinary users.
+   243→
+   244→Navigation should remain contextual.
+   245→
+   246→==================================================
+   247→7. SCREEN 286 — MOBILE SALES HOME
+   248→==================================================
+   249→
+   250→Create mobile Sales workspace.
+   251→
+   252→Include:
+   253→
+   254→- today's sales activity
+   255→- leads
+   256→- follow-ups
+   257→- opportunities
+   258→- pipeline summary
+   259→- meetings
+   260→- visits
+   261→- quotations
+   262→- orders
+   263→- sales targets
+   264→
+   265→Quick actions:
+   266→
+   267→- Add Lead
+   268→- Call
+   269→- WhatsApp
+   270→- Schedule Meeting
+   271→- Add Follow-up
+   272→- Create Visit
+   273→
+   274→Use existing Sales data.
+   275→
+   276→DO NOT create a mobile Sales database.
+   277→
+   278→All actions use existing Sales APIs/workflows.
+   279→
+   280→==================================================
+   281→8. SCREEN 287 — MOBILE LEAD DETAIL
+   282→==================================================
+   283→
+   284→Create mobile Lead Detail.
+   285→
+   286→Show:
+   287→
+   288→- lead identity
+   289→- company
+   290→- contact
+   291→- phone
+   292→- email
+   293→- source
+   294→- status
+   295→- owner
+   296→- priority
+   297→- notes
+   298→- recent communication
+   299→- follow-ups
+   300→- meetings
+   301→- visits
+   302→- opportunities
+   303→
+   304→Quick actions:
+   305→
+   306→- Call
+   307→- WhatsApp
+   308→- Email
+   309→- Add Note
+   310→- Follow-up
+   311→- Convert
+   312→
+   313→All communication actions must use legitimate configured integrations.
+   314→
+   315→No fake call/WhatsApp functionality.
+   316→
+   317→Respect permissions.
+   318→
+   319→==================================================
+   320→9. SCREEN 288 — MOBILE WHATSAPP
+   321→==================================================
+   322→
+   323→Create mobile WhatsApp workspace.
+   324→
+   325→Show:
+   326→
+   327→- authorized conversations
+   328→- lead/customer context
+   329→- messages
+   330→- timestamps
+   331→- unread state
+   332→- search
+   333→- attachments where supported
+   334→- conversation status
+   335→
+   336→Allow configured actions such as:
+   337→
+   338→- Reply
+   339→- Add Note
+   340→- Create Follow-up
+   341→- Convert Lead
+   342→- Open Customer
+   343→
+   344→Use legitimate WhatsApp API/integration.
+   345→
+   346→DO NOT simulate WhatsApp.
+   347→
+   348→Respect:
+   349→
+   350→- consent
+   351→- permissions
+   352→- API limits
+   353→- retention
+   354→- audit
+   355→- privacy
+   356→
+   357→==================================================
+   358→10. SCREEN 289 — MOBILE MEETINGS
+   359→==================================================
+   360→
+   361→Create mobile Meetings workspace.
+   362→
+   363→Include:
+   364→
+   365→- today's meetings
+   366→- upcoming meetings
+   367→- meeting details
+   368→- attendees
+   369→- agenda
+   370→- location
+   371→- conference link
+   372→- notes
+   373→- action items
+   374→
+   375→Quick actions:
+   376→
+   377→- Join
+   378→- Reschedule
+   379→- Add Note
+   380→- Add Action Item
+   381→
+   382→Use existing Meeting/Calendar engine.
+   383→
+   384→DO NOT create a second calendar system.
+   385→
+   386→==================================================
+   387→11. SCREEN 290 — MOBILE TASKS
+   388→==================================================
+   389→
+   390→Create mobile task workspace.
+   391→
+   392→Include:
+   393→
+   394→- My Tasks
+   395→- Today
+   396→- Upcoming
+   397→- Overdue
+   398→- Completed
+   399→- Priority
+   400→- Assigned by
+   401→- Due date
+   402→
+   403→Actions:
+   404→
+   405→- Complete
+   406→- Reassign where authorized
+   407→- Change priority where authorized
+   408→- Add comment
+   409→- Add attachment
+   410→- Open task detail
+   411→
+   412→Reuse the existing Task system.
+   413→
+   414→==================================================
+   415→12. SCREEN 291 — MOBILE SERVICE HOME
+   416→==================================================
+   417→
+   418→Create field-service mobile home.
+   419→
+   420→Designed primarily for Service Engineers.
+   421→
+   422→Show:
+   423→
+   424→- today's visits
+   425→- open tickets
+   426→- urgent tickets
+   427→- SLA warnings
+   428→- assigned customers
+   429→- pending reports
+   430→- pending signatures
+   431→- required parts
+   432→
+   433→Quick actions:
+   434→
+   435→- Start Visit
+   436→- Open Ticket
+   437→- Navigate
+   438→- Add Evidence
+   439→- Add Part
+   440→- Complete Visit
+   441→
+   442→Do not create duplicate service data.
+   443→
+   444→==================================================
+   445→13. SCREEN 292 — MOBILE SERVICE VISIT
+   446→==================================================
+   447→
+   448→Create complete mobile field-visit workspace.
+   449→
+   450→Lifecycle:
+   451→
+   452→Scheduled
+   453→→ En Route
+   454→→ Arrived
+   455→→ In Progress
+   456→→ Paused
+   457→→ Completed
+   458→
+   459→Show:
+   460→
+   461→- customer
+   462→- site
+   463→- ticket
+   464→- issue
+   465→- product
+   466→- serial
+   467→- warranty status
+   468→- checklist
+   469→- diagnosis
+   470→- parts
+   471→- photos
+   472→- notes
+   473→- customer signature
+   474→- service report
+   475→
+   476→Support field-friendly actions.
+   477→
+   478→Critical checklist items can block completion where configured.
+   479→
+   480→Do not fabricate:
+   481→
+   482→- GPS
+   483→- warranty
+   484→- parts
+   485→- signatures
+   486→- diagnostics
+   487→
+   488→If location is used:
+   489→
+   490→- require permission
+   491→- show location state
+   492→- respect privacy
+   493→- audit access
+   494→- do not track unnecessarily
+   495→
+   496→==================================================
+   497→14. SCREEN 293 — MOBILE ATTENDANCE
+   498→==================================================
+   499→
+   500→Create mobile attendance.
+   501→
+   502→Show:
+   503→
+   504→- today's attendance
+   505→- check-in
+   506→- check-out
+   507→- working status
+   508→- attendance history
+   509→- leave information
+   510→- corrections where authorized
+   511→
+   512→Reuse HR Attendance.
+   513→
+   514→Do not create duplicate attendance records.
+   515→
+   516→If location/device verification is configured:
+   517→
+   518→- clearly show it
+   519→- obtain required permission
+   520→- audit verification
+   521→- handle failure safely
+   522→
+   523→==================================================
+   524→15. SCREEN 294 — MOBILE APPROVALS
+   525→==================================================
+   526→
+   527→Create mobile approval workspace.
+   528→
+   529→Show:
+   530→
+   531→- pending approvals
+   532→- approved
+   533→- rejected
+   534→- request type
+   535→- requester
+   536→- amount/value where authorized
+   537→- date
+   538→- priority
+   539→- SLA
+   540→
+   541→Actions:
+   542→
+   543→- Approve
+   544→- Reject
+   545→- Request Changes
+   546→- View Details
+   547→
+   548→Use the centralized Approval Matrix and approval system.
+   549→
+   550→Do not create a second approval engine.
+   551→
+   552→Sensitive approvals may require:
+   553→
+   554→- MFA
+   555→- step-up authentication
+   556→- additional confirmation
+   557→
+   558→==================================================
+   559→16. SCREEN 295 — MOBILE NOTIFICATIONS
+   560→==================================================
+   561→
+   562→Create mobile Notification Center.
+   563→
+   564→Include:
+   565→
+   566→- all
+   567→- unread
+   568→- approvals
+   569→- tasks
+   570→- meetings
+   571→- sales
+   572→- service
+   573→- HR
+   574→- security
+   575→- system
+   576→
+   577→Actions:
+   578→
+   579→- open
+   580→- mark read
+   581→- mark all read
+   582→- filter
+   583→- notification preferences where authorized
+   584→
+   585→Reuse the centralized notification engine.
+   586→
+   587→==================================================
+   588→17. SCREEN 296 — MOBILE PROFILE
+   589→==================================================
+   590→
+   591→Create employee mobile profile.
+   592→
+   593→Show:
+   594→
+   595→- profile photo
+   596→- name
+   597→- role
+   598→- department
+   599→- contact
+   600→- employee ID
+   601→- manager
+   602→- work information
+   603→- security/session access
+   604→
+   605→Actions:
+   606→
+   607→- edit permitted fields
+   608→- security settings
+   609→- sessions
+   610→- ID Card
+   611→- Visiting Card
+   612→
+   613→Never expose sensitive HR information unnecessarily.
+   614→
+   615→==================================================
+   616→18. SCREEN 297 — MOBILE ID CARD
+   617→==================================================
+   618→
+   619→Create digital employee ID card.
+   620→
+   621→Include:
+   622→
+   623→- company branding
+   624→- employee photo
+   625→- name
+   626→- employee ID
+   627→- designation
+   628→- department
+   629→- QR/barcode if configured
+   630→- validity
+   631→- verification status
+   632→
+   633→Do not expose unnecessary personal information.
+   634→
+   635→If QR verification exists:
+   636→
+   637→- use secure signed/verified data
+   638→- do not expose unrestricted employee database information
+   639→
+   640→==================================================
+   641→19. SCREEN 298 — MOBILE VISITING CARD
+   642→==================================================
+   643→
+   644→Create digital business visiting card.
+   645→
+   646→Include:
+   647→
+   648→- employee name
+   649→- designation
+   650→- company
+   651→- phone
+   652→- email
+   653→- website
+   654→- QR
+   655→- share action
+   656→
+   657→Use approved company branding.
+   658→
+   659→Sharing must respect employee/company policy.
+   660→
+   661→==================================================
+   662→20. SCREEN 299 — MOBILE MAIL
+   663→==================================================
+   664→
+   665→Create mobile enterprise mail workspace.
+   666→
+   667→Include:
+   668→
+   669→- inbox
+   670→- unread
+   671→- sent
+   672→- drafts
+   673→- search
+   674→- mail detail
+   675→- compose
+   676→
+   677→Actions:
+   678→
+   679→- reply
+   680→- forward
+   681→- compose
+   682→- attach
+   683→- search
+   684→
+   685→Reuse the existing mail integration/system.
+   686→
+   687→Do not create a fake email transport.
+   688→
+   689→If external email provider is configured, use legitimate APIs.
+   690→
+   691→==================================================
+   692→21. SCREEN 300 — MOBILE AI
+   693→==================================================
+   694→
+   695→Create Qubit AI mobile workspace.
+   696→
+   697→This is a mobile interface to the existing Qubit AI Platform.
+   698→
+   699→Include:
+   700→
+   701→- recent conversations
+   702→- AI agents
+   703→- quick prompts
+   704→- authorized business context
+   705→- suggested actions
+   706→- action approvals
+   707→
+   708→Examples:
+   709→
+   710→"Summarize my day."
+   711→
+   712→"Show my pending approvals."
+   713→
+   714→"Which leads need follow-up?"
+   715→
+   716→"Summarize today's meetings."
+   717→
+   718→"Show my open service visits."
+   719→
+   720→AI must inherit existing permissions.
+   721→
+   722→AI cannot access data merely because it exists in the database.
+   723→
+   724→AI cannot bypass authorization.
+   725→
+   726→Consequential actions require approval.
+   727→
+   728→==================================================
+   729→22. SCREEN 301 — RESPONSIVE QA DASHBOARD
+   730→==================================================
+   731→
+   732→Create internal responsive QA dashboard.
+   733→
+   734→Purpose:
+   735→
+   736→Validate the Qubit One UI across:
+   737→
+   738→- desktop
+   739→- laptop
+   740→- tablet
+   741→- mobile
+   742→
+   743→Show:
+   744→
+   745→- route
+   746→- breakpoint
+   747→- viewport
+   748→- layout status
+   749→- overflow issues
+   750→- component failures
+   751→- accessibility warnings
+   752→- visual regression status
+   753→- screenshot/reference comparison status
+   754→
+   755→Provide QA-oriented visibility.
+   756→
+   757→Do not make this a customer-facing feature.
+   758→
+   759→==================================================
+   760→23. SCREEN 302 — PERFORMANCE DASHBOARD
+   761→==================================================
+   762→
+   763→Create enterprise performance dashboard.
+   764→
+   765→Monitor:
+   766→
+   767→Frontend:
+   768→
+   769→- page load
+   770→- route transition
+   771→- Core Web Vitals
+   772→- JavaScript errors
+   773→- rendering performance
+   774→
+   775→Backend:
+   776→
+   777→- API latency
+   778→- throughput
+   779→- error rate
+   780→- database latency
+   781→- queue latency
+   782→
+   783→Infrastructure:
+   784→
+   785→- CPU
+   786→- memory
+   787→- disk
+   788→- network
+   789→- container health
+   790→
+   791→Show:
+   792→
+   793→- current
+   794→- trend
+   795→- threshold
+   796→- incidents
+   797→- degraded services
+   798→
+   799→Use actual telemetry where integrated.
+   800→
+   801→Never fabricate metrics.
+   802→
+   803→==================================================
+   804→24. SCREEN 303 — ACCESSIBILITY REVIEW
+   805→==================================================
+   806→
+   807→Create accessibility governance workspace.
+   808→
+   809→Check:
+   810→
+   811→- keyboard navigation
+   812→- focus management
+   813→- contrast
+   814→- labels
+   815→- semantic structure
+   816→- screen-reader compatibility
+   817→- form errors
+   818→- touch target size
+   819→- motion preferences
+   820→- zoom behavior
+   821→
+   822→Show:
+   823→
+   824→- issue
+   825→- severity
+   826→- affected screen
+   827→- component
+   828→- status
+   829→- owner
+   830→- resolution
+   831→
+   832→Allow filtering:
+   833→
+   834→- critical
+   835→- major
+   836→- minor
+   837→- resolved
+   838→- unresolved
+   839→
+   840→This is an internal quality/security governance screen.
+   841→
+   842→==================================================
+   843→25. SCREEN 304 — SECURITY HARDENING
+   844→==================================================
+   845→
+   846→Create security hardening dashboard.
+   847→
+   848→Show security posture across:
+   849→
+   850→Authentication:
+   851→
+   852→- MFA
+   853→- SSO
+   854→- sessions
+   855→- passkeys where configured
+   856→
+   857→Authorization:
+   858→
+   859→- RBAC
+   860→- ABAC
+   861→- permission anomalies
+   862→- excessive privileges
+   863→
+   864→Application:
+   865→
+   866→- dependency vulnerabilities
+   867→- security headers
+   868→- API protection
+   869→- rate limiting
+   870→- input validation
+   871→
+   872→Infrastructure:
+   873→
+   874→- TLS
+   875→- secrets
+   876→- network policies
+   877→- container security
+   878→
+   879→Data:
+   880→
+   881→- encryption
+   882→- sensitive data policies
+   883→- backup encryption
+   884→- retention
+   885→
+   886→Show:
+   887→
+   888→- severity
+   889→- finding
+   890→- affected component
+   891→- detected date
+   892→- owner
+   893→- remediation
+   894→- status
+   895→
+   896→DO NOT expose secrets.
+   897→
+   898→DO NOT display passwords, tokens, private keys or sensitive credentials.
+   899→
+   900→==================================================
+   901→26. SCREEN 305 — BACKUP & RECOVERY
+   902→==================================================
+   903→
+   904→Create backup and disaster-recovery workspace.
+   905→
+   906→Show:
+   907→
+   908→- database backup status
+   909→- backup type
+   910→- last successful backup
+   911→- next backup
+   912→- retention
+   913→- encryption status
+   914→- backup verification
+   915→- restore-test status
+   916→- recovery point
+   917→- recovery point objective
+   918→- recovery time objective
+   919→- backup failures
+   920→
+   921→Support authorized administrative actions such as:
+   922→
+   923→- verify backup
+   924→- initiate restore workflow
+   925→- run recovery test
+   926→- inspect backup status
+   927→
+   928→RESTORE ACTIONS MUST BE HIGH-RISK.
+   929→
+   930→Require strong authorization and confirmation.
+   931→
+   932→Never silently restore production.
+   933→
+   934→Show:
+   935→
+   936→- backup health
+   937→- recovery readiness
+   938→- last verified restore
+   939→- failure state
+   940→
+   941→==================================================
+   942→27. SCREEN 306 — MONITORING
+   943→==================================================
+   944→
+   945→Create centralized Qubit One monitoring workspace.
+   946→
+   947→Monitor:
+   948→
+   949→- application health
+   950→- API health
+   951→- database
+   952→- cache
+   953→- Kafka/queues
+   954→- integrations
+   955→- AI services
+   956→- storage
+   957→- email
+   958→- WhatsApp
+   959→- scheduled jobs
+   960→- automation
+   961→- backups
+   962→
+   963→Show:
+   964→
+   965→- healthy
+   966→- degraded
+   967→- unavailable
+   968→- maintenance
+   969→
+   970→Include:
+   971→
+   972→- service name
+   973→- health
+   974→- latency
+   975→- errors
+   976→- uptime
+   977→- last check
+   978→- dependency
+   979→- incident
+   980→
+   981→Use actual monitoring/observability infrastructure.
+   982→
+   983→Integrate with:
+   984→
+   985→- logs
+   986→- metrics
+   987→- traces
+   988→- alerts
+   989→
+   990→==================================================
+   991→28. SCREEN 307 — RELEASE MANAGEMENT
+   992→==================================================
+   993→
+   994→Create enterprise release-management workspace.
+   995→
+   996→Show:
+   997→
+   998→- current version
+   999→- environments
+  1000→- deployment status
+  1001→- release history
+  1002→- release notes
+  1003→- commit/build reference
+  1004→- deployment time
+  1005→- owner
+  1006→- status
+  1007→- rollback readiness
+  1008→
+  1009→Environments:
+  1010→
+  1011→- development
+  1012→- test
+  1013→- staging
+  1014→- production
+  1015→
+  1016→Where applicable show:
+  1017→
+  1018→- deployment
+  1019→- migration
+  1020→- health check
+  1021→- smoke test
+  1022→- rollback state
+  1023→
+  1024→Release lifecycle:
+  1025→
+  1026→Draft
+  1027→→ Validation
+  1028→→ Approved
+  1029→→ Deploying
+  1030→→ Verification
+  1031→→ Released
+  1032→
+  1033→Failure:
+  1034→
+  1035→→ Failed
+  1036→→ Rollback / Recovery
+  1037→
+  1038→Do not allow dangerous production deployment actions without proper authorization.
+  1039→
+  1040→==================================================
+  1041→29. SCREEN 308 — SYSTEM STATUS
+  1042→==================================================
+  1043→
+  1044→Create the final Qubit One system-status page.
+  1045→
+  1046→Purpose:
+  1047→
+  1048→Provide one authoritative system health view.
+  1049→
+  1050→Show:
+  1051→
+  1052→- overall status
+  1053→- application
+  1054→- API
+  1055→- database
+  1056→- cache
+  1057→- messaging
+  1058→- AI
+  1059→- storage
+  1060→- integrations
+  1061→- authentication
+  1062→- backups
+  1063→- monitoring
+  1064→
+  1065→Status categories:
+  1066→
+  1067→Operational
+  1068→Degraded
+  1069→Partial Outage
+  1070→Major Outage
+  1071→Maintenance
+  1072→
+  1073→Show:
+  1074→
+  1075→- incident
+  1076→- start time
+  1077→- affected service
+  1078→- impact
+  1079→- current status
+  1080→- resolution/update
+  1081→
+  1082→This should provide a calm enterprise operational view.
+  1083→
+  1084→Avoid dramatic styling.
+  1085→
+  1086→==================================================
+  1087→30. MOBILE NAVIGATION ARCHITECTURE
+  1088→==================================================
+  1089→
+  1090→Mobile should use a contextual navigation model.
+  1091→
+  1092→Recommended structure:
+  1093→
+  1094→Home
+  1095→My Work
+  1096→Business
+  1097→Communication
+  1098→AI
+  1099→Profile
+  1100→
+  1101→Depending on role, Business may expose:
+  1102→
+  1103→Sales
+  1104→Service
+  1105→HR
+  1106→Finance
+  1107→Inventory
+  1108→Marketing
+  1109→
+  1110→Do not expose every Qubit module to every employee.
+  1111→
+  1112→Navigation must be permission-aware.
+  1113→
+  1114→==================================================
+  1115→31. MOBILE CROSS-MODULE WORKFLOWS
+  1116→==================================================
+  1117→
+  1118→Mobile must support connected workflows.
+  1119→
+  1120→Examples:
+  1121→
+  1122→Lead
+  1123→→ Customer
+  1124→→ Meeting
+  1125→→ Follow-up
+  1126→→ Opportunity
+  1127→
+  1128→Service:
+  1129→
+  1130→Ticket
+  1131→→ Visit
+  1132→→ Checklist
+  1133→→ Parts
+  1134→→ Evidence
+  1135→→ Signature
+  1136→→ Resolution
+  1137→
+  1138→Employee:
+  1139→
+  1140→Attendance
+  1141→→ Tasks
+  1142→→ Meetings
+  1143→→ Approvals
+  1144→→ Mail
+  1145→
+  1146→AI:
+  1147→
+  1148→Question
+  1149→→ Authorized data
+  1150→→ Recommendation
+  1151→→ Approval
+  1152→→ Action
+  1153→
+  1154→Do not isolate mobile features into separate mini-applications.
+  1155→
+  1156→==================================================
+  1157→32. OFFLINE / DEGRADED MODE
+  1158→==================================================
+  1159→
+  1160→Do NOT claim offline support unless actually implemented.
+  1161→
+  1162→If offline functionality exists:
+  1163→
+  1164→- clearly show offline state
+  1165→- identify locally stored actions
+  1166→- queue actions safely
+  1167→- synchronize safely
+  1168→- detect conflicts
+  1169→- use idempotency
+  1170→- never silently overwrite server data
+  1171→
+  1172→If offline support does not exist:
+  1173→
+  1174→show:
+  1175→
+  1176→"Connection required"
+  1177→
+  1178→rather than pretending the action was completed.
+  1179→
+  1180→==================================================
+  1181→33. PERFORMANCE REQUIREMENTS
+  1182→==================================================
+  1183→
+  1184→Mobile must prioritize performance.
+  1185→
+  1186→Use:
+  1187→
+  1188→- optimized images
+  1189→- lazy loading
+  1190→- code splitting
+  1191→- route-level loading
+  1192→- caching where appropriate
+  1193→- pagination
+  1194→- efficient API payloads
+  1195→- optimized database queries
+  1196→- minimal unnecessary client-side processing
+  1197→
+  1198→Do not load the entire enterprise application on mobile startup.
+  1199→
+  1200→==================================================
+  1201→34. SECURITY REQUIREMENTS
+  1202→==================================================
+  1203→
+  1204→Phase 18 must enforce:
+  1205→
+  1206→- MFA
+  1207→- secure sessions
+  1208→- device/session management
+  1209→- authorization
+  1210→- API security
+  1211→- rate limiting
+  1212→- input validation
+  1213→- CSRF protection where applicable
+  1214→- secure headers
+  1215→- XSS protection
+  1216→- SQL injection protection
+  1217→- secrets management
+  1218→- encryption
+  1219→- secure file handling
+  1220→- audit logging
+  1221→- dependency security
+  1222→
+  1223→Backend security must be independent of frontend controls.
+  1224→
+  1225→==================================================
+  1226→35. BACKUP / DR REQUIREMENTS
+  1227→==================================================
+  1228→
+  1229→Production architecture must support:
+  1230→
+  1231→- encrypted backups
+  1232→- separate backup storage
+  1233→- point-in-time recovery where supported
+  1234→- retention policy
+  1235→- backup verification
+  1236→- restore testing
+  1237→- disaster recovery procedure
+  1238→- RPO
+  1239→- RTO
+  1240→- alerts
+  1241→
+  1242→A backup that has never been tested should not be treated as fully verified.
+  1243→
+  1244→==================================================
+  1245→36. OBSERVABILITY
+  1246→==================================================
+  1247→
+  1248→Use centralized observability.
+  1249→
+  1250→Recommended architecture:
+  1251→
+  1252→OpenTelemetry
+  1253→→ Metrics
+  1254→→ Logs
+  1255→→ Traces
+  1256→→ Monitoring
+  1257→→ Alerts
+  1258→
+  1259→Track:
+  1260→
+  1261→- API failures
+  1262→- database errors
+  1263→- frontend errors
+  1264→- authentication events
+  1265→- security events
+  1266→- job failures
+  1267→- queue failures
+  1268→- AI failures
+  1269→- integration failures
+  1270→- backup failures
+  1271→- deployment failures
+  1272→
+  1273→==================================================
+  1274→37. RELEASE SAFETY
+  1275→==================================================
+  1276→
+  1277→Production releases must support:
+  1278→
+  1279→- CI/CD
+  1280→- automated tests
+  1281→- migrations
+  1282→- health checks
+  1283→- smoke tests
+  1284→- deployment verification
+  1285→- rollback
+  1286→- release notes
+  1287→- audit
+  1288→
+  1289→Never deploy untested destructive database changes directly to production.
+  1290→
+  1291→Database migrations must be:
+  1292→
+  1293→- versioned
+  1294→- reviewed
+  1295→- tested
+  1296→- reversible where practical
+  1297→- safely deployable
+  1298→
+  1299→==================================================
+  1300→38. ERROR HANDLING
+  1301→==================================================
+  1302→
+  1303→Every screen must support:
+  1304→
+  1305→- loading
+  1306→- empty
+  1307→- error
+  1308→- permission denied
+  1309→- unavailable
+  1310→- degraded
+  1311→- retry where safe
+  1312→- stale data where applicable
+  1313→
+  1314→Never display:
+  1315→
+  1316→"Success"
+  1317→
+  1318→when the backend failed.
+  1319→
+  1320→Never fabricate:
+  1321→
+  1322→- system health
+  1323→- deployment success
+  1324→- backup success
+  1325→- API success
+  1326→- monitoring data
+  1327→- GPS
+  1328→- attendance
+  1329→- AI output
+  1330→- integration state
+  1331→
+  1332→==================================================
+  1333→39. ACCESSIBILITY
+  1334→==================================================
+  1335→
+  1336→All Phase 18 screens must support:
+  1337→
+  1338→- keyboard navigation
+  1339→- visible focus
+  1340→- semantic HTML
+  1341→- screen-reader labels
+  1342→- accessible forms
+  1343→- sufficient contrast
+  1344→- non-color-only indicators
+  1345→- reduced motion
+  1346→- touch accessibility
+  1347→- scalable text
+  1348→
+  1349→Mobile touch targets must be sufficiently large and separated.
+  1350→
+  1351→==================================================
+  1352→40. ROLE-BASED EXPERIENCE
+  1353→==================================================
+  1354→
+  1355→The final Qubit One experience must remain role-aware.
+  1356→
+  1357→CEO:
+  1358→
+  1359→- executive information
+  1360→- system status
+  1361→- enterprise analytics
+  1362→
+  1363→Manager:
+  1364→
+  1365→- team performance
+  1366→- approvals
+  1367→- tasks
+  1368→- operational status
+  1369→
+  1370→Sales:
+  1371→
+  1372→- mobile sales
+  1373→- leads
+  1374→- meetings
+  1375→- tasks
+  1376→- AI
+  1377→
+  1378→Service Engineer:
+  1379→
+  1380→- service home
+  1381→- visits
+  1382→- tickets
+  1383→- checklist
+  1384→- parts
+  1385→- evidence
+  1386→- signatures
+  1387→
+  1388→Employee:
+  1389→
+  1390→- home
+  1391→- tasks
+  1392→- meetings
+  1393→- mail
+  1394→- attendance
+  1395→- approvals
+  1396→- profile
+  1397→
+  1398→Admin:
+  1399→
+  1400→- security
+  1401→- monitoring
+  1402→- backups
+  1403→- release
+  1404→- system status
+  1405→
+  1406→Do not expose administrative controls to normal employees.
+  1407→
+  1408→==================================================
+  1409→41. AI SECURITY
+  1410→==================================================
+  1411→
+  1412→Mobile AI must follow the exact same Qubit AI governance.
+  1413→
+  1414→AI:
+  1415→
+  1416→- cannot bypass permissions
+  1417→- cannot access arbitrary DB
+  1418→- cannot expose confidential records
+  1419→- cannot invent facts
+  1420→- cannot perform unauthorized actions
+  1421→- must use approved tools
+  1422→- must log consequential actions
+  1423→- must request approval where required
+  1424→
+  1425→==================================================
+  1426→42. EXISTING SYSTEM REUSE
+  1427→==================================================
+  1428→
+  1429→Reuse existing:
+  1430→
+  1431→- Identity
+  1432→- Authentication
+  1433→- Authorization
+  1434→- Employee system
+  1435→- CRM
+  1436→- Sales
+  1437→- Finance
+  1438→- Inventory
+  1439→- Marketing
+  1440→- HR
+  1441→- Service
+  1442→- Meetings
+  1443→- Tasks
+  1444→- Mail
+  1445→- Notifications
+  1446→- AI Platform
+  1447→- Automation Engine
+  1448→- Analytics
+  1449→- Audit
+  1450→- Reporting
+  1451→
+  1452→DO NOT create duplicate versions.
+  1453→
+  1454→==================================================
+  1455→43. DATA INTEGRITY
+  1456→==================================================
+  1457→
+  1458→Use:
+  1459→
+  1460→- transactions
+  1461→- constraints
+  1462→- foreign keys
+  1463→- unique constraints
+  1464→- validation
+  1465→- idempotency
+  1466→- concurrency controls
+  1467→- safe migrations
+  1468→- audit
+  1469→
+  1470→Frontend must never directly control production database state.
+  1471→
+  1472→==================================================
+  1473→44. OBSERVABILITY FOR PHASE 18
+  1474→==================================================
+  1475→
+  1476→Monitor:
+  1477→
+  1478→- mobile API usage
+  1479→- page performance
+  1480→- API latency
+  1481→- error rate
+  1482→- authentication failures
+  1483→- security events
+  1484→- backup jobs
+  1485→- restore tests
+  1486→- monitoring health
+  1487→- deployments
+  1488→- rollbacks
+  1489→- AI requests
+  1490→- automation failures
+  1491→
+  1492→==================================================
+  1493→45. TESTING
+  1494→==================================================
+  1495→
+  1496→Perform:
+  1497→
+  1498→Unit Testing
+  1499→Integration Testing
+  1500→API Testing
+  1501→Database Testing
+  1502→Authorization Testing
+  1503→Security Testing
+  1504→Regression Testing
+  1505→Responsive Testing
+  1506→Mobile Testing
+  1507→Accessibility Testing
+  1508→Performance Testing
+  1509→Load Testing
+  1510→Failure Testing
+  1511→Concurrency Testing
+  1512→Backup/Restore Testing
+  1513→Deployment Testing
+  1514→Rollback Testing
+  1515→
+  1516→Critical workflows must be tested end-to-end.
+  1517→
+  1518→==================================================
+  1519→46. FINAL 308-SCREEN REGRESSION
+  1520→==================================================
+  1521→
+  1522→Phase 18 must not only test screens 285–308.
+  1523→
+  1524→Perform regression validation across the entire Qubit One product.
+  1525→
+  1526→Validate:
+  1527→
+  1528→1–308.
+  1529→
+  1530→Check:
+  1531→
+  1532→- navigation
+  1533→- permissions
+  1534→- APIs
+  1535→- workflows
+  1536→- database relationships
+  1537→- responsive behavior
+  1538→- security
+  1539→- performance
+  1540→- audit
+  1541→- AI
+  1542→- automation
+  1543→- notifications
+  1544→- integrations
+  1545→
+  1546→No Phase 18 change should silently break earlier phases.
+  1547→
+  1548→==================================================
+  1549→47. OPTIONAL FUTURE CAPABILITIES
+  1550→==================================================
+  1551→
+  1552→Do NOT add these as extra numbered screens.
+  1553→
+  1554→Keep architecture ready for:
+  1555→
+  1556→- native iOS application
+  1557→- native Android application
+  1558→- biometric authentication
+  1559→- advanced device management
+  1560→- MDM integration
+  1561→- offline-first service operations
+  1562→- advanced disaster recovery
+  1563→- multi-region deployment
+  1564→- blue/green deployments
+  1565→- canary releases
+  1566→- feature flags
+  1567→- advanced SRE tooling
+  1568→- synthetic monitoring
+  1569→- advanced security operations
+  1570→- SIEM integration
+  1571→- enterprise compliance frameworks
+  1572→
+  1573→These remain future extensions.
+  1574→
+  1575→==================================================
+  1576→48. FINAL DESIGN QUALITY RULE
+  1577→==================================================
+  1578→
+  1579→The final product must feel like ONE coherent enterprise platform.
+  1580→
+  1581→Not:
+  1582→
+  1583→"300 different pages."
+  1584→
+  1585→Instead:
+  1586→
+  1587→ONE Qubit One.
+  1588→
+  1589→The user should feel that:
+  1590→
+  1591→Home
+  1592→→ Work
+  1593→→ Sales
+  1594→→ Finance
+  1595→→ HR
+  1596→→ Service
+  1597→→ Marketing
+  1598→→ Meetings
+  1599→→ AI
+  1600→→ Analytics
+  1601→→ Administration
+  1602→
+  1603→are connected parts of the same operating system.
+  1604→
+  1605→Maintain:
+  1606→
+  1607→- shared identity
+  1608→- shared navigation
+  1609→- shared search
+  1610→- shared permissions
+  1611→- shared notifications
+  1612→- shared tasks
+  1613→- shared audit
+  1614→- shared AI
+  1615→- shared analytics
+  1616→- shared automation
+  1617→- shared design system
+  1618→
+  1619→==================================================
+  1620→49. FINAL VALIDATION CHECKLIST
+  1621→==================================================
+  1622→
+  1623→Before declaring Phase 18 complete:
+  1624→
+  1625→[ ] Exactly 24 Phase 18 screens exist.
+  1626→
+  1627→[ ] Screens 285–308 are implemented.
+  1628→
+  1629→[ ] No extra numbered screens were created.
+  1630→
+  1631→[ ] Mobile is a genuine mobile experience.
+  1632→
+  1633→[ ] Mobile does not duplicate backend systems.
+  1634→
+  1635→[ ] Existing Qubit permissions are reused.
+  1636→
+  1637→[ ] Existing authentication is reused.
+  1638→
+  1639→[ ] Existing Sales system is reused.
+  1640→
+  1641→[ ] Existing Service system is reused.
+  1642→
+  1643→[ ] Existing HR Attendance is reused.
+  1644→
+  1645→[ ] Existing Task system is reused.
+  1646→
+  1647→[ ] Existing Meeting system is reused.
+  1648→
+  1649→[ ] Existing Mail system is reused.
+  1650→
+  1651→[ ] Existing Notification system is reused.
+  1652→
+  1653→[ ] Existing AI Platform is reused.
+  1654→
+  1655→[ ] Existing Analytics system is reused.
+  1656→
+  1657→[ ] Existing Audit system is reused.
+  1658→
+  1659→[ ] Security hardening is implemented.
+  1660→
+  1661→[ ] Backup/recovery visibility is implemented.
+  1662→
+  1663→[ ] Monitoring is integrated with real telemetry where available.
+  1664→
+  1665→[ ] Release management is integrated with actual deployment infrastructure where available.
+  1666→
+  1667→[ ] System Status reflects actual service health.
+  1668→
+  1669→[ ] No fake monitoring metrics.
+  1670→
+  1671→[ ] No fake backup status.
+  1672→
+  1673→[ ] No fake deployment status.
+  1674→
+  1675→[ ] No fake integrations.
+  1676→
+  1677→[ ] No fake offline functionality.
+  1678→
+  1679→[ ] No fabricated GPS.
+  1680→
+  1681→[ ] No fabricated AI actions.
+  1682→
+  1683→[ ] No unauthorized data exposure.
+  1684→
+  1685→[ ] Sensitive HR/Finance/Security data is protected.
+  1686→
+  1687→[ ] Mobile performance is optimized.
+  1688→
+  1689→[ ] Accessibility is reviewed.
+  1690→
+  1691→[ ] Responsive QA is completed.
+  1692→
+  1693→[ ] Full 1–308 regression is performed.
+  1694→
+  1695→[ ] Existing modules are not broken.
+  1696→
+  1697→[ ] Existing database integrity is preserved.
+  1698→
+  1699→[ ] Existing design system is preserved.
+  1700→
+  1701→[ ] Current Qubit One UI reference is strictly followed.
+  1702→
+  1703→[ ] No neon/cyberpunk/gaming UI.
+  1704→
+  1705→[ ] No unnecessary gradients/glows.
+  1706→
+  1707→[ ] No duplicate systems.
+  1708→
+  1709→[ ] No unnecessary technology churn.
+  1710→
+  1711→==================================================
+  1712→50. COMPLETION RULE
+  1713→==================================================
+  1714→
+  1715→Do not stop after creating visual placeholders.
+  1716→
+  1717→Implement the actual functionality supported by the existing architecture.
+  1718→
+  1719→If a real external integration is not configured:
+  1720→
+  1721→DO NOT fake it.
+  1722→
+  1723→Create the correct integration boundary and truthful unavailable/configuration state.
+  1724→
+  1725→If infrastructure telemetry is unavailable:
+  1726→
+  1727→DO NOT fabricate metrics.
+  1728→
+  1729→Show the correct "Not Connected", "Unavailable", or configuration state.
+  1730→
+  1731→If offline support is not implemented:
+  1732→
+  1733→DO NOT claim offline functionality.
+  1734→
+  1735→Complete all 24 Phase 18 screens.
+  1736→
+  1737→Then perform full regression validation across screens 1–308.
+  1738→
+  1739→Do not ask what to build next.
+  1740→
+  1741→Do not stop after a partial implementation.
+  1742→
+  1743→Analyze → integrate → implement → test → harden → validate.
+  1744→
+  1745→PHASE 18 COMPLETE =
+  1746→SCREENS 285–308 COMPLETE
+  1747→+
+  1748→FULL QUBIT ONE 1–308 REGRESSION VALIDATION.

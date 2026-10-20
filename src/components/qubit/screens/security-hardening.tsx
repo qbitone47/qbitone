@@ -64,7 +64,7 @@ export function SecurityHardeningScreen() {
                     label={check.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase())}
                     health={v.status === "Enforced" || v.status === "Configured" || v.status === "Active" || v.status === "Managed" || v.status === "Monitored" || v.status === "Reviewed" || v.status === "Measured" ? "healthy" : v.status === "Partial" ? "degraded" : v.status === "Not configured" || v.status === "Not connected" || v.status === "None recorded" ? "unavailable" : "maintenance"}
                     note={v.detail}
-                    value={<StatusWord status={v.status} />}
+                    value={v.status}
                   />
                 ))}
               </div>

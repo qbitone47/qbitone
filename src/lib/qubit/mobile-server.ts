@@ -178,7 +178,8 @@ export async function mobileGet(role: WorkspaceRole, section: MobileSection, par
     case "approvals":
       return approvalsPayload(role, params.get("id") ?? undefined);
     case "notifications":
-      return ok(notificationsPayload(params.get("category") ?? undefined));
+      // notificationsPayload already returns a Result (ok/fail) — do not wrap twice.
+      return notificationsPayload(params.get("category") ?? undefined);
     case "profile":
       return ok(profilePayload(role));
     case "id-card":
@@ -749,8 +750,8 @@ function notificationsPayload(category?: string) {
   const s = store();
   let items = NOTIFICATIONS.map((n) => ({ ...n, unread: s.notifRead.has(n.id) ? false : n.unread }));
   const categories = [...new Set(NOTIFICATIONS.map((n) => n.category))];
-  if (category && category !== "all") items = items.filter((n) => n.category.toLowerCase() === category.toLowerCase());
-  const unreadOnly = category === "unread";
+  const unreadOnly = (category ?? "").trim().toLowerCase() === "unread";
+  if (category && !unreadOnly && category.toLowerCase() !== "all") items = items.filter((n) => n.category.toLowerCase() === category.toLowerCase());
   if (unreadOnly) items = items.filter((n) => n.unread);
   return ok({
     items: items.map(notificationBrief),
