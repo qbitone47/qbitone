@@ -130,11 +130,14 @@ interface SalesStore {
   settings: SalesSettings;
 }
 
-let _store: SalesStore | null = null;
+// Phase 20 — globalThis singleton (see workspace-server): route bundles
+// must share ONE sales store so /api/sales, /api/mobile, /api/analytics and
+// /api/search read and write the same pipeline state.
+const g = globalThis as unknown as { __qubitSalesStore?: SalesStore };
 
 function store(): SalesStore {
-  if (!_store) {
-    _store = {
+  if (!g.__qubitSalesStore) {
+    g.__qubitSalesStore = {
       seq: 1000,
       leads: SALES_LEADS.map((x) => structuredClone(x)),
       contacts: SALES_CONTACTS.map((x) => structuredClone(x)),
@@ -152,7 +155,7 @@ function store(): SalesStore {
       settings: structuredClone(SALES_SETTINGS),
     };
   }
-  return _store;
+  return g.__qubitSalesStore;
 }
 
 function nextId(prefix: string): string {

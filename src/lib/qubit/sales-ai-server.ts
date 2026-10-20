@@ -105,10 +105,12 @@ interface AiStore {
   seq: number;
 }
 
-let _ai: AiStore | null = null;
+// Phase 20 — globalThis singleton (see workspace-server): one AI store
+// across route bundles.
+const g = globalThis as unknown as { __qubitSalesAiStore?: AiStore };
 function aiStore(): AiStore {
-  if (!_ai) {
-    _ai = {
+  if (!g.__qubitSalesAiStore) {
+    g.__qubitSalesAiStore = {
       dismissedInsights: new Set(),
       recommendationState: new Map(),
       dismissedPrioritization: new Set(),
@@ -120,7 +122,7 @@ function aiStore(): AiStore {
       seq: 0,
     };
   }
-  return _ai;
+  return g.__qubitSalesAiStore;
 }
 
 function nextAiId(prefix: string): string {

@@ -35,6 +35,9 @@ import {
   saveDraft,
   markMail,
   updateProfile,
+  listMeetings,
+  getMeeting,
+  listNotifications,
   type WorkspaceRole,
 } from "./workspace-server";
 import {
@@ -118,10 +121,13 @@ interface MobileStore {
   cardShares: { at: number; channel: string }[];
 }
 
-let _store: MobileStore | null = null;
+// Phase 20 — globalThis singleton (see workspace-server): route bundles
+// must share ONE mobile store so attendance punches, visit state and
+// notification read-state survive across /api/mobile and other routes.
+const g = globalThis as unknown as { __qubitMobileStore?: MobileStore };
 function store(): MobileStore {
-  if (!_store) {
-    _store = {
+  if (!g.__qubitMobileStore) {
+    g.__qubitMobileStore = {
       attendance: [],
       meetingNotes: new Map(),
       meetingActions: new Map(),
@@ -137,7 +143,7 @@ function store(): MobileStore {
       cardShares: [],
     };
   }
-  return _store;
+  return g.__qubitMobileStore;
 }
 
 // ============================================================
@@ -166,7 +172,7 @@ export async function mobileGet(role: WorkspaceRole, section: MobileSection, par
     case "whatsapp":
       return whatsappPayload(role, params.get("id") ?? undefined);
     case "meetings":
-      return meetingsPayload(params.get("id") ?? undefined);
+      return meetingsPayload(role, params.get("id") ?? undefined);
     case "tasks":
       return tasksPayload(params.get("id") ?? undefined);
     case "service-home":
@@ -179,7 +185,7 @@ export async function mobileGet(role: WorkspaceRole, section: MobileSection, par
       return approvalsPayload(role, params.get("id") ?? undefined);
     case "notifications":
       // notificationsPayload already returns a Result (ok/fail) — do not wrap twice.
-      return notificationsPayload(params.get("category") ?? undefined);
+      return notificationsPayload(role, params.get("category") ?? undefined);
     case "profile":
       return ok(profilePayload(role));
     case "id-card":
@@ -422,14 +428,20 @@ function meetingBrief(m: Meeting) {
   };
 }
 
-function meetingsPayload(meetingId?: string) {
+function meetingsPayload(role: WorkspaceRole, meetingId?: string) {
+  // Phase 20 — mobile consistency: the meeting list/detail derive from the
+  // ONE workspace meetings store via listMeetings/getMeeting, so desktop
+  // creations (createMeeting) and cancellations appear here identically —
+  // the raw MEETINGS fixture is no longer read on this path.
   if (meetingId) {
-    const m = MEETINGS.find((x) => x.id === meetingId);
-    if (!m) return fail(404, "not_found", "Meeting not found.");
-    if (!m.participantIds.includes(SESSION_USER_ID) && m.organizerId !== SESSION_USER_ID) {
-      return fail(403, "forbidden", "You are not a participant of this meeting.");
-    }
+    const res = getMeeting(role, meetingId);
+    if (!res.ok) return fail(res.status, res.code, res.message);
+    const m = res.meeting;
     const s = store();
+    // The workspace store is the record authority (notes/actions materialized
+    // onto the meeting); the mobile meetingNotes/meetingActions maps remain
+    // the Phase 18 field-note overlay (participants can record from mobile
+    // without organizer rights) and are merged after the workspace record.
     const notes = s.meetingNotes.get(meetingId) ?? [];
     const extraActions = s.meetingActions.get(meetingId) ?? [];
     return ok({
@@ -450,14 +462,15 @@ function meetingsPayload(meetingId?: string) {
       sourceNote: "The ONE enterprise Meetings module — notes and action items recorded from mobile are appended to the same meeting record store.",
     });
   }
-  const today = MEETINGS.filter(
-    (m) => dayKey(m.start) === WORKSPACE_DAY && m.status !== "Cancelled" && (m.participantIds.includes(SESSION_USER_ID) || m.organizerId === SESSION_USER_ID),
+  const mine = listMeetings(role).meetings; // participation-scoped by the workspace server
+  const today = mine.filter(
+    (m) => dayKey(m.start) === WORKSPACE_DAY && m.status !== "Cancelled",
   ).sort((a, b) => a.start - b.start);
-  const upcoming = MEETINGS.filter(
-    (m) => m.start > WORKSPACE_NOW && m.status === "Scheduled" && (m.participantIds.includes(SESSION_USER_ID) || m.organizerId === SESSION_USER_ID),
+  const upcoming = mine.filter(
+    (m) => m.start > WORKSPACE_NOW && m.status === "Scheduled",
   ).sort((a, b) => a.start - b.start);
-  const past = MEETINGS.filter(
-    (m) => m.status === "Completed" && (m.participantIds.includes(SESSION_USER_ID) || m.organizerId === SESSION_USER_ID),
+  const past = mine.filter(
+    (m) => m.status === "Completed",
   ).sort((a, b) => b.start - a.start).slice(0, 4);
   return ok({
     today: today.map(meetingBrief),
@@ -746,17 +759,22 @@ function notificationBrief(n: (typeof NOTIFICATIONS)[number]) {
   };
 }
 
-function notificationsPayload(category?: string) {
+function notificationsPayload(role: WorkspaceRole, category?: string) {
   const s = store();
-  let items = NOTIFICATIONS.map((n) => ({ ...n, unread: s.notifRead.has(n.id) ? false : n.unread }));
-  const categories = [...new Set(NOTIFICATIONS.map((n) => n.category))];
+  // Phase 20 — source from the ONE workspace notification store (fixture
+  // seed + live meeting invites/cancellations). The mobile read-state
+  // overlay (store().notifRead) applies on top exactly as before, so the
+  // payload shape is unchanged.
+  const all = listNotifications(role).notifications;
+  let items = all.map((n) => ({ ...n, unread: s.notifRead.has(n.id) ? false : n.unread }));
+  const categories = [...new Set(all.map((n) => n.category))];
   const unreadOnly = (category ?? "").trim().toLowerCase() === "unread";
   if (category && !unreadOnly && category.toLowerCase() !== "all") items = items.filter((n) => n.category.toLowerCase() === category.toLowerCase());
   if (unreadOnly) items = items.filter((n) => n.unread);
   return ok({
     items: items.map(notificationBrief),
     categories: ["All", "Unread", ...categories],
-    unreadCount: NOTIFICATIONS.filter((n) => (s.notifRead.has(n.id) ? false : n.unread)).length,
+    unreadCount: all.filter((n) => (s.notifRead.has(n.id) ? false : n.unread)).length,
     sourceNote: "The centralized notification engine — read-state is tracked server-side so mobile and desktop stay in step.",
   });
 }
@@ -1263,7 +1281,10 @@ export async function mobilePost(role: WorkspaceRole, action: MobileAction): Pro
       return { ok: true, message: "Marked as read." };
     }
     case "notification.readall": {
-      for (const n of NOTIFICATIONS) s.notifRead.set(n.id, true);
+      // Phase 20 — mark ALL notifications read, including live meeting
+      // notifications sourced from the workspace store (the fixture-only
+      // loop would leave new invites unread).
+      for (const n of listNotifications(role).notifications) s.notifRead.set(n.id, true);
       return { ok: true, message: "All notifications marked read." };
     }
     case "mail.mark": {

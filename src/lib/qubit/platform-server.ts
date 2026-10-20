@@ -126,10 +126,12 @@ interface PlatformStore {
   incidents: { id: string; service: string; startedAt: number; impact: string; status: string; updates: { at: number; text: string }[] }[];
 }
 
-let _store: PlatformStore | null = null;
+// Phase 20 — globalThis singleton (see workspace-server): backup/restore
+// state must be one store across route bundles.
+const g = globalThis as unknown as { __qubitPlatformStore?: PlatformStore };
 function store(): PlatformStore {
-  if (!_store) {
-    _store = {
+  if (!g.__qubitPlatformStore) {
+    g.__qubitPlatformStore = {
       backups: [],
       restoreTests: [],
       restoreRequests: [],
@@ -176,7 +178,7 @@ function store(): PlatformStore {
       ],
     };
   }
-  return _store;
+  return g.__qubitPlatformStore;
 }
 
 // ---------- real probes ----------

@@ -3,8 +3,10 @@ import {
   addMeetingAction,
   cancelMeeting,
   createCalendarEvent,
+  createMeeting,
   getMeeting,
   listMeetings,
+  promoteMeetingAction,
   saveMeetingNotes,
   type WorkspaceRole,
 } from "@/lib/qubit/workspace-server";
@@ -28,9 +30,14 @@ export async function GET(req: NextRequest) {
 
 // POST /api/workspace/meetings — meeting lifecycle actions.
 // Authorization, validation and audit are enforced by the server:
+//   { action: "create", title, start, end, participantIds, ... } — schedule
+//                                    a meeting; participants are notified
 //   { action: "cancel", id, reason }      — cancel a Scheduled meeting
 //   { action: "notes", id, text }         — append minutes to the record
-//   { action: "add-action", id, title }   — record an action item
+//   { action: "add-action", id, title, asTask? } — record an action item,
+//                                    optionally also creating a task
+//   { action: "promote-action", id, index } — push a recorded action item
+//                                    into My Tasks (409 on repeat)
 //   { action: "create-event", ...fields } — personal calendar entry (screen 44)
 export async function POST(req: NextRequest) {
   let body: {
@@ -41,10 +48,15 @@ export async function POST(req: NextRequest) {
     title?: string;
     ownerId?: string;
     due?: number | null;
-    type?: string;
+    asTask?: boolean;
+    index?: number;
+    agenda?: string;
     start?: number;
     end?: number;
     location?: string;
+    platform?: string;
+    participantIds?: string[];
+    type?: string;
   };
   try {
     body = await req.json();
@@ -56,6 +68,20 @@ export async function POST(req: NextRequest) {
   }
 
   switch (body.action) {
+    case "create": {
+      const result = createMeeting(roleFrom(req), {
+        title: body.title ?? "",
+        agenda: body.agenda,
+        start: body.start ?? Number.NaN,
+        end: body.end ?? Number.NaN,
+        location: body.location,
+        platform: body.platform,
+        participantIds: Array.isArray(body.participantIds) ? body.participantIds : [],
+      });
+      return result.ok
+        ? NextResponse.json(result)
+        : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
+    }
     case "cancel": {
       if (!body.id) return NextResponse.json({ code: "bad_request", message: "Provide a meeting id." }, { status: 400 });
       const result = cancelMeeting(roleFrom(req), { id: body.id, reason: body.reason ?? "" });
@@ -77,7 +103,18 @@ export async function POST(req: NextRequest) {
         title: body.title ?? "",
         ownerId: body.ownerId,
         due: body.due ?? null,
+        asTask: body.asTask === true,
       });
+      return result.ok
+        ? NextResponse.json(result)
+        : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
+    }
+    case "promote-action": {
+      if (!body.id) return NextResponse.json({ code: "bad_request", message: "Provide a meeting id." }, { status: 400 });
+      if (typeof body.index !== "number" || !Number.isInteger(body.index) || body.index < 0) {
+        return NextResponse.json({ code: "bad_request", message: "Provide the action item index." }, { status: 400 });
+      }
+      const result = promoteMeetingAction(roleFrom(req), { id: body.id, index: body.index });
       return result.ok
         ? NextResponse.json(result)
         : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });

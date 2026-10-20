@@ -210,11 +210,13 @@ export interface Meeting {
   organizerId: string;
   participantIds: string[];
   location: string; // room, or platform
-  platform: "Qubit Meet" | "Zoom" | "Microsoft Teams" | "In person";
+  // "Google Meet" / "Room" added in Phase 20 for the New-meeting dialog
+  // (createMeeting) — additive only; existing fixtures untouched.
+  platform: "Qubit Meet" | "Zoom" | "Microsoft Teams" | "Google Meet" | "Room" | "In person";
   status: MeetingStatus;
   agenda?: string;
   notes?: string;
-  actionItems?: { title: string; ownerId: string; due: number | null }[];
+  actionItems?: { title: string; ownerId: string; due: number | null; /** set by the workspace store when the item has been promoted into My Tasks (Phase 20) */ promoted?: boolean }[];
   /** AI meeting summary — only generated for completed meetings, permission-aware */
   aiSummary?: string;
   /** linked calendar event id */

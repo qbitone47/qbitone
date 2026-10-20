@@ -8,11 +8,11 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
-  NOTIFICATIONS,
   relTime,
   type NotificationCategory,
   type WorkspaceNotification,
 } from "@/lib/qubit/workspace-data";
+import { apiGet } from "@/lib/qubit/api";
 import { useQubitNav } from "../nav-context";
 import { useRole } from "../role-context";
 import { PageHeader } from "../page-header";
@@ -36,12 +36,41 @@ export function MyNotificationsScreen() {
   const { role } = useRole();
   const { toast } = useToast();
 
-  const [items, setItems] = React.useState<WorkspaceNotification[]>(NOTIFICATIONS.map((n) => ({ ...n })));
+  const [items, setItems] = React.useState<WorkspaceNotification[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
   const [category, setCategory] = React.useState<string>("all");
   const [unreadOnly, setUnreadOnly] = React.useState(false);
   const [search, setSearch] = React.useState("");
   const [prefsOpen, setPrefsOpen] = React.useState(false);
   const [channels, setChannels] = React.useState({ inApp: true, email: true, push: false, digest: true });
+
+  /** Phase 20 §16 — the feed comes from the ONE centralized notification
+   *  store via /api/workspace/notifications (seed + live meeting
+   *  invites/cancellations), the same server state the mobile
+   *  notification screen reads. Read-state remains a local convenience
+   *  overlay — the list itself is never faked. */
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiGet<{ notifications: WorkspaceNotification[]; unreadCount: number; note: string | null }>(
+        "/notifications",
+        undefined,
+        role,
+        "/api/workspace",
+      );
+      setItems(data.notifications);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Request failed.");
+    } finally {
+      setLoading(false);
+    }
+  }, [role]);
+
+  React.useEffect(() => {
+    void load();
+  }, [load]);
 
   const filtered = React.useMemo(() => {
     let list = items;
@@ -76,6 +105,9 @@ export function MyNotificationsScreen() {
         description="One notification center for the whole operating system — each item links to the object it is about, delivered through the channels your rules define."
         actions={
           <>
+            <Button variant="outline" size="sm" className="h-9 gap-1.5" onClick={() => void load()} disabled={loading} aria-label="Reload notifications">
+              <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} aria-hidden /> Reload
+            </Button>
             <Button variant="outline" size="sm" className="h-9 gap-1.5" onClick={() => setPrefsOpen(true)}>
               <Settings2 className="h-3.5 w-3.5" aria-hidden /> Preferences
             </Button>
@@ -112,7 +144,30 @@ export function MyNotificationsScreen() {
       </div>
 
       <SectionCard noPadding>
-        {filtered.length === 0 ? (
+        {loading ? (
+          <ul className="divide-y" aria-label="Loading notifications">
+            {[0, 1, 2, 3].map((i) => (
+              <li key={i} className="flex gap-3 px-4 py-3.5 md:px-5">
+                <span className="h-9 w-9 shrink-0 animate-pulse rounded-xl bg-slate-100" />
+                <div className="min-w-0 flex-1 space-y-2 py-1">
+                  <div className="h-3.5 w-2/5 animate-pulse rounded bg-slate-100" />
+                  <div className="h-3 w-3/4 animate-pulse rounded bg-slate-100" />
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : error ? (
+          <EmptyState
+            icon={<BellOff />}
+            title="Notifications could not be loaded"
+            message={`${error} No list was fabricated — retry when ready.`}
+            action={
+              <Button size="sm" variant="outline" className="h-8" onClick={() => void load()}>
+                Retry
+              </Button>
+            }
+          />
+        ) : filtered.length === 0 ? (
           <EmptyState
             icon={<Bell />}
             title={unreadOnly ? "No unread notifications" : "No notifications match"}
@@ -258,5 +313,3 @@ function FilterChip({ active, onClick, label, dot }: { active: boolean; onClick:
   );
 }
 
-// RefreshCw kept for parity with other workspace toolbars
-void RefreshCw;

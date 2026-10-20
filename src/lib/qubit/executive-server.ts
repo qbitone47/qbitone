@@ -41,18 +41,20 @@ interface ExecutiveStore {
   reports: ExecReport[];
 }
 
-let _store: ExecutiveStore | null = null;
+// Phase 20 — globalThis singleton (see workspace-server): one executive
+// store across route bundles.
+const g = globalThis as unknown as { __qubitExecutiveStore?: ExecutiveStore };
 
 function store(): ExecutiveStore {
-  if (!_store) {
-    _store = {
+  if (!g.__qubitExecutiveStore) {
+    g.__qubitExecutiveStore = {
       alerts: EXEC_ALERTS.map((a) => structuredClone(a)),
       approvals: EXEC_APPROVALS.map((a) => structuredClone(a)),
       insights: AI_INSIGHTS.map((i) => structuredClone(i)),
       reports: EXEC_REPORTS.map((r) => structuredClone(r)),
     };
   }
-  return _store;
+  return g.__qubitExecutiveStore;
 }
 
 /** Executive authority gate — server-side, never UI-only. */
