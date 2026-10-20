@@ -53,6 +53,8 @@ const MODULE_LABELS: Record<ScreenModule, string> = {
   sales: "Sales",
   "sales-ai": "Sales AI",
   analytics: "Analytics",
+  mobile: "Mobile",
+  platform: "Platform Ops",
 };
 
 export function TopBar({

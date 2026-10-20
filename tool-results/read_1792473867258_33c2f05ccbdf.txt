@@ -1,0 +1,344 @@
+     1→// Screen metadata for Qubit One — pure data, no JSX (safe for contexts)
+     2→// Phase 1: Enterprise Architecture (screens 01–12)
+     3→// Phase 2: Enterprise Design System (screens 13–30)
+     4→// Phase 3: Authentication & Security (screens 31–40)
+     5→// Phase 4: Core Employee Workspace (screens 41–58)
+     6→// Phase 5: CEO Command Center (screens 59–72)
+     7→// Phase 6: Sales Operating System (screens 73–102)
+     8→// Phase 7: Sales AI (screens 103–110)
+     9→// Phase 17: Analytics / Audit (screens 267–284)
+    10→
+    11→export type ScreenId =
+    12→  | "org-structure"
+    13→  | "dept-hierarchy"
+    14→  | "role-matrix"
+    15→  | "permission-matrix"
+    16→  | "reporting-lines"
+    17→  | "employee-lifecycle"
+    18→  | "data-ownership"
+    19→  | "workflow-catalog"
+    20→  | "approval-matrix"
+    21→  | "notification-rules"
+    22→  | "integration-map"
+    23→  | "enterprise-navigation"
+    24→  | "design-tokens"
+    25→  | "typography"
+    26→  | "color-system"
+    27→  | "buttons"
+    28→  | "inputs-forms"
+    29→  | "tables"
+    30→  | "cards"
+    31→  | "charts"
+    32→  | "navigation"
+    33→  | "command-bar"
+    34→  | "modal-drawer"
+    35→  | "status-system"
+    36→  | "empty-states"
+    37→  | "loading-states"
+    38→  | "error-states"
+    39→  | "toast-alerts"
+    40→  | "accessibility"
+    41→  | "responsive-grid"
+    42→  | "login"
+    43→  | "mfa-verification"
+    44→  | "sso-provider-selection"
+    45→  | "password-recovery"
+    46→  | "device-sessions"
+    47→  | "security-center"
+    48→  | "role-access-request"
+    49→  | "ip-network-policy"
+    50→  | "audit-log"
+    51→  | "security-alerts"
+    52→  | "employee-home"
+    53→  | "my-profile"
+    54→  | "my-tasks"
+    55→  | "my-calendar"
+    56→  | "my-meetings"
+    57→  | "my-approvals"
+    58→  | "my-documents"
+    59→  | "my-notifications"
+    60→  | "my-activity"
+    61→  | "company-directory"
+    62→  | "organization-chart"
+    63→  | "employee-360"
+    64→  | "digital-id-card"
+    65→  | "digital-visiting-card"
+    66→  | "mail-inbox"
+    67→  | "compose-mail"
+    68→  | "sent-mail"
+    69→  | "mail-search"
+    70→  | "ceo-overview"
+    71→  | "revenue-snapshot"
+    72→  | "sales-command"
+    73→  | "finance-snapshot"
+    74→  | "people-overview"
+    75→  | "marketing-overview"
+    76→  | "service-overview"
+    77→  | "inventory-overview"
+    78→  | "field-operations"
+    79→  | "executive-alerts"
+    80→  | "executive-approvals"
+    81→  | "ceo-ai-insights"
+    82→  | "kpi-drilldown"
+    83→  | "executive-reports"
+    84→  | "sales-home"
+    85→  | "lead-inbox"
+    86→  | "lead-detail"
+    87→  | "lead-create"
+    88→  | "contact-detail"
+    89→  | "account-detail"
+    90→  | "opportunity-detail"
+    91→  | "sales-pipeline"
+    92→  | "sales-forecast"
+    93→  | "sales-targets"
+    94→  | "sales-leaderboard"
+    95→  | "followup-queue"
+    96→  | "customer-meetings"
+    97→  | "quotation-list"
+    98→  | "quotation-builder"
+    99→  | "quotation-detail"
+   100→  | "order-list"
+   101→  | "order-detail"
+   102→  | "customer-activity"
+   103→  | "whatsapp-inbox"
+   104→  | "whatsapp-conversation"
+   105→  | "whatsapp-convert"
+   106→  | "sales-visiting-card"
+   107→  | "sales-travel"
+   108→  | "visit-planner"
+   109→  | "visit-detail"
+   110→  | "sales-expenses"
+   111→  | "sales-reports"
+   112→  | "team-sales-dashboard"
+   113→  | "sales-settings"
+   114→  | "sales-ai-home"
+   115→  | "ai-lead-prioritization"
+   116→  | "ai-followup-writer"
+   117→  | "ai-customer-summary"
+   118→  | "ai-next-best-action"
+   119→  | "ai-pipeline-review"
+   120→  | "ai-daily-brief"
+   121→  | "ai-sales-qa"
+   122→  | "analytics-home"
+   123→  | "executive-analytics"
+   124→  | "sales-analytics"
+   125→  | "finance-analytics"
+   126→  | "marketing-analytics"
+   127→  | "hr-analytics"
+   128→  | "service-analytics"
+   129→  | "inventory-analytics"
+   130→  | "employee-productivity"
+   131→  | "task-analytics"
+   132→  | "funnel-analytics"
+   133→  | "cohort-analysis"
+   134→  | "report-builder"
+   135→  | "report-detail"
+   136→  | "audit-explorer"
+   137→  | "data-export"
+   138→  | "scheduled-reports"
+   139→  | "analytics-settings";
+   140→
+   141→export type ScreenModule = "enterprise" | "design-system" | "security" | "workspace" | "people" | "mail" | "executive" | "sales" | "sales-ai" | "analytics";
+   142→
+   143→/** Screens rendered without the app shell (standalone authentication) */
+   144→export const AUTH_SCREENS: ScreenId[] = ["login", "mfa-verification", "sso-provider-selection"];
+   145→
+   146→export interface ScreenMeta {
+   147→  id: ScreenId;
+   148→  num: string;
+   149→  title: string;
+   150→  shortTitle: string;
+   151→  description: string;
+   152→  module: ScreenModule;
+   153→}
+   154→
+   155→export const SCREENS: ScreenMeta[] = [
+   156→  // ——— Phase 1 · Enterprise Architecture ———
+   157→  { id: "org-structure", num: "01", title: "Organization Structure", shortTitle: "Org Structure", description: "Complete view of company hierarchy and reporting structure.", module: "enterprise" },
+   158→  { id: "dept-hierarchy", num: "02", title: "Department Hierarchy", shortTitle: "Departments", description: "Manage departments and their hierarchy.", module: "enterprise" },
+   159→  { id: "role-matrix", num: "03", title: "Role Matrix", shortTitle: "Role Matrix", description: "View and manage all organizational roles.", module: "enterprise" },
+   160→  { id: "permission-matrix", num: "04", title: "Permission Matrix", shortTitle: "Permissions", description: "Central RBAC governance across Qubit One modules.", module: "enterprise" },
+   161→  { id: "reporting-lines", num: "05", title: "Reporting Lines", shortTitle: "Reporting Lines", description: "Understand who reports to whom across the organization.", module: "enterprise" },
+   162→  { id: "employee-lifecycle", num: "06", title: "Employee Lifecycle", shortTitle: "Lifecycle", description: "Complete employee journey from hiring to exit.", module: "enterprise" },
+   163→  { id: "data-ownership", num: "07", title: "Data Ownership", shortTitle: "Data Ownership", description: "Define data ownership and governance for enterprise data.", module: "enterprise" },
+   164→  { id: "workflow-catalog", num: "08", title: "Workflow Catalog", shortTitle: "Workflows", description: "Manage all business workflows and automations.", module: "enterprise" },
+   165→  { id: "approval-matrix", num: "09", title: "Approval Matrix", shortTitle: "Approvals", description: "Configure approvals for different request types.", module: "enterprise" },
+   166→  { id: "notification-rules", num: "10", title: "Notification Rules", shortTitle: "Notifications", description: "Manage system notifications across the organization.", module: "enterprise" },
+   167→  { id: "integration-map", num: "11", title: "Integration Map", shortTitle: "Integrations", description: "Central view of systems connected to Qubit One.", module: "enterprise" },
+   168→  { id: "enterprise-navigation", num: "12", title: "Enterprise Navigation", shortTitle: "Navigation", description: "Master information architecture for the entire application.", module: "enterprise" },
+   169→  // ——— Phase 2 · Enterprise Design System ———
+   170→  { id: "design-tokens", num: "13", title: "Design Tokens", shortTitle: "Tokens", description: "Foundational tokens — color, type, spacing, radius, elevation, motion.", module: "design-system" },
+   171→  { id: "typography", num: "14", title: "Typography", shortTitle: "Typography", description: "Complete typographic hierarchy for enterprise data density.", module: "design-system" },
+   172→  { id: "color-system", num: "15", title: "Color System", shortTitle: "Color", description: "Qubit One color language — brand, neutrals and semantics.", module: "design-system" },
+   173→  { id: "buttons", num: "16", title: "Buttons", shortTitle: "Buttons", description: "Every button variant, state and usage rule in one reference.", module: "design-system" },
+   174→  { id: "inputs-forms", num: "17", title: "Inputs & Forms", shortTitle: "Inputs & Forms", description: "Enterprise form system — fields, states, validation, layout.", module: "design-system" },
+   175→  { id: "tables", num: "18", title: "Tables", shortTitle: "Tables", description: "Core enterprise data-table system for large datasets.", module: "design-system" },
+   176→  { id: "cards", num: "19", title: "Cards", shortTitle: "Cards", description: "Card patterns and when to choose them over tables.", module: "design-system" },
+   177→  { id: "charts", num: "20", title: "Charts", shortTitle: "Charts", description: "Data-visualization language that communicates, not decorates.", module: "design-system" },
+   178→  { id: "navigation", num: "21", title: "Navigation", shortTitle: "Navigation", description: "Sidebar, breadcrumbs, tabs and mobile navigation patterns.", module: "design-system" },
+   179→  { id: "command-bar", num: "22", title: "Command Bar", shortTitle: "Command Bar", description: "Global ⌘ K search and quick-action experience.", module: "design-system" },
+   180→  { id: "modal-drawer", num: "23", title: "Modal & Drawer Patterns", shortTitle: "Modals & Drawers", description: "Overlays for secondary workflows and contextual detail.", module: "design-system" },
+   181→  { id: "status-system", num: "24", title: "Status System", shortTitle: "Status", description: "One unified status vocabulary across every module.", module: "design-system" },
+   182→  { id: "empty-states", num: "25", title: "Empty States", shortTitle: "Empty States", description: "What users see when there is no data — and what to do next.", module: "design-system" },
+   183→  { id: "loading-states", num: "26", title: "Loading States", shortTitle: "Loading", description: "Skeletons and progress patterns that feel fast and controlled.", module: "design-system" },
+   184→  { id: "error-states", num: "27", title: "Error States", shortTitle: "Errors", description: "Standardized error experiences with clear recovery paths.", module: "design-system" },
+   185→  { id: "toast-alerts", num: "28", title: "Toast & Alerts", shortTitle: "Toasts & Alerts", description: "Transient feedback and persistent system messaging.", module: "design-system" },
+   186→  { id: "accessibility", num: "29", title: "Accessibility Patterns", shortTitle: "Accessibility", description: "Inclusive defaults — keyboard, focus, ARIA and touch targets.", module: "design-system" },
+   187→  { id: "responsive-grid", num: "30", title: "Responsive Grid", shortTitle: "Responsive Grid", description: "Layout system from desktop workspace to mobile single column.", module: "design-system" },
+   188→  // ——— Phase 3 · Authentication & Security ———
+   189→  { id: "login", num: "31", title: "Login", shortTitle: "Login", description: "Enterprise authentication entry point — password, SSO and passkey.", module: "security" },
+   190→  { id: "mfa-verification", num: "32", title: "MFA Verification", shortTitle: "MFA Verification", description: "Second-factor verification — authenticator, push, passkey, recovery.", module: "security" },
+   191→  { id: "sso-provider-selection", num: "33", title: "SSO Provider Selection", shortTitle: "SSO Providers", description: "Choose among the organization's configured identity providers.", module: "security" },
+   192→  { id: "password-recovery", num: "34", title: "Password & Recovery", shortTitle: "Passwords", description: "Password lifecycle and account recovery with step-up authentication.", module: "security" },
+   193→  { id: "device-sessions", num: "35", title: "Device Sessions", shortTitle: "Sessions", description: "See and control every active session on your account.", module: "security" },
+   194→  { id: "security-center", num: "36", title: "Security Center", shortTitle: "Security Center", description: "Personal security posture, factors, sessions and recommendations.", module: "security" },
+   195→  { id: "role-access-request", num: "37", title: "Role Access Request", shortTitle: "Access Requests", description: "Request role access along the approval path — never self-granted.", module: "security" },
+   196→  { id: "ip-network-policy", num: "38", title: "IP / Network Policy", shortTitle: "Network Policy", description: "Admin network rules with conflict checks and lockout protection.", module: "security" },
+   197→  { id: "audit-log", num: "39", title: "Audit Log", shortTitle: "Audit Log", description: "Trustworthy, searchable enterprise security history.", module: "security" },
+   198→  { id: "security-alerts", num: "40", title: "Security Alerts", shortTitle: "Alerts", description: "Calibrated, actionable alerts with recommended next steps.", module: "security" },
+   199→  // ——— Phase 4 · Core Employee Workspace ———
+   200→  { id: "employee-home", num: "41", title: "Employee Home", shortTitle: "Home", description: "Your personalized daily workspace — priorities, work, approvals and messages.", module: "workspace" },
+   201→  { id: "my-profile", num: "42", title: "My Profile", shortTitle: "My Profile", description: "Your enterprise identity — self-service fields, company-controlled record.", module: "workspace" },
+   202→  { id: "my-tasks", num: "43", title: "My Tasks", shortTitle: "My Tasks", description: "One queue for everything assigned to you — meetings, workflows, sales, HR.", module: "workspace" },
+   203→  { id: "my-calendar", num: "44", title: "My Calendar", shortTitle: "My Calendar", description: "Meetings, deadlines, company events and leave — with real privacy.", module: "workspace" },
+   204→  { id: "my-meetings", num: "45", title: "My Meetings", shortTitle: "My Meetings", description: "Today's live sessions, what's ahead, and the record of what happened.", module: "workspace" },
+   205→  { id: "my-approvals", num: "46", title: "My Approvals", shortTitle: "My Approvals", description: "Requests waiting on your decision — routed by the Approval Matrix.", module: "workspace" },
+   206→  { id: "my-documents", num: "47", title: "My Documents", shortTitle: "My Documents", description: "Your authorized document workspace — access enforced server-side.", module: "workspace" },
+   207→  { id: "my-notifications", num: "48", title: "My Notifications", shortTitle: "Notifications", description: "One notification center, deep-linked into the same operating system.", module: "workspace" },
+   208→  { id: "my-activity", num: "49", title: "My Activity", shortTitle: "My Activity", description: "Your personal work timeline — distinct from the enterprise audit trail.", module: "workspace" },
+   209→  { id: "company-directory", num: "50", title: "Company Directory", shortTitle: "Directory", description: "Find anyone at Qubit One — name, skill, department, designation, location.", module: "people" },
+   210→  { id: "organization-chart", num: "51", title: "Organization Chart", shortTitle: "Org Chart", description: "The live structure — progressive expansion, search-driven focus.", module: "people" },
+   211→  { id: "employee-360", num: "52", title: "Employee 360", shortTitle: "Employee 360", description: "The connected overview — scoped by role, never a super-profile.", module: "people" },
+   212→  { id: "digital-id-card", num: "53", title: "Digital ID Card", shortTitle: "Digital ID", description: "Your enterprise identity credential — verifiable against the registry.", module: "people" },
+   213→  { id: "digital-visiting-card", num: "54", title: "Digital Visiting Card", shortTitle: "Visiting Card", description: "Your professional card — vCard, copy and live share link.", module: "people" },
+   214→  { id: "mail-inbox", num: "55", title: "Company Mail Inbox", shortTitle: "Inbox", description: "High-density enterprise mail — one system with Sent, Compose and Search.", module: "mail" },
+   215→  { id: "compose-mail", num: "56", title: "Compose Mail", shortTitle: "Compose", description: "Directory-backed recipients, policy-checked attachments, honest states.", module: "mail" },
+   216→  { id: "sent-mail", num: "57", title: "Sent Mail", shortTitle: "Sent", description: "Every message you've sent — with honest delivery status and retry.", module: "mail" },
+   217→  { id: "mail-search", num: "58", title: "Mail Search", shortTitle: "Mail Search", description: "Server-enforced search across your authorized mailbox.", module: "mail" },
+   218→  // ——— Phase 5 · CEO Command Center ———
+   219→  { id: "ceo-overview", num: "59", title: "CEO Overview", shortTitle: "CEO Overview", description: "Company health, key KPIs, attention items and today's decisions — one executive picture.", module: "executive" },
+   220→  { id: "revenue-snapshot", num: "60", title: "Revenue Snapshot", shortTitle: "Revenue", description: "Concise revenue performance — target, trend, contribution and variance.", module: "executive" },
+   221→  { id: "sales-command", num: "61", title: "Sales Command Center", shortTitle: "Sales Command", description: "Executive sales view — pipeline health, forecast confidence and major deals.", module: "executive" },
+   222→  { id: "finance-snapshot", num: "62", title: "Finance Snapshot", shortTitle: "Finance", description: "CEO-level financial health — cash, margins, receivables and budget variance.", module: "executive" },
+   223→  { id: "people-overview", num: "63", title: "People Overview", shortTitle: "People", description: "Workforce health — headcount, hiring, attrition and distribution, aggregated.", module: "executive" },
+   224→  { id: "marketing-overview", num: "64", title: "Marketing Overview", shortTitle: "Marketing", description: "Marketing business impact — leads, pipeline contribution and channel ROI.", module: "executive" },
+   225→  { id: "service-overview", num: "65", title: "Service Overview", shortTitle: "Service", description: "Customer service health — SLA, backlog and critical exceptions first.", module: "executive" },
+   226→  { id: "inventory-overview", num: "66", title: "Inventory Overview", shortTitle: "Inventory", description: "Stock and supply visibility — value, exceptions and bottlenecks, not SKU walls.", module: "executive" },
+   227→  { id: "field-operations", num: "67", title: "Field Operations", shortTitle: "Field Ops", description: "Field execution — visits, delays and regional performance at a glance.", module: "executive" },
+   228→  { id: "executive-alerts", num: "68", title: "Executive Alerts", shortTitle: "Executive Alerts", description: "High-signal exceptions that need executive awareness — calibrated, actionable.", module: "executive" },
+   229→  { id: "executive-approvals", num: "69", title: "Executive Approvals", shortTitle: "Executive Approvals", description: "Decisions only executive authority can make — step-up protected and audited.", module: "executive" },
+   230→  { id: "ceo-ai-insights", num: "70", title: "CEO AI Insights", shortTitle: "AI Insights", description: "Evidence-based AI interpretation of authorized company data — never invented.", module: "executive" },
+   231→  { id: "kpi-drilldown", num: "71", title: "Company KPI Drilldown", shortTitle: "KPI Drilldown", description: "Focused investigation behind every executive KPI — definition to underlying records.", module: "executive" },
+   232→  { id: "executive-reports", num: "72", title: "Executive Reports", shortTitle: "Executive Reports", description: "Executive reporting library — generate, schedule and share authorized reports.", module: "executive" },
+   233→  // ——— Phase 6 · Sales Operating System ———
+   234→  { id: "sales-home", num: "73", title: "Sales Home", shortTitle: "Sales Home", description: "Your daily sales operating center — follow-ups, pipeline, meetings and alerts.", module: "sales" },
+   235→  { id: "lead-inbox", num: "74", title: "Lead Inbox", shortTitle: "Lead Inbox", description: "The central lead workspace — triage, assign and convert with duplicate guards.", module: "sales" },
+   236→  { id: "lead-detail", num: "75", title: "Lead Detail", shortTitle: "Lead Detail", description: "The complete lead workspace — qualification, timeline and conversion path.", module: "sales" },
+   237→  { id: "lead-create", num: "76", title: "Lead Creation", shortTitle: "New Lead", description: "Enterprise lead creation with duplicate detection before anything is saved.", module: "sales" },
+   238→  { id: "contact-detail", num: "77", title: "Contact Detail", shortTitle: "Contact Detail", description: "Contact-centric workspace with consent-aware communication and history.", module: "sales" },
+   239→  { id: "account-detail", num: "78", title: "Account Detail", shortTitle: "Account Detail", description: "Customer 360 — contacts, opportunities, quotations, orders and full activity.", module: "sales" },
+   240→  { id: "opportunity-detail", num: "79", title: "Opportunity Detail", shortTitle: "Opportunity Detail", description: "Deal workspace — controlled stage progression, quotations and negotiation history.", module: "sales" },
+   241→  { id: "sales-pipeline", num: "80", title: "Sales Pipeline", shortTitle: "Pipeline", description: "Enterprise Kanban pipeline with stage rules, values and risk indicators.", module: "sales" },
+   242→  { id: "sales-forecast", num: "81", title: "Sales Forecast", shortTitle: "Forecast", description: "Commit, best case and weighted pipeline — Actual, Forecast and Target never mixed.", module: "sales" },
+   243→  { id: "sales-targets", num: "82", title: "Sales Targets", shortTitle: "Targets", description: "Targets by employee, team and region with controlled, audited editing.", module: "sales" },
+   244→  { id: "sales-leaderboard", num: "83", title: "Sales Leaderboard", shortTitle: "Leaderboard", description: "Performance visibility — achievement, conversion and pipeline, never gamified.", module: "sales" },
+   245→  { id: "followup-queue", num: "84", title: "Follow-up Queue", shortTitle: "Follow-ups", description: "Due today, overdue and upcoming — complete, reschedule and record outcomes.", module: "sales" },
+   246→  { id: "customer-meetings", num: "85", title: "Customer Meetings", shortTitle: "Meetings", description: "Sales meeting workspace connected to the enterprise Meetings module.", module: "sales" },
+   247→  { id: "quotation-list", num: "86", title: "Quotation List", shortTitle: "Quotations", description: "Quotation lifecycle — draft to accepted, with approvals routed by the matrix.", module: "sales" },
+   248→  { id: "quotation-builder", num: "87", title: "Quotation Builder", shortTitle: "Quote Builder", description: "Catalog-driven quotation creation with server-side pricing and discount rules.", module: "sales" },
+   249→  { id: "quotation-detail", num: "88", title: "Quotation Detail", shortTitle: "Quotation Detail", description: "Quotation lifecycle view — items, approvals, versions and state-aware actions.", module: "sales" },
+   250→  { id: "order-list", num: "89", title: "Order List", shortTitle: "Orders", description: "Sales orders connected to Finance, Inventory and Dispatch — never disconnected.", module: "sales" },
+   251→  { id: "order-detail", num: "90", title: "Order Detail", shortTitle: "Order Detail", description: "Order fulfillment view — payment, dispatch and delivery with valid transitions only.", module: "sales" },
+   252→  { id: "customer-activity", num: "91", title: "Customer Activity", shortTitle: "Customer Activity", description: "One unified timeline across every customer touchpoint — consent respected.", module: "sales" },
+   253→  { id: "whatsapp-inbox", num: "92", title: "WhatsApp Lead Inbox", shortTitle: "WhatsApp Inbox", description: "WhatsApp Business API inbox — legitimate, consent-checked, fully auditable.", module: "sales" },
+   254→  { id: "whatsapp-conversation", num: "93", title: "WhatsApp Conversation", shortTitle: "WhatsApp Chat", description: "Business conversation workspace — templates, linking and lead creation.", module: "sales" },
+   255→  { id: "whatsapp-convert", num: "94", title: "WhatsApp Lead Conversion", shortTitle: "Lead Conversion", description: "Lead → Contact → Account → Opportunity with a review step and duplicate guard.", module: "sales" },
+   256→  { id: "sales-visiting-card", num: "95", title: "Digital Visiting Card", shortTitle: "Visiting Card", description: "The sales identity card — customer-facing, built on the Phase 4 architecture.", module: "sales" },
+   257→  { id: "sales-travel", num: "96", title: "Sales Travel", shortTitle: "Travel", description: "Travel planning connected to visits, meetings, expenses and opportunities.", module: "sales" },
+   258→  { id: "visit-planner", num: "97", title: "Field Visit Planner", shortTitle: "Visit Planner", description: "Plan and assign customer visits — calendar and list, no covert tracking.", module: "sales" },
+   259→  { id: "visit-detail", num: "98", title: "Field Visit Detail", shortTitle: "Visit Detail", description: "Visit execution — checklist, evidence, outcome and the follow-up it creates.", module: "sales" },
+   260→  { id: "sales-expenses", num: "99", title: "Sales Expenses", shortTitle: "Expenses", description: "Sales expense claims — Finance remains the financial source of truth.", module: "sales" },
+   261→  { id: "sales-reports", num: "100", title: "Sales Reports", shortTitle: "Sales Reports", description: "Operational sales reporting — pipeline, conversion, win/loss and aging.", module: "sales" },
+   262→  { id: "team-sales-dashboard", num: "101", title: "Team Sales Dashboard", shortTitle: "Team Sales", description: "Manager workspace — what is happening, what is at risk, who needs attention.", module: "sales" },
+   263→  { id: "sales-settings", num: "102", title: "Sales Settings", shortTitle: "Settings", description: "Sales configuration — stages, sources, rules. Admin-only, validated, audited.", module: "sales" },
+   264→  // ——— Phase 7 · Sales AI ———
+   265→  { id: "sales-ai-home", num: "103", title: "Sales AI Home", shortTitle: "Sales AI Home", description: "Sales intelligence command center — insights, recommendations and quick actions, grounded in authorized data.", module: "sales-ai" },
+   266→  { id: "ai-lead-prioritization", num: "104", title: "AI Lead Prioritization", shortTitle: "Lead Prioritization", description: "Explainable AI ranking of your leads — every factor inspectable, insufficient data never scored.", module: "sales-ai" },
+   267→  { id: "ai-followup-writer", num: "105", title: "AI Follow-up Writer", shortTitle: "Follow-up Writer", description: "Context → AI draft → edit → review → send. Nothing external leaves without your confirmation.", module: "sales-ai" },
+   268→  { id: "ai-customer-summary", num: "106", title: "AI Customer Summary", shortTitle: "Customer Summary", description: "Structured Customer 360 from authorized records — evidence-linked, refreshable, copyable.", module: "sales-ai" },
+   269→  { id: "ai-next-best-action", num: "107", title: "AI Next Best Action", shortTitle: "Next Best Action", description: "What to do next — reason, evidence, urgency and confidence. Accepting routes into existing workflows.", module: "sales-ai" },
+   270→  { id: "ai-pipeline-review", num: "108", title: "AI Pipeline Review", shortTitle: "Pipeline Review", description: "Pipeline health with stalled-deal, aging and forecast-risk insights. Actual, forecast and AI estimate never mixed.", module: "sales-ai" },
+   271→  { id: "ai-daily-brief", num: "109", title: "AI Daily Brief", shortTitle: "Daily Brief", description: "A personalized, concise read of today — priorities, meetings, follow-ups, target progress and risks.", module: "sales-ai" },
+   272→  { id: "ai-sales-qa", num: "110", title: "AI Sales Q&A", shortTitle: "Sales Q&A", description: "Grounded answers over authorized sales data — key numbers, reasoning, sources, recommended actions.", module: "sales-ai" },
+   273→  // ——— Phase 17 · Analytics / Audit ———
+   274→  { id: "analytics-home", num: "267", title: "Analytics Home", shortTitle: "Home", description: "One unified entry point into Qubit One analytics — role-aware KPIs, reports, freshness and alerts.", module: "analytics" },
+   275→  { id: "executive-analytics", num: "268", title: "Executive Analytics", shortTitle: "Executive", description: "Enterprise executive workspace — revenue, pipeline, cash, people and health, every figure sourced.", module: "analytics" },
+   276→  { id: "sales-analytics", num: "269", title: "Sales Analytics", shortTitle: "Sales", description: "Centralized sales analytics over the authoritative Sales OS — funnel, win/loss, performance, revenue.", module: "analytics" },
+   277→  { id: "finance-analytics", num: "270", title: "Finance Analytics", shortTitle: "Finance", description: "Finance analytics where Finance stays the source of truth — booked, recognized and collected never mixed.", module: "analytics" },
+   278→  { id: "marketing-analytics", num: "271", title: "Marketing Analytics", shortTitle: "Marketing", description: "Campaign, channel and SEO performance with source-aware labels — attribution is never invented.", module: "analytics" },
+   279→  { id: "hr-analytics", num: "272", title: "HR Analytics", shortTitle: "HR", description: "Privacy-safe people analytics — aggregated headcount, hiring, attendance and attrition only.", module: "analytics" },
+   280→  { id: "service-analytics", num: "273", title: "Service Analytics", shortTitle: "Service", description: "Service health — tickets, SLA, response and resolution, engineer performance and visit completion.", module: "analytics" },
+   281→  { id: "inventory-analytics", num: "274", title: "Inventory Analytics", shortTitle: "Inventory", description: "Stock levels, movement and dispatch — operational metrics kept separate from Finance-aligned valuation.", module: "analytics" },
+   282→  { id: "employee-productivity", num: "275", title: "Employee Productivity", shortTitle: "Productivity", description: "Privacy-conscious productivity from work items you own — no surveillance, no fabricated scores.", module: "analytics" },
+   283→  { id: "task-analytics", num: "276", title: "Task Analytics", shortTitle: "Tasks", description: "Analytics over the ONE workspace task store — status, priority, workload and overdue trends.", module: "analytics" },
+   284→  { id: "funnel-analytics", num: "277", title: "Funnel Analytics", shortTitle: "Funnels", description: "One funnel engine over Sales, Recruitment, Service and Marketing — stages, conversion and drop-off.", module: "analytics" },
+   285→  { id: "cohort-analysis", num: "278", title: "Cohort / Trend Analysis", shortTitle: "Cohorts & Trends", description: "Acquisition cohorts and trend analysis — honest sample sizes, no weak conclusions dressed as facts.", module: "analytics" },
+   286→  { id: "report-builder", num: "279", title: "Custom Report Builder", shortTitle: "Report Builder", description: "Governed report building on the semantic layer — no SQL, server-enforced fields, rows and exports.", module: "analytics" },
+   287→  { id: "report-detail", num: "280", title: "Report Detail", shortTitle: "Report Detail", description: "The saved report view — definitions, lineage, freshness and only the actions your role allows.", module: "analytics" },
+   288→  { id: "audit-explorer", num: "281", title: "Audit Explorer", shortTitle: "Audit Explorer", description: "An advanced view over the ONE enterprise audit trail — search and filter, never edit.", module: "analytics" },
+   289→  { id: "data-export", num: "282", title: "Data Export", shortTitle: "Data Export", description: "Secure, permission-controlled exports — reasons for sensitive data, expiring links, audited jobs.", module: "analytics" },
+   290→  { id: "scheduled-reports", num: "283", title: "Scheduled Reports", shortTitle: "Scheduled Reports", description: "Scheduled report deliveries on the Qubit scheduler — validated recipients, audited, pausable.", module: "analytics" },
+   291→  { id: "analytics-settings", num: "284", title: "Analytics Settings", shortTitle: "Settings", description: "Analytics administration — metric governance, refresh policies, retention and export rules.", module: "analytics" },
+   292→];
+   293→
+   294→export const screenMeta = (id: ScreenId): ScreenMeta =>
+   295→  SCREENS.find((s) => s.id === id) ?? SCREENS[0];
+   296→
+   297→export const screensByModule = (m: ScreenModule): ScreenMeta[] =>
+   298→  SCREENS.filter((s) => s.module === m);
+   299→
+   300→/** Cross-screen navigation parameters */
+   301→export interface ScreenParams {
+   302→  departmentId?: string;
+   303→  employeeId?: string;
+   304→  stageId?: string;
+   305→  focusNodeId?: string;
+   306→  /** MFA challenge id passed from Login (31) to MFA Verification (32) */
+   307→  challengeId?: string;
+   308→  /** Alert / audit correlation focus */
+   309→  correlationId?: string;
+   310→  /** Workspace deep links (Phase 4) */
+   311→  taskId?: string;
+   312→  filter?: string;
+   313→  meetingId?: string;
+   314→  approvalId?: string;
+   315→  sentId?: string;
+   316→  /** Mail compose prefill */
+   317→  to?: string;
+   318→  mailReply?: string;
+   319→  mailForward?: string;
+   320→  replyAll?: boolean;
+   321→  /** Executive deep links (Phase 5) */
+   322→  kpiId?: string;
+   323→  domainId?: string;
+   324→  reportId?: string;
+   325→  insightId?: string;
+   326→  region?: string;
+   327→  /** Sales deep links (Phase 6) */
+   328→  leadId?: string;
+   329→  contactId?: string;
+   330→  accountId?: string;
+   331→  opportunityId?: string;
+   332→  quotationId?: string;
+   333→  orderId?: string;
+   334→  waId?: string;
+   335→  visitId?: string;
+   336→  expenseId?: string;
+   337→  travelId?: string;
+   338→  /** Analytics deep links (Phase 17) */
+   339→  datasetId?: string;
+   340→  exportId?: string;
+   341→  scheduleId?: string;
+   342→  funnelId?: string;
+   343→}
+   344→

@@ -7,6 +7,7 @@
 // Phase 6: Sales Operating System (screens 73–102)
 // Phase 7: Sales AI (screens 103–110)
 // Phase 17: Analytics / Audit (screens 267–284)
+// Phase 18: Enterprise Hardening + Mobile (screens 285–308) — final UI/product phase
 
 export type ScreenId =
   | "org-structure"
@@ -136,9 +137,35 @@ export type ScreenId =
   | "audit-explorer"
   | "data-export"
   | "scheduled-reports"
-  | "analytics-settings";
+  | "analytics-settings"
+  // ——— Phase 18 · Mobile (285–300) ———
+  | "mobile-home"
+  | "mobile-sales-home"
+  | "mobile-lead-detail"
+  | "mobile-whatsapp"
+  | "mobile-meetings"
+  | "mobile-tasks"
+  | "mobile-service-home"
+  | "mobile-service-visit"
+  | "mobile-attendance"
+  | "mobile-approvals"
+  | "mobile-notifications"
+  | "mobile-profile"
+  | "mobile-id-card"
+  | "mobile-visiting-card"
+  | "mobile-mail"
+  | "mobile-ai"
+  // ——— Phase 18 · Enterprise Hardening (301–308) ———
+  | "responsive-qa"
+  | "performance-dashboard"
+  | "accessibility-review"
+  | "security-hardening"
+  | "backup-recovery"
+  | "monitoring"
+  | "release-management"
+  | "system-status";
 
-export type ScreenModule = "enterprise" | "design-system" | "security" | "workspace" | "people" | "mail" | "executive" | "sales" | "sales-ai" | "analytics";
+export type ScreenModule = "enterprise" | "design-system" | "security" | "workspace" | "people" | "mail" | "executive" | "sales" | "sales-ai" | "analytics" | "mobile" | "platform";
 
 /** Screens rendered without the app shell (standalone authentication) */
 export const AUTH_SCREENS: ScreenId[] = ["login", "mfa-verification", "sso-provider-selection"];
@@ -289,6 +316,32 @@ export const SCREENS: ScreenMeta[] = [
   { id: "data-export", num: "282", title: "Data Export", shortTitle: "Data Export", description: "Secure, permission-controlled exports — reasons for sensitive data, expiring links, audited jobs.", module: "analytics" },
   { id: "scheduled-reports", num: "283", title: "Scheduled Reports", shortTitle: "Scheduled Reports", description: "Scheduled report deliveries on the Qubit scheduler — validated recipients, audited, pausable.", module: "analytics" },
   { id: "analytics-settings", num: "284", title: "Analytics Settings", shortTitle: "Settings", description: "Analytics administration — metric governance, refresh policies, retention and export rules.", module: "analytics" },
+  // ——— Phase 18 · Mobile ———
+  { id: "mobile-home", num: "285", title: "Mobile Home", shortTitle: "Mobile Home", description: "The Qubit One mobile command center — today's work, quick actions and role shortcuts.", module: "mobile" },
+  { id: "mobile-sales-home", num: "286", title: "Mobile Sales Home", shortTitle: "Mobile Sales", description: "Field sales workspace on the existing Sales OS — leads, follow-ups, pipeline, visits.", module: "mobile" },
+  { id: "mobile-lead-detail", num: "287", title: "Mobile Lead Detail", shortTitle: "Mobile Lead", description: "The lead workspace in the field — call, WhatsApp, email, follow-up, convert.", module: "mobile" },
+  { id: "mobile-whatsapp", num: "288", title: "Mobile WhatsApp", shortTitle: "Mobile WhatsApp", description: "The authorized WhatsApp Business inbox — conversations, context and actions.", module: "mobile" },
+  { id: "mobile-meetings", num: "289", title: "Mobile Meetings", shortTitle: "Mobile Meetings", description: "Today's and upcoming meetings — join, notes and action items on the go.", module: "mobile" },
+  { id: "mobile-tasks", num: "290", title: "Mobile Tasks", shortTitle: "Mobile Tasks", description: "My Tasks in the field — today, overdue, upcoming; complete and comment.", module: "mobile" },
+  { id: "mobile-service-home", num: "291", title: "Mobile Service Home", shortTitle: "Mobile Service", description: "Field-service command center — visits, urgent tickets, SLA warnings, parts.", module: "mobile" },
+  { id: "mobile-service-visit", num: "292", title: "Mobile Service Visit", shortTitle: "Mobile Visit", description: "The complete field-visit workspace — lifecycle, checklist, evidence, parts, notes.", module: "mobile" },
+  { id: "mobile-attendance", num: "293", title: "Mobile Attendance", shortTitle: "Mobile Attendance", description: "Check in and out on the enterprise attendance record — leave and history included.", module: "mobile" },
+  { id: "mobile-approvals", num: "294", title: "Mobile Approvals", shortTitle: "Mobile Approvals", description: "The approval queue in your pocket — approve, reject, request changes; step-up protected.", module: "mobile" },
+  { id: "mobile-notifications", num: "295", title: "Mobile Notifications", shortTitle: "Mobile Alerts", description: "The notification center on mobile — filtered, actionable, deep-linked.", module: "mobile" },
+  { id: "mobile-profile", num: "296", title: "Mobile Profile", shortTitle: "Mobile Profile", description: "Your identity on mobile — profile, security, sessions, cards.", module: "mobile" },
+  { id: "mobile-id-card", num: "297", title: "Mobile ID Card", shortTitle: "Mobile ID", description: "The digital employee ID card — verifiable, minimal, company-branded.", module: "mobile" },
+  { id: "mobile-visiting-card", num: "298", title: "Mobile Visiting Card", shortTitle: "Mobile Card", description: "The professional visiting card — QR, vCard and share, policy-respecting.", module: "mobile" },
+  { id: "mobile-mail", num: "299", title: "Mobile Mail", shortTitle: "Mobile Mail", description: "Enterprise mail on mobile — inbox, sent, drafts, compose and search.", module: "mobile" },
+  { id: "mobile-ai", num: "300", title: "Mobile AI", shortTitle: "Mobile AI", description: "The Qubit AI Platform on mobile — grounded answers over data you are authorized to see.", module: "mobile" },
+  // ——— Phase 18 · Enterprise Hardening ———
+  { id: "responsive-qa", num: "301", title: "Responsive QA Dashboard", shortTitle: "Responsive QA", description: "Internal QA over the whole product — breakpoints, overflow, layout and registry integrity.", module: "platform" },
+  { id: "performance-dashboard", num: "302", title: "Performance Dashboard", shortTitle: "Performance", description: "Real telemetry only — backend latency, system resources and browser vitals as measured.", module: "platform" },
+  { id: "accessibility-review", num: "303", title: "Accessibility Review", shortTitle: "A11y Review", description: "Accessibility governance — findings, severity, owners and resolution across the product.", module: "platform" },
+  { id: "security-hardening", num: "304", title: "Security Hardening", shortTitle: "Hardening", description: "Security posture across identity, application, infrastructure and data — never exposing secrets.", module: "platform" },
+  { id: "backup-recovery", num: "305", title: "Backup & Recovery", shortTitle: "Backup & DR", description: "Real backups of the platform database — verified, retained, with high-risk restore testing.", module: "platform" },
+  { id: "monitoring", num: "306", title: "Monitoring", shortTitle: "Monitoring", description: "One monitoring view over application, database, integrations, jobs and AI services.", module: "platform" },
+  { id: "release-management", num: "307", title: "Release Management", shortTitle: "Releases", description: "Release history, environments and rollback readiness — safe by default.", module: "platform" },
+  { id: "system-status", num: "308", title: "System Status", shortTitle: "System Status", description: "The one authoritative health view of Qubit One — calm, honest, current.", module: "platform" },
 ];
 
 export const screenMeta = (id: ScreenId): ScreenMeta =>
@@ -340,4 +393,7 @@ export interface ScreenParams {
   exportId?: string;
   scheduleId?: string;
   funnelId?: string;
+  /** Mobile deep links (Phase 18) */
+  mailId?: string;
+  notificationId?: string;
 }

@@ -1,0 +1,1748 @@
+# QUBIT ONE — PHASE 18 MASTER IMPLEMENTATION PROMPT
+# ENTERPRISE HARDENING + MOBILE
+# SCREENS 285–308
+# EXACT SCREEN COUNT: 24
+# FINAL UI / PRODUCT PHASE
+
+You are continuing the existing Qubit One enterprise platform.
+
+Qubit One is NOT a new project.
+
+The platform already contains Phases 1–17 and screens 1–284.
+
+Your responsibility in Phase 18 is to complete the final product/UI phase by adding:
+
+1. Dedicated mobile experiences
+2. Responsive enterprise behavior
+3. Performance validation
+4. Accessibility validation
+5. Security hardening
+6. Backup and recovery visibility
+7. Monitoring
+8. Release management
+9. System status
+
+DO NOT rebuild Qubit One.
+
+DO NOT redesign Qubit One from scratch.
+
+DO NOT create duplicate systems.
+
+DO NOT break existing functionality.
+
+==================================================
+1. CURRENT QUBIT ONE UI REFERENCE
+==================================================
+
+ATTACH THE CURRENT APPROVED QUBIT ONE UI REFERENCE IMAGE TO THIS PROMPT.
+
+STRICTLY FOLLOW THIS UI/UX DESIGN.
+
+The attached image is the visual source of truth for the Qubit One design language.
+
+Match:
+
+- navigation
+- typography
+- spacing
+- sidebar
+- header
+- page hierarchy
+- buttons
+- tables
+- cards
+- forms
+- filters
+- badges
+- tabs
+- drawers
+- modals
+- status indicators
+- responsive behavior
+- overall visual density
+
+Maintain the existing Qubit One visual identity.
+
+Use:
+
+- premium enterprise UI
+- light workspace
+- deep navy navigation
+- restrained professional blue
+- white surfaces
+- neutral gray
+- dark readable text
+- subtle borders
+- subtle shadows
+- moderate radius
+- clean hierarchy
+- professional information density
+
+DO NOT introduce:
+
+- neon
+- cyberpunk
+- gaming UI
+- excessive glassmorphism
+- excessive gradients
+- glowing UI
+- unnecessary animations
+- oversized decorative elements
+- random colors
+- inconsistent component styles
+
+Qubit One should remain a serious enterprise business operating system.
+
+==================================================
+2. PHASE 18 OBJECTIVE
+==================================================
+
+Phase 18 is the final screen/product phase.
+
+The goal is:
+
+Qubit One
+→ Enterprise Desktop
+→ Responsive Web
+→ Dedicated Mobile Experience
+→ Security Hardening
+→ Performance Validation
+→ Accessibility Validation
+→ Backup/Recovery
+→ Monitoring
+→ Release Management
+→ Production System Status
+
+This phase must NOT become a collection of disconnected admin pages.
+
+All operational screens must use existing Qubit One infrastructure.
+
+==================================================
+3. EXACT SCREEN COUNT
+==================================================
+
+Implement EXACTLY these 24 screens:
+
+285. Mobile Home
+286. Mobile Sales Home
+287. Mobile Lead Detail
+288. Mobile WhatsApp
+289. Mobile Meetings
+290. Mobile Tasks
+291. Mobile Service Home
+292. Mobile Service Visit
+293. Mobile Attendance
+294. Mobile Approvals
+295. Mobile Notifications
+296. Mobile Profile
+297. Mobile ID Card
+298. Mobile Visiting Card
+299. Mobile Mail
+300. Mobile AI
+301. Responsive QA Dashboard
+302. Performance Dashboard
+303. Accessibility Review
+304. Security Hardening
+305. Backup & Recovery
+306. Monitoring
+307. Release Management
+308. System Status
+
+DO NOT add numbered screens beyond 308.
+
+DO NOT remove any.
+
+DO NOT duplicate any.
+
+==================================================
+4. MOBILE DESIGN PRINCIPLE
+==================================================
+
+Mobile is NOT a scaled-down desktop.
+
+Create a genuine mobile-first experience for field and daily employee workflows.
+
+Mobile must feel like:
+
+Qubit One Mobile
+
+while remaining visually and architecturally connected to the main Qubit One platform.
+
+Use:
+
+- compact navigation
+- bottom navigation where appropriate
+- contextual actions
+- mobile-friendly cards
+- swipe-friendly controls
+- mobile sheets
+- compact filters
+- large enough touch targets
+- fast actions
+- clear hierarchy
+- offline/degraded states only where actually supported
+
+DO NOT simply shrink desktop tables.
+
+==================================================
+5. MOBILE SECURITY
+==================================================
+
+Mobile experiences must inherit existing Qubit One:
+
+- authentication
+- authorization
+- RBAC
+- ABAC
+- MFA
+- session management
+- device/session controls
+- audit logging
+- security policies
+
+Do not create a second mobile authentication system.
+
+Mobile users receive exactly the permissions granted by the core Qubit One identity/security architecture.
+
+==================================================
+6. SCREEN 285 — MOBILE HOME
+==================================================
+
+Create the primary Qubit One mobile workspace.
+
+Purpose:
+
+Provide employees with a fast daily command center.
+
+Include:
+
+- greeting
+- profile
+- today's tasks
+- meetings
+- approvals
+- notifications
+- important messages
+- quick actions
+- recent activity
+- role-specific shortcuts
+
+Quick actions may include:
+
+- Create Lead
+- New Task
+- Start Meeting
+- Check Attendance
+- View Approvals
+- Open Mail
+- Open AI
+
+Content must be permission-aware.
+
+Do not show irrelevant enterprise modules to ordinary users.
+
+Navigation should remain contextual.
+
+==================================================
+7. SCREEN 286 — MOBILE SALES HOME
+==================================================
+
+Create mobile Sales workspace.
+
+Include:
+
+- today's sales activity
+- leads
+- follow-ups
+- opportunities
+- pipeline summary
+- meetings
+- visits
+- quotations
+- orders
+- sales targets
+
+Quick actions:
+
+- Add Lead
+- Call
+- WhatsApp
+- Schedule Meeting
+- Add Follow-up
+- Create Visit
+
+Use existing Sales data.
+
+DO NOT create a mobile Sales database.
+
+All actions use existing Sales APIs/workflows.
+
+==================================================
+8. SCREEN 287 — MOBILE LEAD DETAIL
+==================================================
+
+Create mobile Lead Detail.
+
+Show:
+
+- lead identity
+- company
+- contact
+- phone
+- email
+- source
+- status
+- owner
+- priority
+- notes
+- recent communication
+- follow-ups
+- meetings
+- visits
+- opportunities
+
+Quick actions:
+
+- Call
+- WhatsApp
+- Email
+- Add Note
+- Follow-up
+- Convert
+
+All communication actions must use legitimate configured integrations.
+
+No fake call/WhatsApp functionality.
+
+Respect permissions.
+
+==================================================
+9. SCREEN 288 — MOBILE WHATSAPP
+==================================================
+
+Create mobile WhatsApp workspace.
+
+Show:
+
+- authorized conversations
+- lead/customer context
+- messages
+- timestamps
+- unread state
+- search
+- attachments where supported
+- conversation status
+
+Allow configured actions such as:
+
+- Reply
+- Add Note
+- Create Follow-up
+- Convert Lead
+- Open Customer
+
+Use legitimate WhatsApp API/integration.
+
+DO NOT simulate WhatsApp.
+
+Respect:
+
+- consent
+- permissions
+- API limits
+- retention
+- audit
+- privacy
+
+==================================================
+10. SCREEN 289 — MOBILE MEETINGS
+==================================================
+
+Create mobile Meetings workspace.
+
+Include:
+
+- today's meetings
+- upcoming meetings
+- meeting details
+- attendees
+- agenda
+- location
+- conference link
+- notes
+- action items
+
+Quick actions:
+
+- Join
+- Reschedule
+- Add Note
+- Add Action Item
+
+Use existing Meeting/Calendar engine.
+
+DO NOT create a second calendar system.
+
+==================================================
+11. SCREEN 290 — MOBILE TASKS
+==================================================
+
+Create mobile task workspace.
+
+Include:
+
+- My Tasks
+- Today
+- Upcoming
+- Overdue
+- Completed
+- Priority
+- Assigned by
+- Due date
+
+Actions:
+
+- Complete
+- Reassign where authorized
+- Change priority where authorized
+- Add comment
+- Add attachment
+- Open task detail
+
+Reuse the existing Task system.
+
+==================================================
+12. SCREEN 291 — MOBILE SERVICE HOME
+==================================================
+
+Create field-service mobile home.
+
+Designed primarily for Service Engineers.
+
+Show:
+
+- today's visits
+- open tickets
+- urgent tickets
+- SLA warnings
+- assigned customers
+- pending reports
+- pending signatures
+- required parts
+
+Quick actions:
+
+- Start Visit
+- Open Ticket
+- Navigate
+- Add Evidence
+- Add Part
+- Complete Visit
+
+Do not create duplicate service data.
+
+==================================================
+13. SCREEN 292 — MOBILE SERVICE VISIT
+==================================================
+
+Create complete mobile field-visit workspace.
+
+Lifecycle:
+
+Scheduled
+→ En Route
+→ Arrived
+→ In Progress
+→ Paused
+→ Completed
+
+Show:
+
+- customer
+- site
+- ticket
+- issue
+- product
+- serial
+- warranty status
+- checklist
+- diagnosis
+- parts
+- photos
+- notes
+- customer signature
+- service report
+
+Support field-friendly actions.
+
+Critical checklist items can block completion where configured.
+
+Do not fabricate:
+
+- GPS
+- warranty
+- parts
+- signatures
+- diagnostics
+
+If location is used:
+
+- require permission
+- show location state
+- respect privacy
+- audit access
+- do not track unnecessarily
+
+==================================================
+14. SCREEN 293 — MOBILE ATTENDANCE
+==================================================
+
+Create mobile attendance.
+
+Show:
+
+- today's attendance
+- check-in
+- check-out
+- working status
+- attendance history
+- leave information
+- corrections where authorized
+
+Reuse HR Attendance.
+
+Do not create duplicate attendance records.
+
+If location/device verification is configured:
+
+- clearly show it
+- obtain required permission
+- audit verification
+- handle failure safely
+
+==================================================
+15. SCREEN 294 — MOBILE APPROVALS
+==================================================
+
+Create mobile approval workspace.
+
+Show:
+
+- pending approvals
+- approved
+- rejected
+- request type
+- requester
+- amount/value where authorized
+- date
+- priority
+- SLA
+
+Actions:
+
+- Approve
+- Reject
+- Request Changes
+- View Details
+
+Use the centralized Approval Matrix and approval system.
+
+Do not create a second approval engine.
+
+Sensitive approvals may require:
+
+- MFA
+- step-up authentication
+- additional confirmation
+
+==================================================
+16. SCREEN 295 — MOBILE NOTIFICATIONS
+==================================================
+
+Create mobile Notification Center.
+
+Include:
+
+- all
+- unread
+- approvals
+- tasks
+- meetings
+- sales
+- service
+- HR
+- security
+- system
+
+Actions:
+
+- open
+- mark read
+- mark all read
+- filter
+- notification preferences where authorized
+
+Reuse the centralized notification engine.
+
+==================================================
+17. SCREEN 296 — MOBILE PROFILE
+==================================================
+
+Create employee mobile profile.
+
+Show:
+
+- profile photo
+- name
+- role
+- department
+- contact
+- employee ID
+- manager
+- work information
+- security/session access
+
+Actions:
+
+- edit permitted fields
+- security settings
+- sessions
+- ID Card
+- Visiting Card
+
+Never expose sensitive HR information unnecessarily.
+
+==================================================
+18. SCREEN 297 — MOBILE ID CARD
+==================================================
+
+Create digital employee ID card.
+
+Include:
+
+- company branding
+- employee photo
+- name
+- employee ID
+- designation
+- department
+- QR/barcode if configured
+- validity
+- verification status
+
+Do not expose unnecessary personal information.
+
+If QR verification exists:
+
+- use secure signed/verified data
+- do not expose unrestricted employee database information
+
+==================================================
+19. SCREEN 298 — MOBILE VISITING CARD
+==================================================
+
+Create digital business visiting card.
+
+Include:
+
+- employee name
+- designation
+- company
+- phone
+- email
+- website
+- QR
+- share action
+
+Use approved company branding.
+
+Sharing must respect employee/company policy.
+
+==================================================
+20. SCREEN 299 — MOBILE MAIL
+==================================================
+
+Create mobile enterprise mail workspace.
+
+Include:
+
+- inbox
+- unread
+- sent
+- drafts
+- search
+- mail detail
+- compose
+
+Actions:
+
+- reply
+- forward
+- compose
+- attach
+- search
+
+Reuse the existing mail integration/system.
+
+Do not create a fake email transport.
+
+If external email provider is configured, use legitimate APIs.
+
+==================================================
+21. SCREEN 300 — MOBILE AI
+==================================================
+
+Create Qubit AI mobile workspace.
+
+This is a mobile interface to the existing Qubit AI Platform.
+
+Include:
+
+- recent conversations
+- AI agents
+- quick prompts
+- authorized business context
+- suggested actions
+- action approvals
+
+Examples:
+
+"Summarize my day."
+
+"Show my pending approvals."
+
+"Which leads need follow-up?"
+
+"Summarize today's meetings."
+
+"Show my open service visits."
+
+AI must inherit existing permissions.
+
+AI cannot access data merely because it exists in the database.
+
+AI cannot bypass authorization.
+
+Consequential actions require approval.
+
+==================================================
+22. SCREEN 301 — RESPONSIVE QA DASHBOARD
+==================================================
+
+Create internal responsive QA dashboard.
+
+Purpose:
+
+Validate the Qubit One UI across:
+
+- desktop
+- laptop
+- tablet
+- mobile
+
+Show:
+
+- route
+- breakpoint
+- viewport
+- layout status
+- overflow issues
+- component failures
+- accessibility warnings
+- visual regression status
+- screenshot/reference comparison status
+
+Provide QA-oriented visibility.
+
+Do not make this a customer-facing feature.
+
+==================================================
+23. SCREEN 302 — PERFORMANCE DASHBOARD
+==================================================
+
+Create enterprise performance dashboard.
+
+Monitor:
+
+Frontend:
+
+- page load
+- route transition
+- Core Web Vitals
+- JavaScript errors
+- rendering performance
+
+Backend:
+
+- API latency
+- throughput
+- error rate
+- database latency
+- queue latency
+
+Infrastructure:
+
+- CPU
+- memory
+- disk
+- network
+- container health
+
+Show:
+
+- current
+- trend
+- threshold
+- incidents
+- degraded services
+
+Use actual telemetry where integrated.
+
+Never fabricate metrics.
+
+==================================================
+24. SCREEN 303 — ACCESSIBILITY REVIEW
+==================================================
+
+Create accessibility governance workspace.
+
+Check:
+
+- keyboard navigation
+- focus management
+- contrast
+- labels
+- semantic structure
+- screen-reader compatibility
+- form errors
+- touch target size
+- motion preferences
+- zoom behavior
+
+Show:
+
+- issue
+- severity
+- affected screen
+- component
+- status
+- owner
+- resolution
+
+Allow filtering:
+
+- critical
+- major
+- minor
+- resolved
+- unresolved
+
+This is an internal quality/security governance screen.
+
+==================================================
+25. SCREEN 304 — SECURITY HARDENING
+==================================================
+
+Create security hardening dashboard.
+
+Show security posture across:
+
+Authentication:
+
+- MFA
+- SSO
+- sessions
+- passkeys where configured
+
+Authorization:
+
+- RBAC
+- ABAC
+- permission anomalies
+- excessive privileges
+
+Application:
+
+- dependency vulnerabilities
+- security headers
+- API protection
+- rate limiting
+- input validation
+
+Infrastructure:
+
+- TLS
+- secrets
+- network policies
+- container security
+
+Data:
+
+- encryption
+- sensitive data policies
+- backup encryption
+- retention
+
+Show:
+
+- severity
+- finding
+- affected component
+- detected date
+- owner
+- remediation
+- status
+
+DO NOT expose secrets.
+
+DO NOT display passwords, tokens, private keys or sensitive credentials.
+
+==================================================
+26. SCREEN 305 — BACKUP & RECOVERY
+==================================================
+
+Create backup and disaster-recovery workspace.
+
+Show:
+
+- database backup status
+- backup type
+- last successful backup
+- next backup
+- retention
+- encryption status
+- backup verification
+- restore-test status
+- recovery point
+- recovery point objective
+- recovery time objective
+- backup failures
+
+Support authorized administrative actions such as:
+
+- verify backup
+- initiate restore workflow
+- run recovery test
+- inspect backup status
+
+RESTORE ACTIONS MUST BE HIGH-RISK.
+
+Require strong authorization and confirmation.
+
+Never silently restore production.
+
+Show:
+
+- backup health
+- recovery readiness
+- last verified restore
+- failure state
+
+==================================================
+27. SCREEN 306 — MONITORING
+==================================================
+
+Create centralized Qubit One monitoring workspace.
+
+Monitor:
+
+- application health
+- API health
+- database
+- cache
+- Kafka/queues
+- integrations
+- AI services
+- storage
+- email
+- WhatsApp
+- scheduled jobs
+- automation
+- backups
+
+Show:
+
+- healthy
+- degraded
+- unavailable
+- maintenance
+
+Include:
+
+- service name
+- health
+- latency
+- errors
+- uptime
+- last check
+- dependency
+- incident
+
+Use actual monitoring/observability infrastructure.
+
+Integrate with:
+
+- logs
+- metrics
+- traces
+- alerts
+
+==================================================
+28. SCREEN 307 — RELEASE MANAGEMENT
+==================================================
+
+Create enterprise release-management workspace.
+
+Show:
+
+- current version
+- environments
+- deployment status
+- release history
+- release notes
+- commit/build reference
+- deployment time
+- owner
+- status
+- rollback readiness
+
+Environments:
+
+- development
+- test
+- staging
+- production
+
+Where applicable show:
+
+- deployment
+- migration
+- health check
+- smoke test
+- rollback state
+
+Release lifecycle:
+
+Draft
+→ Validation
+→ Approved
+→ Deploying
+→ Verification
+→ Released
+
+Failure:
+
+→ Failed
+→ Rollback / Recovery
+
+Do not allow dangerous production deployment actions without proper authorization.
+
+==================================================
+29. SCREEN 308 — SYSTEM STATUS
+==================================================
+
+Create the final Qubit One system-status page.
+
+Purpose:
+
+Provide one authoritative system health view.
+
+Show:
+
+- overall status
+- application
+- API
+- database
+- cache
+- messaging
+- AI
+- storage
+- integrations
+- authentication
+- backups
+- monitoring
+
+Status categories:
+
+Operational
+Degraded
+Partial Outage
+Major Outage
+Maintenance
+
+Show:
+
+- incident
+- start time
+- affected service
+- impact
+- current status
+- resolution/update
+
+This should provide a calm enterprise operational view.
+
+Avoid dramatic styling.
+
+==================================================
+30. MOBILE NAVIGATION ARCHITECTURE
+==================================================
+
+Mobile should use a contextual navigation model.
+
+Recommended structure:
+
+Home
+My Work
+Business
+Communication
+AI
+Profile
+
+Depending on role, Business may expose:
+
+Sales
+Service
+HR
+Finance
+Inventory
+Marketing
+
+Do not expose every Qubit module to every employee.
+
+Navigation must be permission-aware.
+
+==================================================
+31. MOBILE CROSS-MODULE WORKFLOWS
+==================================================
+
+Mobile must support connected workflows.
+
+Examples:
+
+Lead
+→ Customer
+→ Meeting
+→ Follow-up
+→ Opportunity
+
+Service:
+
+Ticket
+→ Visit
+→ Checklist
+→ Parts
+→ Evidence
+→ Signature
+→ Resolution
+
+Employee:
+
+Attendance
+→ Tasks
+→ Meetings
+→ Approvals
+→ Mail
+
+AI:
+
+Question
+→ Authorized data
+→ Recommendation
+→ Approval
+→ Action
+
+Do not isolate mobile features into separate mini-applications.
+
+==================================================
+32. OFFLINE / DEGRADED MODE
+==================================================
+
+Do NOT claim offline support unless actually implemented.
+
+If offline functionality exists:
+
+- clearly show offline state
+- identify locally stored actions
+- queue actions safely
+- synchronize safely
+- detect conflicts
+- use idempotency
+- never silently overwrite server data
+
+If offline support does not exist:
+
+show:
+
+"Connection required"
+
+rather than pretending the action was completed.
+
+==================================================
+33. PERFORMANCE REQUIREMENTS
+==================================================
+
+Mobile must prioritize performance.
+
+Use:
+
+- optimized images
+- lazy loading
+- code splitting
+- route-level loading
+- caching where appropriate
+- pagination
+- efficient API payloads
+- optimized database queries
+- minimal unnecessary client-side processing
+
+Do not load the entire enterprise application on mobile startup.
+
+==================================================
+34. SECURITY REQUIREMENTS
+==================================================
+
+Phase 18 must enforce:
+
+- MFA
+- secure sessions
+- device/session management
+- authorization
+- API security
+- rate limiting
+- input validation
+- CSRF protection where applicable
+- secure headers
+- XSS protection
+- SQL injection protection
+- secrets management
+- encryption
+- secure file handling
+- audit logging
+- dependency security
+
+Backend security must be independent of frontend controls.
+
+==================================================
+35. BACKUP / DR REQUIREMENTS
+==================================================
+
+Production architecture must support:
+
+- encrypted backups
+- separate backup storage
+- point-in-time recovery where supported
+- retention policy
+- backup verification
+- restore testing
+- disaster recovery procedure
+- RPO
+- RTO
+- alerts
+
+A backup that has never been tested should not be treated as fully verified.
+
+==================================================
+36. OBSERVABILITY
+==================================================
+
+Use centralized observability.
+
+Recommended architecture:
+
+OpenTelemetry
+→ Metrics
+→ Logs
+→ Traces
+→ Monitoring
+→ Alerts
+
+Track:
+
+- API failures
+- database errors
+- frontend errors
+- authentication events
+- security events
+- job failures
+- queue failures
+- AI failures
+- integration failures
+- backup failures
+- deployment failures
+
+==================================================
+37. RELEASE SAFETY
+==================================================
+
+Production releases must support:
+
+- CI/CD
+- automated tests
+- migrations
+- health checks
+- smoke tests
+- deployment verification
+- rollback
+- release notes
+- audit
+
+Never deploy untested destructive database changes directly to production.
+
+Database migrations must be:
+
+- versioned
+- reviewed
+- tested
+- reversible where practical
+- safely deployable
+
+==================================================
+38. ERROR HANDLING
+==================================================
+
+Every screen must support:
+
+- loading
+- empty
+- error
+- permission denied
+- unavailable
+- degraded
+- retry where safe
+- stale data where applicable
+
+Never display:
+
+"Success"
+
+when the backend failed.
+
+Never fabricate:
+
+- system health
+- deployment success
+- backup success
+- API success
+- monitoring data
+- GPS
+- attendance
+- AI output
+- integration state
+
+==================================================
+39. ACCESSIBILITY
+==================================================
+
+All Phase 18 screens must support:
+
+- keyboard navigation
+- visible focus
+- semantic HTML
+- screen-reader labels
+- accessible forms
+- sufficient contrast
+- non-color-only indicators
+- reduced motion
+- touch accessibility
+- scalable text
+
+Mobile touch targets must be sufficiently large and separated.
+
+==================================================
+40. ROLE-BASED EXPERIENCE
+==================================================
+
+The final Qubit One experience must remain role-aware.
+
+CEO:
+
+- executive information
+- system status
+- enterprise analytics
+
+Manager:
+
+- team performance
+- approvals
+- tasks
+- operational status
+
+Sales:
+
+- mobile sales
+- leads
+- meetings
+- tasks
+- AI
+
+Service Engineer:
+
+- service home
+- visits
+- tickets
+- checklist
+- parts
+- evidence
+- signatures
+
+Employee:
+
+- home
+- tasks
+- meetings
+- mail
+- attendance
+- approvals
+- profile
+
+Admin:
+
+- security
+- monitoring
+- backups
+- release
+- system status
+
+Do not expose administrative controls to normal employees.
+
+==================================================
+41. AI SECURITY
+==================================================
+
+Mobile AI must follow the exact same Qubit AI governance.
+
+AI:
+
+- cannot bypass permissions
+- cannot access arbitrary DB
+- cannot expose confidential records
+- cannot invent facts
+- cannot perform unauthorized actions
+- must use approved tools
+- must log consequential actions
+- must request approval where required
+
+==================================================
+42. EXISTING SYSTEM REUSE
+==================================================
+
+Reuse existing:
+
+- Identity
+- Authentication
+- Authorization
+- Employee system
+- CRM
+- Sales
+- Finance
+- Inventory
+- Marketing
+- HR
+- Service
+- Meetings
+- Tasks
+- Mail
+- Notifications
+- AI Platform
+- Automation Engine
+- Analytics
+- Audit
+- Reporting
+
+DO NOT create duplicate versions.
+
+==================================================
+43. DATA INTEGRITY
+==================================================
+
+Use:
+
+- transactions
+- constraints
+- foreign keys
+- unique constraints
+- validation
+- idempotency
+- concurrency controls
+- safe migrations
+- audit
+
+Frontend must never directly control production database state.
+
+==================================================
+44. OBSERVABILITY FOR PHASE 18
+==================================================
+
+Monitor:
+
+- mobile API usage
+- page performance
+- API latency
+- error rate
+- authentication failures
+- security events
+- backup jobs
+- restore tests
+- monitoring health
+- deployments
+- rollbacks
+- AI requests
+- automation failures
+
+==================================================
+45. TESTING
+==================================================
+
+Perform:
+
+Unit Testing
+Integration Testing
+API Testing
+Database Testing
+Authorization Testing
+Security Testing
+Regression Testing
+Responsive Testing
+Mobile Testing
+Accessibility Testing
+Performance Testing
+Load Testing
+Failure Testing
+Concurrency Testing
+Backup/Restore Testing
+Deployment Testing
+Rollback Testing
+
+Critical workflows must be tested end-to-end.
+
+==================================================
+46. FINAL 308-SCREEN REGRESSION
+==================================================
+
+Phase 18 must not only test screens 285–308.
+
+Perform regression validation across the entire Qubit One product.
+
+Validate:
+
+1–308.
+
+Check:
+
+- navigation
+- permissions
+- APIs
+- workflows
+- database relationships
+- responsive behavior
+- security
+- performance
+- audit
+- AI
+- automation
+- notifications
+- integrations
+
+No Phase 18 change should silently break earlier phases.
+
+==================================================
+47. OPTIONAL FUTURE CAPABILITIES
+==================================================
+
+Do NOT add these as extra numbered screens.
+
+Keep architecture ready for:
+
+- native iOS application
+- native Android application
+- biometric authentication
+- advanced device management
+- MDM integration
+- offline-first service operations
+- advanced disaster recovery
+- multi-region deployment
+- blue/green deployments
+- canary releases
+- feature flags
+- advanced SRE tooling
+- synthetic monitoring
+- advanced security operations
+- SIEM integration
+- enterprise compliance frameworks
+
+These remain future extensions.
+
+==================================================
+48. FINAL DESIGN QUALITY RULE
+==================================================
+
+The final product must feel like ONE coherent enterprise platform.
+
+Not:
+
+"300 different pages."
+
+Instead:
+
+ONE Qubit One.
+
+The user should feel that:
+
+Home
+→ Work
+→ Sales
+→ Finance
+→ HR
+→ Service
+→ Marketing
+→ Meetings
+→ AI
+→ Analytics
+→ Administration
+
+are connected parts of the same operating system.
+
+Maintain:
+
+- shared identity
+- shared navigation
+- shared search
+- shared permissions
+- shared notifications
+- shared tasks
+- shared audit
+- shared AI
+- shared analytics
+- shared automation
+- shared design system
+
+==================================================
+49. FINAL VALIDATION CHECKLIST
+==================================================
+
+Before declaring Phase 18 complete:
+
+[ ] Exactly 24 Phase 18 screens exist.
+
+[ ] Screens 285–308 are implemented.
+
+[ ] No extra numbered screens were created.
+
+[ ] Mobile is a genuine mobile experience.
+
+[ ] Mobile does not duplicate backend systems.
+
+[ ] Existing Qubit permissions are reused.
+
+[ ] Existing authentication is reused.
+
+[ ] Existing Sales system is reused.
+
+[ ] Existing Service system is reused.
+
+[ ] Existing HR Attendance is reused.
+
+[ ] Existing Task system is reused.
+
+[ ] Existing Meeting system is reused.
+
+[ ] Existing Mail system is reused.
+
+[ ] Existing Notification system is reused.
+
+[ ] Existing AI Platform is reused.
+
+[ ] Existing Analytics system is reused.
+
+[ ] Existing Audit system is reused.
+
+[ ] Security hardening is implemented.
+
+[ ] Backup/recovery visibility is implemented.
+
+[ ] Monitoring is integrated with real telemetry where available.
+
+[ ] Release management is integrated with actual deployment infrastructure where available.
+
+[ ] System Status reflects actual service health.
+
+[ ] No fake monitoring metrics.
+
+[ ] No fake backup status.
+
+[ ] No fake deployment status.
+
+[ ] No fake integrations.
+
+[ ] No fake offline functionality.
+
+[ ] No fabricated GPS.
+
+[ ] No fabricated AI actions.
+
+[ ] No unauthorized data exposure.
+
+[ ] Sensitive HR/Finance/Security data is protected.
+
+[ ] Mobile performance is optimized.
+
+[ ] Accessibility is reviewed.
+
+[ ] Responsive QA is completed.
+
+[ ] Full 1–308 regression is performed.
+
+[ ] Existing modules are not broken.
+
+[ ] Existing database integrity is preserved.
+
+[ ] Existing design system is preserved.
+
+[ ] Current Qubit One UI reference is strictly followed.
+
+[ ] No neon/cyberpunk/gaming UI.
+
+[ ] No unnecessary gradients/glows.
+
+[ ] No duplicate systems.
+
+[ ] No unnecessary technology churn.
+
+==================================================
+50. COMPLETION RULE
+==================================================
+
+Do not stop after creating visual placeholders.
+
+Implement the actual functionality supported by the existing architecture.
+
+If a real external integration is not configured:
+
+DO NOT fake it.
+
+Create the correct integration boundary and truthful unavailable/configuration state.
+
+If infrastructure telemetry is unavailable:
+
+DO NOT fabricate metrics.
+
+Show the correct "Not Connected", "Unavailable", or configuration state.
+
+If offline support is not implemented:
+
+DO NOT claim offline functionality.
+
+Complete all 24 Phase 18 screens.
+
+Then perform full regression validation across screens 1–308.
+
+Do not ask what to build next.
+
+Do not stop after a partial implementation.
+
+Analyze → integrate → implement → test → harden → validate.
+
+PHASE 18 COMPLETE =
+SCREENS 285–308 COMPLETE
++
+FULL QUBIT ONE 1–308 REGRESSION VALIDATION.

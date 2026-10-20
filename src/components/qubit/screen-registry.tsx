@@ -130,6 +130,30 @@ import { AuditExplorerScreen } from "./screens/audit-explorer";
 import { DataExportScreen } from "./screens/data-export";
 import { ScheduledReportsScreen } from "./screens/scheduled-reports";
 import { AnalyticsSettingsScreen } from "./screens/analytics-settings";
+import { MobileHomeScreen } from "./screens/mobile-home";
+import { MobileSalesHomeScreen } from "./screens/mobile-sales-home";
+import { MobileLeadDetailScreen } from "./screens/mobile-lead-detail";
+import { MobileWhatsappScreen } from "./screens/mobile-whatsapp";
+import { MobileMeetingsScreen } from "./screens/mobile-meetings";
+import { MobileTasksScreen } from "./screens/mobile-tasks";
+import { MobileServiceHomeScreen } from "./screens/mobile-service-home";
+import { MobileServiceVisitScreen } from "./screens/mobile-service-visit";
+import { MobileAttendanceScreen } from "./screens/mobile-attendance";
+import { MobileApprovalsScreen } from "./screens/mobile-approvals";
+import { MobileNotificationsScreen } from "./screens/mobile-notifications";
+import { MobileProfileScreen } from "./screens/mobile-profile";
+import { MobileIdCardScreen } from "./screens/mobile-id-card";
+import { MobileVisitingCardScreen } from "./screens/mobile-visiting-card";
+import { MobileMailScreen } from "./screens/mobile-mail";
+import { MobileAiScreen } from "./screens/mobile-ai";
+import { ResponsiveQaScreen } from "./screens/responsive-qa";
+import { PerformanceDashboardScreen } from "./screens/performance-dashboard";
+import { AccessibilityReviewScreen } from "./screens/accessibility-review";
+import { SecurityHardeningScreen } from "./screens/security-hardening";
+import { BackupRecoveryScreen } from "./screens/backup-recovery";
+import { MonitoringScreen } from "./screens/monitoring";
+import { ReleaseManagementScreen } from "./screens/release-management";
+import { SystemStatusScreen } from "./screens/system-status";
 
 export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "org-structure": OrganizationStructureScreen,
@@ -260,4 +284,30 @@ export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "data-export": DataExportScreen,
   "scheduled-reports": ScheduledReportsScreen,
   "analytics-settings": AnalyticsSettingsScreen,
+  // ——— Phase 18 · Mobile ———
+  "mobile-home": MobileHomeScreen,
+  "mobile-sales-home": MobileSalesHomeScreen,
+  "mobile-lead-detail": MobileLeadDetailScreen,
+  "mobile-whatsapp": MobileWhatsappScreen,
+  "mobile-meetings": MobileMeetingsScreen,
+  "mobile-tasks": MobileTasksScreen,
+  "mobile-service-home": MobileServiceHomeScreen,
+  "mobile-service-visit": MobileServiceVisitScreen,
+  "mobile-attendance": MobileAttendanceScreen,
+  "mobile-approvals": MobileApprovalsScreen,
+  "mobile-notifications": MobileNotificationsScreen,
+  "mobile-profile": MobileProfileScreen,
+  "mobile-id-card": MobileIdCardScreen,
+  "mobile-visiting-card": MobileVisitingCardScreen,
+  "mobile-mail": MobileMailScreen,
+  "mobile-ai": MobileAiScreen,
+  // ——— Phase 18 · Enterprise Hardening ———
+  "responsive-qa": ResponsiveQaScreen,
+  "performance-dashboard": PerformanceDashboardScreen,
+  "accessibility-review": AccessibilityReviewScreen,
+  "security-hardening": SecurityHardeningScreen,
+  "backup-recovery": BackupRecoveryScreen,
+  monitoring: MonitoringScreen,
+  "release-management": ReleaseManagementScreen,
+  "system-status": SystemStatusScreen,
 };

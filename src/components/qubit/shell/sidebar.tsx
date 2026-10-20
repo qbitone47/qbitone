@@ -15,8 +15,10 @@ import {
   Palette,
   PanelLeftClose,
   PanelLeftOpen,
+  ServerCog,
   Settings2,
   ShieldCheck,
+  Smartphone,
   Sparkles,
   TrendingUp,
   UserRound,
@@ -42,6 +44,7 @@ export const SIDEBAR_MODULES: SidebarModule[] = [
   { id: "executive", label: "CEO Command Center", icon: Crown, section: "Workspace", expandableModule: "executive" },
   { id: "home", label: "Home", icon: House, section: "Workspace", screen: "employee-home" },
   { id: "workspace", label: "Workspace", icon: LayoutList, section: "Workspace", expandableModule: "workspace" },
+  { id: "mobile", label: "Mobile", icon: Smartphone, section: "Workspace", expandableModule: "mobile" },
   { id: "enterprise", label: "Enterprise", icon: Building2, section: "Workspace", expandableModule: "enterprise" },
   { id: "people", label: "People", icon: UserRound, section: "Workspace", expandableModule: "people" },
   { id: "sales", label: "Sales", icon: TrendingUp, section: "Business", expandableModule: "sales" },
@@ -56,6 +59,7 @@ export const SIDEBAR_MODULES: SidebarModule[] = [
   { id: "analytics", label: "Analytics", icon: BarChart3, section: "Intelligence", expandableModule: "analytics" },
   { id: "documents", label: "Documents", icon: FolderClosed, section: "Intelligence" },
   { id: "security", label: "Security", icon: ShieldCheck, section: "System", expandableModule: "security" },
+  { id: "platform", label: "Platform Ops", icon: ServerCog, section: "System", expandableModule: "platform" },
   { id: "design-system", label: "Design System", icon: Palette, section: "System", expandableModule: "design-system" },
   { id: "settings", label: "Settings", icon: Settings2, section: "System" },
 ];
@@ -75,6 +79,8 @@ export const MODULE_PHASE: Record<string, string> = {
   meetings: "Phase 11 — Meetings & Collaboration",
   ai: "Phase 12 — Qubit AI Platform",
   analytics: "Phase 17 — Analytics & Audit",
+  mobile: "Phase 18 — Mobile Experience",
+  platform: "Phase 18 — Enterprise Hardening",
   documents: "Phase 14 — Documents & Knowledge",
   "design-system": "Phase 2 — Enterprise Design System",
   security: "Phase 3 — Authentication & Security",
@@ -108,7 +114,7 @@ export function SidebarContent({
 }) {
   const { screen, navigate } = useQubitNav();
   // Executive module starts expanded (Phase 5); workspace starts collapsed.
-  const [open, setOpen] = React.useState<Record<string, boolean>>({ executive: true, workspace: false, enterprise: false, people: false, mail: false, "design-system": false, security: false, sales: false, ai: false, analytics: false });
+  const [open, setOpen] = React.useState<Record<string, boolean>>({ executive: true, workspace: false, enterprise: false, people: false, mail: false, "design-system": false, security: false, sales: false, ai: false, analytics: false, mobile: false, platform: false });
 
   const sections = React.useMemo(() => {
     const map = new Map<string, SidebarModule[]>();
@@ -284,13 +290,13 @@ export function SidebarContent({
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[12.5px] font-semibold leading-tight text-slate-900">Qubit One Pvt Ltd</span>
               <span className="block truncate text-[10.5px] leading-tight text-slate-400">
-                Phase 17 · Analytics & Audit
+                Phase 18 · Mobile & Hardening — Final
               </span>
             </span>
             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-hidden />
           </div>
         ) : (
-          <div className="flex justify-center py-0.5" title="Qubit One Pvt Ltd — Phase 17 · Analytics & Audit">
+          <div className="flex justify-center py-0.5" title="Qubit One Pvt Ltd — Phase 18 · Mobile & Hardening — Final">
             <QubitMark className="h-7 w-7 rounded-lg text-[13px]" />
           </div>
         )}
