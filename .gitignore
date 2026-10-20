@@ -54,3 +54,23 @@ server.log
 /skills/
 # Phase 21 (§18/§19): runtime state and secrets never enter version control
 db/
+
+# ============================================================
+# Phase 21 — GitHub repository preparation (spec §8, §22, §27)
+# Local sandbox artifacts, personal uploads and agent state are
+# not part of the Qubit One source tree and never enter VC.
+# ============================================================
+/tool-results/
+/upload/
+/download/
+/agent-ctx/
+/.agent-browser/
+/.zscripts/
+/tests/
+/worklog.md
+
+# Local SQLite runtime databases (schema of record lives in /prisma)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
