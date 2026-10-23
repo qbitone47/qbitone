@@ -30,6 +30,10 @@ const PATTERNS: ScanPattern[] = [
     id: "supabase-service-jwt",
     description: "Supabase service_role JWT fragment",
     regex: /InNlcnZpY2Vfcm9sZSI6|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9_-]{40,}/g,
+    // Detection-rule definitions are not credentials: allow the scanner's own
+    // pattern line, smoke-test's SECRET_MARKERS regex (both contain the bare
+    // marker literal as a DETECTION rule — verified self-match, not a secret).
+    allow: /regex:|SECRET_MARKERS|\{\d+,\}/,
   },
   {
     id: "database-url-with-credentials",
