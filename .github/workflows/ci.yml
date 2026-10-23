@@ -4,7 +4,8 @@ name: CI
 # Validates dependency installation, lint, TypeScript type checking
 # and the production build on every push to main and every pull
 # request targeting main. No production secrets are required: the
-# pipeline uses a throwaway local SQLite database.
+# pipeline provisions a throwaway PostgreSQL service for the
+# Prisma schema validation.
 
 on:
   push:
@@ -20,9 +21,23 @@ jobs:
     name: Lint, typecheck and build
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: qubit_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       # Throwaway CI database (never a real environment).
-      DATABASE_URL: file:./db/ci.db
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qubit_ci?sslmode=disable
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
