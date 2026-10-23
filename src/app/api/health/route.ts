@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { withMeter } from "@/lib/qubit/telemetry-server";
 
 // ============================================================
 // Qubit One — deployment health probe (Phase 24, spec §23).
@@ -46,23 +47,29 @@ async function databaseCheck(): Promise<{
 }
 
 export async function GET() {
-  const database = await databaseCheck();
-  return NextResponse.json(
-    {
-      // The runtime answering this request IS the application
-      // liveness signal; per-dependency state lives under checks.
-      status: "ok",
-      service: "qubit-one",
-      checks: {
-        application: "pass",
-        database,
+  // Phase 25: request metering (real telemetry, failure-isolated). The health
+  // handler is parameterless, so a minimal synthetic Request supplies the
+  // metering context — every health probe invocation becomes a real
+  // availability signal in the telemetry store.
+  return withMeter(new Request("http://localhost/api/health", { method: "GET" }), "GET /api/health", async () => {
+    const database = await databaseCheck();
+    return NextResponse.json(
+      {
+        // The runtime answering this request IS the application
+        // liveness signal; per-dependency state lives under checks.
+        status: "ok",
+        service: "qubit-one",
+        checks: {
+          application: "pass",
+          database,
+        },
+        // Vercel injects the deployed commit SHA at runtime; on
+        // self-hosted runs there is no such variable and it stays null.
+        commit: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
+        uptimeSec: Math.round((Date.now() - PROCESS_STARTED_AT) / 1000),
+        timestamp: new Date().toISOString(),
       },
-      // Vercel injects the deployed commit SHA at runtime; on
-      // self-hosted runs there is no such variable and it stays null.
-      commit: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
-      uptimeSec: Math.round((Date.now() - PROCESS_STARTED_AT) / 1000),
-      timestamp: new Date().toISOString(),
-    },
-    { headers: { "Cache-Control": "no-store" } },
-  );
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  });
 }

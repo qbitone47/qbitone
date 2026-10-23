@@ -38,6 +38,9 @@ import { salesGet, type SalesSection } from "@/lib/qubit/sales-server";
 import { employees } from "@/lib/qubit/data";
 import type { MailMessage } from "@/lib/qubit/workspace-data";
 import { SCREENS } from "@/lib/qubit/screens";
+import { obsSearchSnapshot } from "@/lib/qubit/obs-server";
+// Phase 25: request metering (real telemetry, failure-isolated).
+import { withMeter } from "@/lib/qubit/telemetry-server";
 
 // ---------- response contract ----------
 
@@ -172,187 +175,208 @@ function salesGroup(
 // GET /api/search — min query length 2, else 400 bad_query.
 // ============================================================
 export async function GET(req: NextRequest) {
-  const actor = await identityFrom(req);
-  if (!actor.ok) return actor.response;
-  // Phase 21 (§22 / audit L3): search is high-frequency but still
-  // bounded — a generous per-user limit plus a max query length.
-  const gate = rateLimit(`search:${actor.userId}`, RATE_PROFILES.search.limit, RATE_PROFILES.search.windowMs);
-  if (!gate.allowed) return tooManyRequests(gate.retryAfterSec);
-  const started = Date.now();
-  const role = actor.role;
-  const q = (req.nextUrl.searchParams.get("q") ?? "").trim().toLowerCase();
-  if (q.length < 2) {
-    return NextResponse.json({ code: "bad_query", message: "Provide a search query of at least 2 characters." }, { status: 400 });
-  }
-  if (q.length > 120) {
-    return NextResponse.json({ code: "bad_query", message: "Search queries are limited to 120 characters." }, { status: 400 });
-  }
+  return withMeter(req, "GET /api/search", async () => {
+    const actor = await identityFrom(req);
+    if (!actor.ok) return actor.response;
+    // Phase 21 (§22 / audit L3): search is high-frequency but still
+    // bounded — a generous per-user limit plus a max query length.
+    const gate = rateLimit(`search:${actor.userId}`, RATE_PROFILES.search.limit, RATE_PROFILES.search.windowMs);
+    if (!gate.allowed) return tooManyRequests(gate.retryAfterSec);
+    const started = Date.now();
+    const role = actor.role;
+    const q = (req.nextUrl.searchParams.get("q") ?? "").trim().toLowerCase();
+    if (q.length < 2) {
+      return NextResponse.json({ code: "bad_query", message: "Provide a search query of at least 2 characters." }, { status: 400 });
+    }
+    if (q.length > 120) {
+      return NextResponse.json({ code: "bad_query", message: "Search queries are limited to 120 characters." }, { status: 400 });
+    }
 
-  const groups: SearchGroup[] = [];
-  const omitted: OmittedSource[] = [];
+    const groups: SearchGroup[] = [];
+    const omitted: OmittedSource[] = [];
 
-  // employees — the canonical identity fixture; every role may search the directory.
-  // Deep-link: employee-360 (screen 52) reads nav.params.employeeId and scopes content
-  // by role; company-directory (screen 50) reads no params, so it cannot deep-link.
-  const employeeGroup = safeGroup("employee", "Employees", omitted, "Employee source unavailable", () => ({
-    items: matchCap(employees, q, (e) => `${e.name} ${e.title} ${e.department}`, (e) => ({
-      id: e.id,
-      title: e.name,
-      subtitle: `${e.title} · ${e.department}`,
-      screen: screenIdOf("employee-360"),
-      params: { employeeId: e.id },
-    })),
-  }));
-  if (employeeGroup) groups.push(employeeGroup);
-
-  // tasks — listTasks() already scopes to the session user; the owner check is kept
-  // per §17 ("assignee or owner is SESSION_USER_ID") as an explicit authorization guard.
-  const taskGroup = safeGroup("task", "Tasks", omitted, "Task source unavailable", () => ({
-    items: matchCap(
-      listTasks().filter((t) => t.assigneeId === SESSION_USER_ID || t.ownerId === SESSION_USER_ID),
-      q,
-      (t) => `${t.title} ${t.detail}`,
-      (t) => ({
-        id: t.id,
-        title: t.title,
-        subtitle: `${t.status} · ${t.priority}`,
-        screen: screenIdOf("my-tasks"),
-        params: { taskId: t.id },
-      }),
-    ),
-  }));
-  if (taskGroup) groups.push(taskGroup);
-
-  // meetings — listMeetings(role) is participation-scoped server-side (organizer or
-  // invited participant); its scope note is surfaced verbatim on the group.
-  const meetingGroup = safeGroup("meeting", "Meetings", omitted, "Meeting source unavailable", () => {
-    const scoped = listMeetings(role);
-    const items = matchCap(scoped.meetings, q, (m) => `${m.title} ${m.agenda ?? ""} ${m.location}`, (m) => ({
-      id: m.id,
-      title: m.title,
-      subtitle: `${m.location} · ${m.status}`,
-      screen: screenIdOf("my-meetings"),
-      params: { meetingId: m.id },
+    // employees — the canonical identity fixture; every role may search the directory.
+    // Deep-link: employee-360 (screen 52) reads nav.params.employeeId and scopes content
+    // by role; company-directory (screen 50) reads no params, so it cannot deep-link.
+    const employeeGroup = safeGroup("employee", "Employees", omitted, "Employee source unavailable", () => ({
+      items: matchCap(employees, q, (e) => `${e.name} ${e.title} ${e.department}`, (e) => ({
+        id: e.id,
+        title: e.name,
+        subtitle: `${e.title} · ${e.department}`,
+        screen: screenIdOf("employee-360"),
+        params: { employeeId: e.id },
+      })),
     }));
-    return { items, note: scoped.note ?? undefined };
-  });
-  if (meetingGroup) groups.push(meetingGroup);
+    if (employeeGroup) groups.push(employeeGroup);
 
-  // mail — listMail(role, …) filters the session mailbox server-side. folder "all"
-  // searches the whole authorized mailbox (inbox/sent/drafts/archive) — still the
-  // session user's own store, never an authorization bypass. mail-inbox (screen 55)
-  // reads no nav.params, so mail rows navigate without params (no fake deep-link).
-  const mailGroup = safeGroup("mail", "Mail", omitted, "Mail source unavailable", () => ({
-    items: listMail(role, { q, folder: "all", limit: CAP }).items.slice(0, CAP).map((m) => ({
-      id: m.id,
-      title: m.subject || "(no subject)",
-      subtitle: `${mailFrom(m)} · ${m.folder}`,
-      screen: screenIdOf("mail-inbox"),
-    })),
-  }));
-  if (mailGroup) groups.push(mailGroup);
-
-  // approvals — queue + (where the boundary exposes it) decision history.
-  // For employee/sales-exec the boundary returns only their own submitted requests.
-  const approvalGroup = safeGroup("approval", "Approvals", omitted, "Approval source unavailable", () => {
-    const approvals = listApprovals(role);
-    const history = "history" in approvals && approvals.history ? approvals.history : [];
-    return {
+    // tasks — listTasks() already scopes to the session user; the owner check is kept
+    // per §17 ("assignee or owner is SESSION_USER_ID") as an explicit authorization guard.
+    const taskGroup = safeGroup("task", "Tasks", omitted, "Task source unavailable", () => ({
       items: matchCap(
-        [...approvals.queue, ...history],
+        listTasks().filter((t) => t.assigneeId === SESSION_USER_ID || t.ownerId === SESSION_USER_ID),
         q,
-        (a) => `${a.title} ${a.kind}`,
-        (a) => ({
-          id: a.id,
-          title: a.title,
-          subtitle: `${a.kind} · ${a.status}`,
-          screen: screenIdOf("my-approvals"),
-          params: { approvalId: a.id },
+        (t) => `${t.title} ${t.detail}`,
+        (t) => ({
+          id: t.id,
+          title: t.title,
+          subtitle: `${t.status} · ${t.priority}`,
+          screen: screenIdOf("my-tasks"),
+          params: { taskId: t.id },
         }),
       ),
-    };
-  });
-  if (approvalGroup) groups.push(approvalGroup);
+    }));
+    if (taskGroup) groups.push(taskGroup);
 
-  // sales — leads / opportunities / customers (accounts) / quotations via salesGet,
-  // which enforces the sales boundary internally (403 for hr-manager/employee).
-  // Row shapes are the WithRefs payloads documented in sales-server.ts
-  // (leadWithRefs / oppWithRefs / accountWithRefs / quotationWithRefs).
-  const leadGroup = salesGroup(
-    role, "leads", "lead", "Leads", q, omitted,
-    (r) => `${str(r, "name")} ${str(r, "company")} ${str(r, "contactPerson")} ${str(r, "industry")} ${str(r, "location")} ${str(r, "status")}`,
-    (r) => ({
-      id: str(r, "id"),
-      title: str(r, "name"),
-      subtitle: `${str(r, "company")} · ${str(r, "status")}`,
-      screen: screenIdOf("lead-detail"),
-      params: { leadId: str(r, "id") },
-    }),
-  );
-  if (leadGroup) groups.push(leadGroup);
+    // meetings — listMeetings(role) is participation-scoped server-side (organizer or
+    // invited participant); its scope note is surfaced verbatim on the group.
+    const meetingGroup = safeGroup("meeting", "Meetings", omitted, "Meeting source unavailable", () => {
+      const scoped = listMeetings(role);
+      const items = matchCap(scoped.meetings, q, (m) => `${m.title} ${m.agenda ?? ""} ${m.location}`, (m) => ({
+        id: m.id,
+        title: m.title,
+        subtitle: `${m.location} · ${m.status}`,
+        screen: screenIdOf("my-meetings"),
+        params: { meetingId: m.id },
+      }));
+      return { items, note: scoped.note ?? undefined };
+    });
+    if (meetingGroup) groups.push(meetingGroup);
 
-  const opportunityGroup = salesGroup(
-    role, "opportunities", "opportunity", "Opportunities", q, omitted,
-    (r) => {
-      const account = nested(r, "account");
-      return `${str(r, "name")} ${account ? str(account, "name") : ""} ${str(r, "stage")} ${str(r, "nextAction")}`;
-    },
-    (r) => {
-      const account = nested(r, "account");
+    // mail — listMail(role, …) filters the session mailbox server-side. folder "all"
+    // searches the whole authorized mailbox (inbox/sent/drafts/archive) — still the
+    // session user's own store, never an authorization bypass. mail-inbox (screen 55)
+    // reads no nav.params, so mail rows navigate without params (no fake deep-link).
+    const mailGroup = safeGroup("mail", "Mail", omitted, "Mail source unavailable", () => ({
+      items: listMail(role, { q, folder: "all", limit: CAP }).items.slice(0, CAP).map((m) => ({
+        id: m.id,
+        title: m.subject || "(no subject)",
+        subtitle: `${mailFrom(m)} · ${m.folder}`,
+        screen: screenIdOf("mail-inbox"),
+      })),
+    }));
+    if (mailGroup) groups.push(mailGroup);
+
+    // approvals — queue + (where the boundary exposes it) decision history.
+    // For employee/sales-exec the boundary returns only their own submitted requests.
+    const approvalGroup = safeGroup("approval", "Approvals", omitted, "Approval source unavailable", () => {
+      const approvals = listApprovals(role);
+      const history = "history" in approvals && approvals.history ? approvals.history : [];
       return {
+        items: matchCap(
+          [...approvals.queue, ...history],
+          q,
+          (a) => `${a.title} ${a.kind}`,
+          (a) => ({
+            id: a.id,
+            title: a.title,
+            subtitle: `${a.kind} · ${a.status}`,
+            screen: screenIdOf("my-approvals"),
+            params: { approvalId: a.id },
+          }),
+        ),
+      };
+    });
+    if (approvalGroup) groups.push(approvalGroup);
+
+    // sales — leads / opportunities / customers (accounts) / quotations via salesGet,
+    // which enforces the sales boundary internally (403 for hr-manager/employee).
+    // Row shapes are the WithRefs payloads documented in sales-server.ts
+    // (leadWithRefs / oppWithRefs / accountWithRefs / quotationWithRefs).
+    const leadGroup = salesGroup(
+      role, "leads", "lead", "Leads", q, omitted,
+      (r) => `${str(r, "name")} ${str(r, "company")} ${str(r, "contactPerson")} ${str(r, "industry")} ${str(r, "location")} ${str(r, "status")}`,
+      (r) => ({
         id: str(r, "id"),
         title: str(r, "name"),
-        subtitle: `${account ? str(account, "name") : "No account"} · ${str(r, "stage")}`,
-        screen: screenIdOf("opportunity-detail"),
-        params: { opportunityId: str(r, "id") },
-      };
-    },
-  );
-  if (opportunityGroup) groups.push(opportunityGroup);
+        subtitle: `${str(r, "company")} · ${str(r, "status")}`,
+        screen: screenIdOf("lead-detail"),
+        params: { leadId: str(r, "id") },
+      }),
+    );
+    if (leadGroup) groups.push(leadGroup);
 
-  // customer → "account-detail" (screen 78, Customer 360) reads nav.params.accountId.
-  const customerGroup = salesGroup(
-    role, "accounts", "customer", "Customers", q, omitted,
-    (r) => `${str(r, "name")} ${str(r, "industry")} ${str(r, "location")} ${str(r, "status")} ${str(r, "ownerName")}`,
-    (r) => ({
-      id: str(r, "id"),
-      title: str(r, "name"),
-      subtitle: `${str(r, "industry")} · ${str(r, "location")} · ${str(r, "status")}`,
-      screen: screenIdOf("account-detail"),
-      params: { accountId: str(r, "id") },
-    }),
-  );
-  if (customerGroup) groups.push(customerGroup);
+    const opportunityGroup = salesGroup(
+      role, "opportunities", "opportunity", "Opportunities", q, omitted,
+      (r) => {
+        const account = nested(r, "account");
+        return `${str(r, "name")} ${account ? str(account, "name") : ""} ${str(r, "stage")} ${str(r, "nextAction")}`;
+      },
+      (r) => {
+        const account = nested(r, "account");
+        return {
+          id: str(r, "id"),
+          title: str(r, "name"),
+          subtitle: `${account ? str(account, "name") : "No account"} · ${str(r, "stage")}`,
+          screen: screenIdOf("opportunity-detail"),
+          params: { opportunityId: str(r, "id") },
+        };
+      },
+    );
+    if (opportunityGroup) groups.push(opportunityGroup);
 
-  const quotationGroup = salesGroup(
-    role, "quotations", "quotation", "Quotations", q, omitted,
-    (r) => {
-      const account = nested(r, "account");
-      return `${str(r, "number")} ${account ? str(account, "name") : ""} ${str(r, "status")}`;
-    },
-    (r) => {
-      const account = nested(r, "account");
-      return {
+    // customer → "account-detail" (screen 78, Customer 360) reads nav.params.accountId.
+    const customerGroup = salesGroup(
+      role, "accounts", "customer", "Customers", q, omitted,
+      (r) => `${str(r, "name")} ${str(r, "industry")} ${str(r, "location")} ${str(r, "status")} ${str(r, "ownerName")}`,
+      (r) => ({
         id: str(r, "id"),
-        title: `${str(r, "number")} — ${account ? str(account, "name") : "Quotation"}`,
-        subtitle: str(r, "status"),
-        screen: screenIdOf("quotation-detail"),
-        params: { quotationId: str(r, "id") },
-      };
-    },
-  );
-  if (quotationGroup) groups.push(quotationGroup);
+        title: str(r, "name"),
+        subtitle: `${str(r, "industry")} · ${str(r, "location")} · ${str(r, "status")}`,
+        screen: screenIdOf("account-detail"),
+        params: { accountId: str(r, "id") },
+      }),
+    );
+    if (customerGroup) groups.push(customerGroup);
 
-  // documents — the workspace store holds documents, but no list/read export exists
-  // (workspace-server exposes only documentAction mutations). Honest omission — no
-  // exports were added to shared server files for this route.
-  omitted.push({ type: "document", reason: "Source not exposed for search" });
+    const quotationGroup = salesGroup(
+      role, "quotations", "quotation", "Quotations", q, omitted,
+      (r) => {
+        const account = nested(r, "account");
+        return `${str(r, "number")} ${account ? str(account, "name") : ""} ${str(r, "status")}`;
+      },
+      (r) => {
+        const account = nested(r, "account");
+        return {
+          id: str(r, "id"),
+          title: `${str(r, "number")} — ${account ? str(account, "name") : "Quotation"}`,
+          subtitle: str(r, "status"),
+          screen: screenIdOf("quotation-detail"),
+          params: { quotationId: str(r, "id") },
+        };
+      },
+    );
+    if (quotationGroup) groups.push(quotationGroup);
 
-  return NextResponse.json({
-    ok: true,
-    q,
-    groups,
-    omitted,
-    tookMs: Date.now() - started,
+    // documents — the workspace store holds documents, but no list/read export exists
+    // (workspace-server exposes only documentAction mutations). Honest omission — no
+    // exports were added to shared server files for this route.
+    omitted.push({ type: "document", reason: "Source not exposed for search" });
+
+    // Phase 25 (§23): observability entities — administrators only (the role comes
+    // from the signed session cookie, never a client header). All items map to
+    // existing operational screens; nothing here duplicates their management UI.
+    if (role === "administrator") {
+      try {
+        const obs = obsSearchSnapshot();
+        const obsHits: SearchItem[] = [
+          ...matchCap(obs.alerts, q, (a) => `${a.name} ${a.severity} ${a.status}`, (a) => ({ id: a.id, title: a.name, subtitle: `Alert · ${a.severity} · ${a.status}`, screen: screenIdOf("p23-alert-center") })),
+          ...matchCap(obs.incidents, q, (i) => `${i.title} ${i.severity} ${i.status}`, (i) => ({ id: i.id, title: i.title, subtitle: `Incident · ${i.severity} · ${i.status}`, screen: screenIdOf("p22-incident-center") })),
+          ...matchCap(obs.runbooks, q, (r) => `${r.title} ${r.incidentType}`, (r) => ({ id: r.id, title: r.title, subtitle: `Runbook · ${r.incidentType}`, screen: screenIdOf("p23-operational-runbooks") })),
+          ...matchCap(obs.slos, q, (s) => `${s.name} ${s.kind}`, (s) => ({ id: s.id, title: s.name, subtitle: `SLO · ${s.kind} · target ${s.target}`, screen: screenIdOf("p23-slo-management") })),
+          ...matchCap(obs.alertRules, q, (r) => `${r.name} ${r.metric}`, (r) => ({ id: r.id, title: r.name, subtitle: `Alert rule · ${r.metric}${r.enabled ? "" : " · disabled"}`, screen: screenIdOf("p23-alert-rules") })),
+        ].slice(0, CAP);
+        if (obsHits.length > 0) groups.push({ type: "task", label: "Observability", items: obsHits, note: "Operational records from the observability registries (administrator scope)." });
+      } catch {
+        omitted.push({ type: "task", reason: "Observability source unavailable" });
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      q,
+      groups,
+      omitted,
+      tookMs: Date.now() - started,
+    });
   });
 }

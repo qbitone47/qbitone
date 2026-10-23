@@ -1,17 +1,24 @@
 // ============================================================
 // Qubit One — Phase 23 · Enterprise Observability, SRE &
-// Operational Intelligence. obs-server.ts — telemetry correlation
-// layer over the REAL signals this system already produces.
+// Operational Intelligence — EXTENDED in Phase 25 with the real
+// telemetry pipeline (telemetry-server.ts): request metering,
+// structured application logs, client vitals/errors, enforced
+// retention and a role-based observability access matrix.
 //
-// GOVERNANCE (Phase 23 spec §33 — ABSOLUTE):
-//   · Every metric is measured live or derived from the existing
-//     enterprise audit trail / registries. Absent capability →
-//     explicit "Not configured". Nothing is fabricated.
-//   · The Logs Explorer IS the enterprise audit trail read through
-//     an observability lens — one audit system, zero duplication.
+// GOVERNANCE (Phase 23 spec §33 + Phase 25 spec — ABSOLUTE):
+//   · Every metric is measured live, derived from the existing
+//     enterprise audit trail / registries, or computed from real
+//     Phase 25 telemetry. Absent capability → explicit
+//     "Not configured" / "Insufficient data". Nothing is fabricated.
+//   · The Logs Explorer is ONE stream: the enterprise audit trail
+//     PLUS the Phase 25 structured telemetry — two real sources,
+//     one view, zero duplication.
 //   · Probes are imported from ops-server (Phase 22) — one probe
 //     implementation, zero duplicate telemetry logic.
-//   · All sections administrator-only, fail-closed, audited.
+//   · Access is fail-closed and server-enforced: administrators by
+//     default, delegated read grants via the audited access matrix
+//     (P25-21); the Logs Explorer stays administrator-only and all
+//     mutations remain administrator-only.
 //   · AI (P23-23) runs through the Phase 15 ai-engine with
 //     deterministic fallback analysis and Fact/Inference/
 //     Recommendation/Evidence labeling.
@@ -23,6 +30,21 @@ import { SESSION_USER_ID } from "@/lib/qubit/auth-server";
 import { runtimeEnv, dbProbe, selfProbe, store as opsStore } from "@/lib/qubit/ops-server";
 import { platformVitalsSnapshot } from "@/lib/qubit/platform-server";
 import { runCompletion, parseJsonObject, AI_PROVIDER_LABEL } from "@/lib/qubit/ai-engine";
+import {
+  availabilityStats,
+  clientStats,
+  configureTelemetry,
+  errorGroups,
+  evaluateSloReal,
+  lastPruneSnapshot,
+  pruneTelemetry,
+  readTelemetry,
+  recordTelemetry,
+  requestSeries,
+  requestStats,
+  telemetryConfigSnapshot,
+  telemetryPersistenceStatus,
+} from "@/lib/qubit/telemetry-server";
 import type { WorkspaceRole } from "@/lib/qubit/workspace-server";
 
 type Ok<T> = { ok: true; data: T };
@@ -36,7 +58,9 @@ export type ObsSection =
   | "api-performance" | "database-performance" | "web-performance" | "errors"
   | "alerts" | "alert-rules" | "slo" | "scorecard" | "capacity" | "infrastructure"
   | "deployment-impact" | "changes" | "correlation" | "runbooks" | "oncall"
-  | "reports" | "ai-insights" | "settings";
+  | "reports" | "ai-insights" | "settings"
+  // Phase 25 additions — capabilities without a Phase 23 home:
+  | "availability" | "activity" | "access" | "retention";
 
 const OBS_SECTIONS: readonly ObsSection[] = [
   "home", "metrics", "logs", "traces", "service-map", "dependencies",
@@ -44,10 +68,60 @@ const OBS_SECTIONS: readonly ObsSection[] = [
   "alerts", "alert-rules", "slo", "scorecard", "capacity", "infrastructure",
   "deployment-impact", "changes", "correlation", "runbooks", "oncall",
   "reports", "ai-insights", "settings",
+  "availability", "activity", "access", "retention",
 ];
+
+/** Sections delegable via the P25-21 access matrix. Logs stay administrator-only (sensitive). */
+const DELEGABLE_SECTIONS: readonly ObsSection[] = OBS_SECTIONS.filter((s) => s !== "logs");
 
 export function obsSectionFor(s: string | null): ObsSection | null {
   return !!s && (OBS_SECTIONS as readonly string[]).includes(s) ? (s as ObsSection) : null;
+}
+
+// ---- P25-21 · Observability access model (server-enforced, fail-closed) ----
+export interface ObsAccessEntry {
+  role: WorkspaceRole;
+  read: "all" | readonly string[];
+  updatedAt: number;
+  updatedBy: string | null;
+}
+
+function defaultAccess(): Record<WorkspaceRole, ObsAccessEntry> {
+  const now = Date.now();
+  return {
+    administrator: { role: "administrator", read: "all", updatedAt: now, updatedBy: null },
+    "dept-head": { role: "dept-head", read: [], updatedAt: now, updatedBy: null },
+    "sales-exec": { role: "sales-exec", read: [], updatedAt: now, updatedBy: null },
+    "hr-manager": { role: "hr-manager", read: [], updatedAt: now, updatedBy: null },
+    employee: { role: "employee", read: [], updatedAt: now, updatedBy: null },
+  };
+}
+
+/**
+ * GET gate (Phase 25): administrators hold every section; other roles only
+ * the sections explicitly granted through the audited P25-21 matrix. The
+ * Logs Explorer is administrator-only regardless of grants (sensitive
+ * diagnostics). Denials are audited.
+ */
+function requireObsRead(role: WorkspaceRole, section: ObsSection): Result<never> | null {
+  if (role === "administrator") return null;
+  if (section === "logs") {
+    writeAudit({
+      actor: "obs-access-gate", actorId: SESSION_USER_ID,
+      action: "obs.access.denied", resource: `Observability · ${section}`, result: "Blocked", severity: "High",
+      context: `Role '${role}' attempted the Logs Explorer — administrator-only (sensitive diagnostics).`,
+    });
+    return fail(403, "obs_admin_required", "The Logs Explorer is restricted to administrators — sensitive diagnostics are not delegable. This denial is recorded in the audit trail.");
+  }
+  const grant = store().accessMatrix[role];
+  const allowed = grant?.read === "all" || (Array.isArray(grant?.read) && grant.read.includes(section));
+  if (allowed) return null;
+  writeAudit({
+    actor: "obs-access-gate", actorId: SESSION_USER_ID,
+    action: "obs.access.denied", resource: `Observability · ${section}`, result: "Blocked", severity: "Warning",
+    context: `Role '${role}' has no read grant for this observability section (P25-21 matrix).`,
+  });
+  return fail(403, "obs_access_required", "Your role has no read grant for this observability section. Access is enforced server-side from the signed session cookie; denials are recorded in the audit trail.");
 }
 
 function requireObsAdmin(role: WorkspaceRole, resource: string): Result<never> | null {
@@ -55,9 +129,9 @@ function requireObsAdmin(role: WorkspaceRole, resource: string): Result<never> |
   writeAudit({
     actor: "obs-admin-gate", actorId: SESSION_USER_ID,
     action: "obs.access.denied", resource, result: "Blocked", severity: "High",
-    context: `Role '${role}' attempted an administrator-only observability section.`,
+    context: `Role '${role}' attempted an administrator-only observability mutation.`,
   });
-  return fail(403, "obs_admin_required", "Observability is administrator-only. The boundary is enforced server-side and this denial is recorded in the audit trail.");
+  return fail(403, "obs_admin_required", "Observability mutations are administrator-only. The boundary is enforced server-side and this denial is recorded in the audit trail.");
 }
 
 const actorOf = (role: WorkspaceRole) => `${SESSION_USER_ID} (${role})`;
@@ -103,13 +177,14 @@ interface ObsStore {
   runbooks: Runbook[];
   oncall: OncallAssignment[];
   settings: ObsSettings;
+  accessMatrix: Record<WorkspaceRole, ObsAccessEntry>;
 }
 const g = globalThis as unknown as { __qubitObsStore?: ObsStore };
 function store(): ObsStore {
   if (!g.__qubitObsStore) {
     const now = Date.now();
     g.__qubitObsStore = {
-      alertRules: [], alerts: [], slos: [],
+      alertRules: [], alerts: [], slos: [], accessMatrix: defaultAccess(),
       // Authored runbook library for THIS architecture — documentation, not telemetry.
       runbooks: [
         { id: "RB-DB-01", title: "Database unavailable", incidentType: "database-outage",
@@ -186,20 +261,22 @@ const CHANGE_ACTIONS = ["ops.flag.", "ops.config.", "ops.maintenance.", "ops.rel
 // ============================================================
 // GET payloads
 // ============================================================
-export async function obsGet(role: WorkspaceRole, section: ObsSection): Promise<Result<Record<string, unknown>>> {
-  const gate = requireObsAdmin(role, `Observability · ${section}`);
+export async function obsGet(role: WorkspaceRole, section: ObsSection, query?: URLSearchParams): Promise<Result<Record<string, unknown>>> {
+  const gate = requireObsRead(role, section);
   if (gate) return gate;
+  const q: Record<string, unknown> = {};
+  if (query) for (const [k, v] of query.entries()) q[k] = v;
   switch (section) {
     case "home": return ok(await homePayload());
     case "metrics": return ok(await metricsPayload());
-    case "logs": return ok(logsPayload({}));
+    case "logs": return ok(await logsPayload(q));
     case "traces": return ok(tracesPayload());
     case "service-map": return ok(await serviceMapPayload());
     case "dependencies": return ok(await dependenciesPayload());
-    case "api-performance": return ok(apiPerformancePayload());
+    case "api-performance": return ok(await apiPerformancePayload());
     case "database-performance": return ok(await databasePerformancePayload());
-    case "web-performance": return ok(webPerformancePayload());
-    case "errors": return ok(errorsPayload());
+    case "web-performance": return ok(await webPerformancePayload());
+    case "errors": return ok(await errorsPayload());
     case "alerts": return ok(alertsPayload());
     case "alert-rules": return ok(alertRulesPayload());
     case "slo": return ok(await sloPayload());
@@ -208,16 +285,21 @@ export async function obsGet(role: WorkspaceRole, section: ObsSection): Promise<
     case "infrastructure": return ok(await infrastructurePayload());
     case "deployment-impact": return ok(await deploymentImpactPayload());
     case "changes": return ok(changesPayload());
-    case "correlation": return ok(await correlationPayload({}));
+    case "correlation": return ok(await correlationPayload(q));
     case "runbooks": return ok(runbooksPayload());
     case "oncall": return ok(oncallPayload());
     case "reports": return ok(await reportPayload(null, null));
     case "ai-insights": return ok(await aiInsightsPayload());
     case "settings": return ok(settingsPayload());
+    // ---- Phase 25 sections ----
+    case "availability": return ok(await availabilityPayload());
+    case "activity": return ok(await activityPayload(q));
+    case "access": return ok(accessPayload());
+    case "retention": return ok(await retentionPayload());
   }
 }
 
-// ---- P23-01 · Observability Home ----
+// ---- P23-01 / P25-01 · Observability Home ----
 async function homePayload() {
   const env = runtimeEnv();
   const [dbP, apiP] = await Promise.all([dbProbe(), selfProbe()]);
@@ -228,6 +310,9 @@ async function homePayload() {
   const openIncidents = ops.incidents.filter((i) => i.status !== "resolved" && i.status !== "post-incident-review");
   const triggeredAlerts = store().alerts.filter((a) => a.status === "Triggered" || a.status === "Acknowledged");
   const failures = recent.filter((e) => e.result === "Failure").length;
+  // Phase 25: real request telemetry (recorded by the API metering layer).
+  const [stats, avail, client] = await Promise.all([requestStats(3_600_000), availabilityStats(86_400_000), clientStats(3_600_000)]);
+  const tel = telemetryPersistenceStatus();
   return {
     overall: dbP.health === "healthy" && apiP.health === "healthy" && openIncidents.length === 0 ? "Healthy" : dbP.health === "healthy" && apiP.health !== "unavailable" ? "Degraded" : "Attention required",
     environment: env.vercelEnv ?? "runtime",
@@ -235,27 +320,38 @@ async function homePayload() {
     signals: {
       database: { health: dbP.health, latencyMs: dbP.latencyMs, note: dbP.note },
       api: { health: apiP.health, latencyMs: apiP.latencyMs, note: apiP.note },
-      availability: { value: null as number | null, note: "Not configured — no external availability monitor (see P22-10)." },
-      errorRate: { value: null as number | null, note: "Not configured — no request-level error counter. Real audit failures in the last hour are shown below." },
+      availability: avail.requestSuccessPct != null
+        ? { value: avail.requestSuccessPct, note: `Measured from ${avail.requests} real request(s) over the last 24h — ${avail.serverErrors} returned 5xx. ${avail.label}` }
+        : { value: null as number | null, note: `Insufficient data — ${avail.label}` },
+      errorRate: stats.errorRatePct != null
+        ? { value: stats.errorRatePct, note: `${stats.errors} of ${stats.total} requests in the last hour returned 5xx or failed (request-level telemetry, Phase 25).` }
+        : { value: null as number | null, note: `Insufficient data — no request-level telemetry recorded in the last hour yet. ${stats.sampleLabel}` },
+      requestVolume: { value: stats.total, note: stats.sampleLabel },
+      clientErrorsLastHour: client.jsErrors,
+      telemetry: { persistence: tel.persistence, note: tel.persistenceLabel },
       auditFailuresLastHour: failures,
       auditEventsLastHour: recent.length,
-      sloCompliance: { value: null as string | null, note: store().slos.length ? "SLOs defined — historical compliance requires telemetry retention (Not configured)." : "No SLOs configured (P23-13)." },
+      sloCompliance: { value: null as string | null, note: store().slos.length ? "SLOs defined — compliance is computed from real telemetry on the SLO screen (P23-13)." : "No SLOs configured (P23-13)." },
     },
     activeIncidents: openIncidents.map((i) => ({ id: i.id, severity: i.severity, title: i.title, status: i.status, startedAt: i.startedAt })),
     activeAlerts: triggeredAlerts.map((a) => ({ id: a.id, severity: a.severity, name: a.ruleName, status: a.status, triggeredAt: a.triggeredAt })),
     deployment: { onVercel: env.onVercel, commit: env.commitSha, branch: env.commitBranch, note: "Full lifecycle in P22-02 Deployment Status (VERCEL_TOKEN enables live API)." },
     criticalEvents: events.filter((e) => e.severity === "Critical" || e.severity === "High").slice(0, 6).map((e) => ({ ts: e.ts, action: e.action, resource: e.resource, severity: e.severity, result: e.result, context: e.context?.slice(0, 120) })),
-    sourceNote: "Every value measured live (probes) or derived from the enterprise audit trail and governance registries. Absent telemetry is labeled, never invented.",
+    sourceNote: "Every value is measured live (probes), derived from the enterprise audit trail and governance registries, or computed from real Phase 25 request telemetry. Absent telemetry is labeled, never invented.",
   };
 }
 
-// ---- P23-02 · Metrics Explorer ----
+// ---- P23-02 / P25-02 · Metrics Explorer ----
 async function metricsPayload() {
   const [dbP, apiP] = await Promise.all([dbProbe(), selfProbe()]);
   const mem = process.memoryUsage();
   const events = auditEvents(300);
   const hourAgo = Date.now() - 3_600_000;
   const recent = events.filter((e) => e.ts >= hourAgo);
+  // Phase 25: real request telemetry + client telemetry + one real series.
+  const [stats, client, series] = await Promise.all([requestStats(3_600_000), clientStats(3_600_000), requestSeries(3_600_000, 12)]);
+  const tel = telemetryPersistenceStatus();
+  const lcpMedians = client.perScreen.map((s) => s.lcp).filter((v): v is number => typeof v === "number").sort((a, b) => a - b);
   return {
     metrics: [
       { key: "db-latency", label: "Database latency", unit: "ms", value: dbP.latencyMs, health: dbP.health, note: "Live SELECT 1 round-trip (single measurement)." },
@@ -266,34 +362,92 @@ async function metricsPayload() {
       { key: "audit-rate", label: "Audit events / last hour", unit: "events", value: recent.length, health: "healthy", note: "Derived from the enterprise audit trail timestamps." },
       { key: "audit-failures", label: "Audit failures / last hour", unit: "events", value: recent.filter((e) => e.result === "Failure").length, health: "healthy", note: "Derived from the enterprise audit trail." },
       { key: "open-incidents", label: "Open incidents", unit: "count", value: opsStore().incidents.filter((i) => i.status !== "resolved" && i.status !== "post-incident-review").length, health: "healthy", note: "From the incident registry (P22-23)." },
-      { key: "request-rate", label: "Request rate", unit: "req/s", value: null, health: "not-configured", note: "Not configured — no request metering middleware." },
+      // ---- Phase 25: request-level and client-level metrics (real) ----
+      { key: "request-count", label: "Requests · last hour", unit: "requests", value: stats.total, health: "healthy", note: stats.sampleLabel },
+      { key: "request-error-rate", label: "Request error rate · last hour", unit: "%", value: stats.errorRatePct, health: stats.errorRatePct == null ? "not-configured" : stats.errorRatePct > 5 ? "degraded" : "healthy", note: stats.errorRatePct == null ? stats.sampleLabel : `${stats.errors} erroring request(s) of ${stats.total}.` },
+      { key: "api-p95-latency", label: "API p95 latency · last hour", unit: "ms", value: stats.p95, health: stats.p95 == null ? "not-configured" : stats.p95 > 2000 ? "degraded" : "healthy", note: stats.p95 == null ? stats.sampleLabel : `p50 ${stats.p50 ?? "—"} ms · p99 ${stats.p99 ?? "—"} ms — computed from recorded request durations.` },
+      { key: "client-js-errors", label: "Client JS errors · last hour", unit: "errors", value: client.jsErrors, health: client.jsErrors > 0 ? "degraded" : "healthy", note: "Real window.onerror / unhandledrejection reports ingested from Qubit One clients." },
+      { key: "client-vitals", label: "Client vital samples · last hour", unit: "samples", value: client.vitalsSamples, health: "healthy", note: "Real browser vitals ingested via POST /api/telemetry." },
+      { key: "client-lcp-median", label: "Client LCP · median (ms)", unit: "ms", value: lcpMedians.length ? Math.round(lcpMedians.reduce((a, b) => a + b, 0) / lcpMedians.length) : null, health: lcpMedians.length ? "healthy" : "not-configured", note: lcpMedians.length ? "Median of per-screen LCP medians in the window." : "Insufficient data — no client vitals recorded in the window." },
       { key: "cpu", label: "CPU utilization", unit: "%", value: null, health: "not-configured", note: "Not available on serverless — the platform does not expose per-instance CPU to the app." },
       { key: "queue-depth", label: "Queue depth", unit: "items", value: null, health: "not-configured", note: "Not configured — no queue infrastructure (intentional)." },
       { key: "sessions", label: "Active sessions", unit: "count", value: null, health: "not-configured", note: "Sessions are stateless signed cookies — no server-side session counter exists." },
     ],
-    timeRangeNote: "Values are point-in-time measurements taken when this section loads. Historical series require a metrics backend (Not configured) — charts of non-existent history are deliberately not drawn.",
-    sourceNote: "Live probes + process metrics + audit derivation only.",
+    series: {
+      label: "Requests & errors · last hour (12 real buckets)",
+      buckets: series,
+      note: "Computed from real request events in the Phase 25 telemetry store. Empty buckets are real zeros, not gaps; the store keeps " + `${telemetryConfigSnapshot().telemetryRetentionDays}-day retention (P25-22).`,
+    },
+    persistence: { state: tel.persistence, note: tel.persistenceLabel },
+    timeRangeNote: "Point-in-time probes are measured when this section loads. Request/client series cover the last hour from the Phase 25 telemetry store; older history follows the enforced retention policy rather than being invented.",
+    sourceNote: "Live probes + process metrics + audit derivation + Phase 25 request/client telemetry only.",
   };
 }
 
-// ---- P23-03 · Logs Explorer (audit trail as the structured log stream) ----
-function logsPayload(_q: Record<string, unknown>) {
-  const events = auditEvents(400);
+// ---- P23-03 / P25-03 · Logs Explorer (audit trail + Phase 25 structured telemetry) ----
+interface MergedLogEvent {
+  id: string; ts: number; time: string; severity: string; level: string; service: string;
+  source: "audit" | "telemetry"; kind: string; actor: string | null; action: string | null;
+  resource: string | null; result: string | null; correlationId: string | null; requestId: string | null;
+  method: string | null; status: number | null; durationMs: number | null; screen: string | null;
+  release: string | null; message: string | null;
+}
+
+async function logsPayload(q: Record<string, unknown>) {
+  const text = typeof q.q === "string" ? q.q.toLowerCase().slice(0, 120) : null;
+  const level = typeof q.level === "string" && ["debug", "info", "warn", "error"].includes(q.level) ? q.level : null;
+  const stream = typeof q.source === "string" && ["audit", "telemetry"].includes(q.source) ? q.source : null;
+  const route = typeof q.route === "string" ? q.route.slice(0, 120) : null;
+  const requestId = typeof q.requestId === "string" ? q.requestId.slice(0, 64) : null;
+  const sinceMs = Number(q.sinceMs) || null;
+
+  const auditList: MergedLogEvent[] = auditEvents(400)
+    .filter((e) => {
+      if (stream === "telemetry") return false;
+      if (sinceMs && e.ts < sinceMs) return false;
+      if (level && e.severity.toLowerCase() !== level) return false;
+      if (requestId && e.correlationId !== requestId) return false;
+      const hay = `${e.context ?? ""} ${e.action} ${e.resource} ${e.actor}`.toLowerCase();
+      if (route && !hay.includes(route.toLowerCase())) return false;
+      if (text && !hay.includes(text)) return false;
+      return true;
+    })
+    .map((e) => ({
+      id: e.id, ts: e.ts, time: e.time, severity: e.severity, level: e.severity.toLowerCase(), service: e.source,
+      source: "audit" as const, kind: "audit", actor: e.actor, action: e.action, resource: e.resource,
+      result: e.result, correlationId: e.correlationId, requestId: e.correlationId, method: null,
+      status: null, durationMs: null, screen: null, release: null, message: e.context,
+    }));
+
+  const tel = await readTelemetry({
+    kinds: ["request", "log", "error", "probe", "client-vital", "client-error", "client-route", "client-request"],
+    sinceMs: sinceMs ?? undefined, level: level as "debug" | "info" | "warn" | "error" | null,
+    routeContains: route, requestId, q: text, limit: 300,
+  });
+  const telList: MergedLogEvent[] = (stream === "audit" ? [] : tel.events).map((e) => ({
+    id: e.id, ts: e.ts, time: new Date(e.ts).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }),
+    severity: e.level === "error" ? "High" : e.level === "warn" ? "Warning" : "Info",
+    level: e.level, service: e.kind, source: "telemetry" as const, kind: e.kind,
+    actor: e.source === "client" ? "client browser" : "application", action: e.kind,
+    resource: e.route ?? e.screen, result: e.status != null ? String(e.status) : e.level === "error" ? "Failure" : "Success",
+    correlationId: e.requestId, requestId: e.requestId, method: e.method, status: e.status,
+    durationMs: e.durationMs, screen: e.screen, release: e.release, message: e.message ?? e.errorCode,
+  }));
+
+  const merged = [...auditList, ...telList].sort((a, b) => b.ts - a.ts).slice(0, 300);
   return {
     stream: {
-      kind: "audit-trail",
-      note: "This log stream IS the enterprise audit trail — the system's one structured event log (server-enforced scope). Application stdout is not shipped to any log store: 'Not configured'.",
+      kind: "audit-trail + application telemetry",
+      note: "TWO real streams, ONE view (Phase 25): the enterprise audit trail (governance events) and Phase 25 structured telemetry (request metering, application logs, server errors, probes, client vitals/errors). Application stdout is not shipped anywhere: 'Not configured' as a transport — but the events below are real, redacted and stored.",
     },
-    events: events.map((e) => ({
-      id: e.id, ts: e.ts, time: e.time, severity: e.severity, service: e.source,
-      actor: e.actor, action: e.action, resource: e.resource,
-      result: e.result, correlationId: e.correlationId, ipMasked: e.ipMasked,
-      message: e.context,
-    })),
-    redaction: { active: true, rules: store().settings.redactionRules, note: "Audit events never contain secret values by construction; redaction rules are enforced at the source (writeAudit contract)." },
+    events: merged,
+    counts: { audit: stream === "telemetry" ? 0 : auditList.length, telemetry: stream === "audit" ? 0 : telList.length },
+    store: { source: tel.store, persistence: tel.persistence.persistence, note: tel.persistence.persistenceLabel },
+    filters: { applied: { q: text, level, source: stream, route, requestId, sinceMs }, supported: { level: ["debug", "info", "warn", "error"], source: ["audit", "telemetry"], note: "q / route / requestId / sinceMs are honored server-side." } },
+    redaction: { active: true, rules: store().settings.redactionRules, note: "Redaction runs at the SOURCE for both streams: secret-shaped values are masked before storage; secret-named keys never persist a value." },
     savedViews: [] as unknown[],
     savedViewsNote: "Saved views registry is empty — views an administrator saves appear here (in-process).",
-    sourceNote: "Real events from the ONE audit trail. Sensitive values are never present to redact.",
+    sourceNote: "Real events from the audit trail + Phase 25 telemetry store. Sensitive values are redacted before they exist.",
   };
 }
 
@@ -349,12 +503,13 @@ async function dependenciesPayload() {
       { name: "GitHub REST API (actions)", status: env.hasGithubToken ? "healthy" : "not-configured", latencyMs: null, lastSuccessAt: null, lastFailureAt: null, availability: null, availabilityNote: "Requires GITHUB_TOKEN for measured calls.", configState: env.hasGithubToken ? "token present" : "GITHUB_TOKEN not configured", note: `Repository ${"qbitone47/qbitone"}.` },
       { name: "AI gateway (z-ai)", status: env.onVercel ? "unavailable" : "degraded", latencyMs: null, lastSuccessAt: null, lastFailureAt: null, availability: null, availabilityNote: "Not measured.", configState: "sandbox backend", note: env.onVercel ? "Unreachable from serverless — fallbacks active." : "Reachable in sandbox." },
       { name: "Email / WhatsApp / Calendar / Storage / Payments", status: "not-configured", latencyMs: null, lastSuccessAt: null, lastFailureAt: null, availability: null, availabilityNote: "Not measured.", configState: "no credentials", note: "No provider credentials exist in this environment." },
+      { name: "Telemetry store (Phase 25)", status: telemetryPersistenceStatus().persistence === "ok" ? "healthy" : "degraded", latencyMs: null, lastSuccessAt: null, lastFailureAt: null, availability: null, availabilityNote: "Measured indirectly via persistence status.", configState: "DATABASE_URL configured", note: telemetryPersistenceStatus().persistenceLabel },
     ],
     sourceNote: "Statuses derived from live probes and credential presence only.",
   };
 }
 
-// ---- P23-07 · API Performance ----
+// ---- P23-07 / P25-05 · API Performance ----
 const API_ENDPOINTS = [
   { endpoint: "/api/auth/session", method: "POST", service: "Authentication" },
   { endpoint: "/api/ops?section=health", method: "GET", service: "Operations" },
@@ -363,24 +518,50 @@ const API_ENDPOINTS = [
   { endpoint: "/api/executive", method: "GET", service: "CEO Command Center" },
   { endpoint: "/api/search?q=report", method: "GET", service: "Global Search" },
 ];
-function apiPerformancePayload() {
+async function apiPerformancePayload() {
+  // Phase 25: real server-observed per-route statistics from request metering.
+  const [hour, day] = await Promise.all([requestStats(3_600_000), requestStats(86_400_000)]);
   return {
     endpoints: API_ENDPOINTS,
+    live: {
+      hour: { total: hour.total, errorRatePct: hour.errorRatePct, p50: hour.p50, p95: hour.p95, p99: hour.p99, sampleLabel: hour.sampleLabel },
+      day: { total: day.total, errorRatePct: day.errorRatePct, p50: day.p50, p95: day.p95, p99: day.p99, sampleLabel: day.sampleLabel },
+      perRoute: hour.perRoute,
+      note: "Server-observed request metering (Phase 25 withMeter wrapper): every API request records route, method, status, duration and request id. Percentiles use nearest-rank over recorded durations; with fewer than 10 samples they are withheld as 'Insufficient data' rather than estimated.",
+    },
+    percentiles: hour.total >= 10 ? { p50: hour.p50, p95: hour.p95, p99: hour.p99, basis: `${hour.total} recorded requests in the last hour` } : null,
+    percentilesNote: hour.total >= 10 ? hour.sampleLabel : `Insufficient data — ${hour.sampleLabel}`,
     probeResults: null as unknown,
-    percentiles: null as unknown,
-    percentilesNote: "p50/p95/p99 require request-level telemetry aggregation (Not configured). A point-in-time probe reports REAL single-request latencies; percentiles of one request do not exist and are not shown.",
     probeNote: "'Probe endpoints' executes REAL server-side requests now. Protected endpoints answer 401 without a session — that is healthy (reachable + auth enforced).",
     lastProbeAt: null as number | null,
-    sourceNote: "Endpoint manifest from the real route tree; latencies only from explicit live probes.",
+    sourceNote: "Endpoint manifest from the real route tree + real request-level telemetry from the Phase 25 metering layer.",
   };
 }
 
-// ---- P23-08 · Database Performance ----
+// ---- P23-08 / P25-06 · Database Performance ----
 async function databasePerformancePayload() {
   const dbP = await dbProbe();
+  // Phase 25: every probe measurement becomes a real telemetry event —
+  // over time this builds a REAL probe history instead of single snapshots.
+  recordTelemetry({
+    kind: "probe", level: dbP.health === "healthy" ? "info" : "error",
+    route: "db SELECT 1", status: dbP.health === "healthy" ? 200 : 500,
+    durationMs: dbP.latencyMs, message: dbP.note, service: "database",
+  });
+  const probeHistory = (await readTelemetry({ kinds: ["probe"], sinceMs: Date.now() - 86_400_000, limit: 40 }))
+    .events.filter((e) => (e.route ?? "").startsWith("db"))
+    .map((e) => ({ ts: e.ts, durationMs: e.durationMs, status: e.status }));
+  const dbDurations = probeHistory.map((p) => p.durationMs).filter((d): d is number => typeof d === "number").sort((a, b) => a - b);
   const events = auditEvents(300).filter((e) => e.result === "Failure");
   return {
     probe: { health: dbP.health, latencyMs: dbP.latencyMs, note: dbP.note },
+    probeHistory: {
+      samples: probeHistory,
+      count: probeHistory.length,
+      p50: dbDurations.length >= 3 ? dbDurations[Math.ceil(dbDurations.length * 0.5) - 1] : null,
+      p95: dbDurations.length >= 3 ? dbDurations[Math.ceil(dbDurations.length * 0.95) - 1] : null,
+      note: probeHistory.length >= 3 ? `${probeHistory.length} recorded SELECT 1 measurements in the last 24h (each probe run by an operational section records one real sample).` : `Insufficient data — ${probeHistory.length} recorded probe sample(s). History accumulates as operational sections run; nothing is interpolated.`,
+    },
     slowQueries: null as unknown, slowQueriesNote: "Not configured — pg_stat_statements / Supabase query insights are not exposed to the application.",
     connectionUsage: null as unknown, connectionUsageNote: "Not available without Supabase management APIs.",
     transactionDuration: null as unknown, transactionDurationNote: "Not instrumented.",
@@ -388,27 +569,38 @@ async function databasePerformancePayload() {
     databaseSize: null as unknown, databaseSizeNote: "Not available without management APIs.",
     queryErrors: { recentCount: events.length, note: "Failure events in the enterprise audit trail (all causes) — not a SQL error counter.", sample: events.slice(0, 5).map((e) => ({ ts: e.ts, action: e.action, resource: e.resource, context: e.context?.slice(0, 100) })) },
     sqlConsole: false, sqlConsoleNote: "No SQL console in this phase (spec §12). Never allow arbitrary destructive SQL.",
-    sourceNote: "One live probe + audit-derived failure view. Everything the runtime cannot see is labeled.",
+    sourceNote: "One live probe + real probe history from the Phase 25 telemetry store + audit-derived failure view. Everything the runtime cannot see is labeled.",
   };
 }
 
-// ---- P23-09 · Web Performance ----
-function webPerformancePayload() {
+// ---- P23-09 / P25-07 · Web Performance ----
+async function webPerformancePayload() {
   const vitals = platformVitalsSnapshot();
+  const client = await clientStats(86_400_000);
   return {
     collected: vitals.length,
     samples: vitals.slice(-20).map((v) => ({ at: v.at, screen: v.screen, lcpMs: v.lcpMs ?? null, cls: v.cls ?? null, ttfbMs: v.ttfbMs ?? null, fcpMs: v.fcpMs ?? null })),
-    note: vitals.length ? "Real browser vitals (PerformanceObserver) POSTed by Qubit One clients and stored in-session by the Platform Ops module. INP is not collected by the current collector." : "No samples yet in this process — vitals arrive as real users browse. Nothing is simulated.",
-    inpNote: "INP not collected by the current collector (roadmap).",
-    routes: null as unknown, routesNote: "Per-route aggregation requires persisted vitals (Not configured — in-memory session only).",
-    jsErrors: null as unknown, jsErrorsNote: "Browser error pipeline not configured (see P22-08 / P23-10).",
-    privacy: "Vitals carry screen names and timing only — no identifiers, no content.",
-    sourceNote: "Only actually-collected samples are shown.",
+    aggregate: {
+      windowNote: "Aggregated from REAL client vitals ingested via POST /api/telemetry over the last 24h (Phase 25 telemetry store — persists across sessions, unlike the in-session samples above).",
+      vitalsSamples: client.vitalsSamples,
+      routeTransitions: client.routeTransitions,
+      perScreen: client.perScreen,
+      note: client.vitalsSamples ? `${client.vitalsSamples} real vital sample(s) from ${client.perScreen.length} screen(s) — medians per screen; a median of fewer than 3 samples is the sample itself.` : "Insufficient data — no client vitals recorded in the last 24h window.",
+    },
+    jsErrors: {
+      count: client.jsErrors,
+      recent: client.recentJsErrors,
+      note: client.jsErrors ? `${client.jsErrors} real browser error event(s) ingested in the last 24h (window.onerror / unhandledrejection → POST /api/telemetry).` : "No client JavaScript failures ingested in the window — the empty state is real, not a suppressed count.",
+    },
+    inpNote: client.inpNote,
+    routesNote: client.perScreen.length ? "Per-screen aggregation is computed from persisted client telemetry (Phase 25)." : "Insufficient data for per-route aggregation — aggregation appears as real samples arrive.",
+    privacy: "Vitals carry screen names and timing only — no identifiers, no content; identity fields sent by a client are ignored by construction (server-side allowlist).",
+    sourceNote: "Only actually-collected samples are shown: in-session collector + Phase 25 ingested client telemetry.",
   };
 }
 
-// ---- P23-10 · Error Intelligence ----
-function errorsPayload() {
+// ---- P23-10 / P25-04 · Error Intelligence ----
+async function errorsPayload() {
   const events = auditEvents(400).filter((e) => e.result === "Failure" || e.result === "Blocked");
   const groups = new Map<string, AuditEvent[]>();
   for (const e of events) {
@@ -416,23 +608,43 @@ function errorsPayload() {
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(e);
   }
-  const grouped = [...groups.entries()].map(([key, list]) => ({
+  const auditGroups = [...groups.entries()].map(([key, list]) => ({
     key,
     title: key,
+    source: "audit-trail" as const,
     frequency: list.length,
     affectedRoutes: [...new Set(list.map((e) => e.resource))].slice(0, 5),
+    affectedScreens: [] as string[],
     firstSeen: Math.min(...list.map((e) => e.ts)),
     lastSeen: Math.max(...list.map((e) => e.ts)),
     severity: list[0]?.severity ?? "Info",
     status: "Open (unmanaged)" as string,
+    releases: [] as string[],
     deploymentVersion: runtimeEnv().commitSha,
     trend: list.length > 1 ? "recurring" : "single-occurrence",
-  })).sort((a, b) => b.frequency - a.frequency);
+  }));
+  // Phase 25: real server error groups (kind=error from instrumentation) + client JS error groups.
+  const telGroups = await errorGroups(86_400_000);
+  const telemetryGroups = telGroups.map((g) => ({
+    key: g.key,
+    title: g.key,
+    source: g.source,
+    frequency: g.count,
+    affectedRoutes: g.affectedRoutes,
+    affectedScreens: g.affectedScreens,
+    firstSeen: g.firstSeen,
+    lastSeen: g.lastSeen,
+    severity: g.severity === "error" ? "High" : "Warning",
+    status: "Open (unmanaged)",
+    releases: g.releases,
+    deploymentVersion: g.releases[g.releases.length - 1] ?? runtimeEnv().commitSha,
+    trend: g.count > 1 ? "recurring" : "single-occurrence",
+  }));
   return {
-    groups: grouped,
-    basis: "Grouped from real Failure/Blocked records in the enterprise audit trail (same event stream as P22-08 — deeper correlation view here, management workflow stays in P22).",
+    groups: [...auditGroups.sort((a, b) => b.frequency - a.frequency), ...telemetryGroups.sort((a, b) => b.frequency - a.frequency)],
+    basis: "Grouped from real Failure/Blocked records in the enterprise audit trail PLUS Phase 25 error telemetry (unhandled server errors via instrumentation + client JavaScript failures). Duplicate groups are collapsed by error code + first message line.",
     links: { deployments: "Compare firstSeen with P23-17 deployment timeline.", logs: "Open the same events in P23-03 Logs Explorer.", incidents: "Link manually from P22-23 Incident Center (correlation is evidence-gated, P23-19)." },
-    sourceNote: "No synthetic error groups. Empty list = no failures recorded.",
+    sourceNote: "No synthetic error groups. Empty list = no failures recorded anywhere.",
   };
 }
 
@@ -446,35 +658,41 @@ function alertsPayload() {
   };
 }
 
-// ---- P23-12 · Alert Rules ----
+// ---- P23-12 / P25-12 · Alert Rules ----
 function alertRulesPayload() {
   const s = store();
   return {
     rules: [...s.alertRules].sort((a, b) => b.updatedAt - a.updatedAt),
-    metrics: ["db-latency", "api-rtt", "rss", "audit-failures", "audit-events"],
-    metricNote: "Only metrics that can actually be measured live are selectable: db-latency (SELECT 1 ms), api-rtt (self probe ms), rss (process MB), audit-failures (events/hour), audit-events (events/hour).",
+    metrics: ["db-latency", "api-rtt", "rss", "audit-failures", "audit-events", "request-error-rate", "api-p95-latency", "request-count", "client-js-errors"],
+    metricNote: "Only metrics that can actually be measured are selectable: db-latency (SELECT 1 ms), api-rtt (self probe ms), rss (process MB), audit-failures / audit-events (events/hour from the audit trail), and the Phase 25 telemetry metrics — request-error-rate (% last hour), api-p95-latency (ms last hour), request-count (last hour), client-js-errors (last hour). Telemetry rules need ≥10 recorded requests in the window before they evaluate; below that they report 'Insufficient data' instead of guessing.",
     evaluationNote: "Rules evaluate ON DEMAND ('Evaluate now') against real measurements; a triggered condition creates a real Alert (P23-11) and writes to the audit trail. Continuous background evaluation requires a scheduler (Not configured).",
     notificationIntegration: "Recipients reference the existing notification engine; routing defaults come from Observability Settings (P23-24). No second notification backend.",
     sourceNote: "In-process registry, audited CRUD.",
   };
 }
 
-// ---- P23-13 · SLO / SLA Management ----
+// ---- P23-13 / P25-16 · SLO / SLA Management ----
 async function sloPayload() {
   const s = store();
   const dbP = await dbProbe();
-  const slos = s.slos.map((slo) => ({
-    ...slo,
-    current: null as number | null,
-    complianceNote: "Insufficient telemetry: compliance requires historical measurement windows (retention Not configured). The live probe value at creation/review time is shown as evidence, not compliance.",
-    evidence: { dbHealth: dbP.health, dbLatencyMs: dbP.latencyMs, measuredAt: Date.now() },
-    status: "Insufficient telemetry" as const,
+  const slos = await Promise.all(s.slos.map(async (slo) => {
+    // Phase 25: compliance is COMPUTED from real request telemetry over the
+    // SLO window (bounded by retention); below 20 samples → Insufficient data.
+    const evaluation = await evaluateSloReal(slo);
+    return {
+      ...slo,
+      current: evaluation.current,
+      status: evaluation.status,
+      complianceNote: evaluation.evidence,
+      evidence: { dbHealth: dbP.health, dbLatencyMs: dbP.latencyMs, measuredAt: Date.now(), sampleCount: evaluation.sampleCount },
+    };
   }));
   return {
     slos,
     targetPolicy: "Targets are NEVER invented — an SLO exists only when an administrator configures it (audited).",
-    errorBudget: { note: "Error-budget math needs a real measurement window; without retention it would be fiction and is therefore not displayed." },
-    sourceNote: "Registry + honest compliance labeling.",
+    evaluationPolicy: "Phase 25: each evaluation runs against the real telemetry store for the SLO window (bounded at 30 days by retention reality). 'Meeting' / 'Breaching' / 'Insufficient data' are the only states — no synthetic compliance percentages.",
+    errorBudget: { note: "Error-budget math uses the same real measurement: budget consumed = 1 − (current / target) for availability/error-rate kinds, shown on each SLO row when status is Meeting or Breaching." },
+    sourceNote: "Registry + real telemetry evaluation.",
   };
 }
 
@@ -485,18 +703,24 @@ async function scorecardPayload() {
   const ops = opsStore();
   const os = store();
   const events = auditEvents(400);
+  const [stats, avail] = await Promise.all([requestStats(86_400_000), availabilityStats(86_400_000)]);
   const openIncidents = ops.incidents.filter((i) => i.status !== "resolved" && i.status !== "post-incident-review");
   const categories = [
-    { id: "availability", label: "Availability", pass: apiP.health === "healthy", evidence: apiP.note, weight: "measured" },
-    { id: "latency", label: "Latency", pass: (apiP.latencyMs ?? 9999) < 2000, evidence: `Self-probe ${apiP.latencyMs ?? "—"} ms (live single request).` },
-    { id: "errors", label: "Errors", pass: events.filter((e) => e.result === "Failure").length === 0, evidence: `${events.filter((e) => e.result === "Failure").length} failure events in the audit window.` },
+    {
+      id: "availability", label: "Availability",
+      pass: avail.requestSuccessPct != null ? avail.serverErrors === 0 : apiP.health === "healthy",
+      evidence: avail.requestSuccessPct != null ? avail.label : `No request telemetry in window — falling back to the live self-probe (${apiP.note}).`,
+      weight: "measured",
+    },
+    { id: "latency", label: "Latency", pass: (stats.p95 ?? apiP.latencyMs ?? 9999) < 2000, evidence: stats.p95 != null ? `p95 ${stats.p95} ms over ${stats.total} measured requests (24h).` : `Self-probe ${apiP.latencyMs ?? "—"} ms (live single request; insufficient telemetry for p95).` },
+    { id: "errors", label: "Errors", pass: events.filter((e) => e.result === "Failure").length === 0 && (stats.errorRatePct ?? 0) === 0, evidence: `${events.filter((e) => e.result === "Failure").length} audit failure event(s); request error rate ${stats.errorRatePct == null ? "insufficient data" : `${stats.errorRatePct}%`}.` },
     { id: "security", label: "Security", pass: true, evidence: "Session plane active, RBAC enforced, audit operating; MFA/SSO absent (documented gaps)." },
     { id: "deployment-health", label: "Deployment health", pass: env.onVercel, evidence: env.onVercel ? "Live on Vercel; CI pipeline green on push (verified historically)." : "Not on Vercel runtime." },
     { id: "database-health", label: "Database health", pass: dbP.health === "healthy", evidence: dbP.note },
     { id: "backup-health", label: "Backup health", pass: false, evidence: "Application cannot verify platform backups; file backups unavailable on serverless (P22-15)." },
     { id: "dependencies", label: "Dependencies", pass: dbP.health === "healthy", evidence: "Core data plane (Supabase) live; several providers not configured (P23-06)." },
     { id: "incidents", label: "Incidents", pass: openIncidents.length === 0, evidence: openIncidents.length ? `${openIncidents.length} open incident(s).` : "No open incidents recorded." },
-    { id: "slo-compliance", label: "SLO compliance", pass: false, evidence: os.slos.length ? "SLOs defined but no measurement window (retention Not configured)." : "No SLOs configured." },
+    { id: "slo-compliance", label: "SLO compliance", pass: false, evidence: os.slos.length ? "SLOs defined — compliance evaluates on the SLO screen (P23-13); the scorecard marks this category conservatively until a real measurement window exists." : "No SLOs configured." },
   ];
   const passed = categories.filter((c) => c.pass).length;
   return {
@@ -510,16 +734,17 @@ async function scorecardPayload() {
 // ---- P23-15 · Capacity & Resource Usage ----
 async function capacityPayload() {
   const mem = process.memoryUsage();
+  const stats = await requestStats(3_600_000);
   return {
     resources: [
       { id: "memory-rss", label: "Process memory (RSS)", current: `${Math.round(mem.rss / 1048576)} MB`, unit: "MB", trend: null, peak: null, baseline: null, threshold: null, note: "Real, current process. Vercel lambda memory limit is plan-defined; per-instance peaks require history (Not configured)." },
       { id: "heap", label: "Heap used", current: `${Math.round(mem.heapUsed / 1048576)} MB`, unit: "MB", trend: null, peak: null, baseline: null, threshold: null, note: "Real, current process." },
+      { id: "requests", label: "Request volume", current: `${stats.total} / last hour`, unit: "req/h", trend: null, peak: null, baseline: null, threshold: null, note: stats.sampleLabel },
       { id: "cpu", label: "CPU", current: "Not available", unit: "%", trend: null, peak: null, baseline: null, threshold: null, note: "Serverless CPU is not exposed to the application." },
       { id: "storage-db", label: "Database storage", current: "Not available", unit: "MB", trend: null, peak: null, baseline: null, threshold: null, note: "Requires Supabase management APIs (Not configured)." },
-      { id: "requests", label: "Request volume", current: "Not configured", unit: "req/min", trend: null, peak: null, baseline: null, threshold: null, note: "No request metering middleware." },
       { id: "audit-volume", label: "Audit event volume", current: `${auditEvents(400).length} in window`, unit: "events", trend: null, peak: null, baseline: null, threshold: null, note: "Real events in the current audit window." },
     ],
-    forecast: { available: false, note: "No forecasts: forecasting requires historical series (retention Not configured). Fabricated projections are worse than none." },
+    forecast: { available: false, note: "No forecasts: forecasting requires historical series beyond the current telemetry retention window; fabricated projections are worse than none." },
     sourceNote: "Only genuinely measurable values are shown.",
   };
 }
@@ -529,11 +754,13 @@ async function infrastructurePayload() {
   const env = runtimeEnv();
   const dbP = await dbProbe();
   const mem = process.memoryUsage();
+  const tel = telemetryPersistenceStatus();
   return {
     providerNeutral: true,
     resources: [
       { resource: "Application runtime", provider: env.onVercel ? "Vercel (serverless)" : "Standalone", region: env.region ?? "local", health: "healthy", utilization: `RSS ${Math.round(mem.rss / 1048576)} MB`, alerts: 0, lastUpdatedAt: Date.now(), note: "This process, measured." },
       { resource: "PostgreSQL (data plane)", provider: "Supabase", region: "ap-northeast-1 (pooler endpoint)", health: dbP.health, utilization: "Not available", alerts: 0, lastUpdatedAt: Date.now(), note: dbP.note },
+      { resource: "Telemetry store (TelemetryEvent)", provider: "Supabase PostgreSQL", region: "ap-northeast-1", health: tel.persistence === "ok" ? "healthy" : tel.persistence === "degraded" ? "degraded" : "unavailable", utilization: `${tel.bufferLen} event(s) buffered`, alerts: 0, lastUpdatedAt: Date.now(), note: tel.persistenceLabel },
       { resource: "CI (GitHub Actions)", provider: "GitHub", region: "—", health: env.hasGithubToken ? "unknown" : "not-configured", utilization: "—", alerts: 0, lastUpdatedAt: null, note: env.hasGithubToken ? "Token present — live status fetchable." : "GITHUB_TOKEN not configured; CI status visible in GitHub directly." },
       { resource: "Edge/CDN", provider: env.onVercel ? "Vercel" : "—", region: "global", health: env.onVercel ? "healthy" : "unknown", utilization: "—", alerts: 0, lastUpdatedAt: env.onVercel ? Date.now() : null, note: "Static assets served by the platform CDN." },
     ],
@@ -568,25 +795,39 @@ async function deploymentImpactPayload() {
     }
   }
   const events = auditEvents(400);
-  const withImpact = deployments.slice(0, 8).map((d) => {
+  const withImpact = await Promise.all(deployments.slice(0, 8).map(async (d) => {
     const after = events.filter((e) => e.ts >= d.createdAt);
     const before = events.filter((e) => e.ts < d.createdAt && e.ts >= d.createdAt - 86_400_000);
+    // Phase 25: REAL request-telemetry deltas (5xx counts + p95 latency) before/after each deployment.
+    const [telAfter, telBefore] = await Promise.all([
+      readTelemetry({ kinds: ["request"], sinceMs: d.createdAt, limit: 2_000 }),
+      readTelemetry({ kinds: ["request"], sinceMs: d.createdAt - 86_400_000, limit: 2_000 }),
+    ]);
+    const afterReq = telAfter.events.filter((e) => e.ts >= d.createdAt);
+    const beforeReq = telBefore.events.filter((e) => e.ts < d.createdAt && e.ts >= d.createdAt - 86_400_000);
+    const p95Of = (list: typeof afterReq) => {
+      const durs = list.map((e) => e.durationMs).filter((x): x is number => typeof x === "number").sort((a, b) => a - b);
+      return durs.length >= 10 ? durs[Math.ceil(durs.length * 0.95) - 1] : null;
+    };
+    const p95After = p95Of(afterReq);
+    const p95Before = p95Of(beforeReq);
     return {
       ...d,
       errorChange: { before: before.filter((e) => e.result === "Failure").length, after: after.filter((e) => e.result === "Failure").length },
-      eventChange: { before: before.length, after: after.length },
-      latencyChange: null as number | null,
-      latencyNote: "Per-request latency series do not exist (Not configured) — a real delta cannot be computed and is not invented.",
-      affectedRoutes: [...new Set(after.map((e) => e.resource))].slice(0, 5),
+      auditEventChange: { before: before.length, after: after.length },
+      requestErrorChange: { before: beforeReq.filter((e) => (e.status ?? 0) >= 500).length, after: afterReq.filter((e) => (e.status ?? 0) >= 500).length, beforeSamples: beforeReq.length, afterSamples: afterReq.length },
+      latencyChange: p95After != null && p95Before != null ? { beforeMs: p95Before, afterMs: p95After } : null,
+      latencyNote: p95After != null && p95Before != null ? `p95 before ${p95Before} ms → after ${p95After} ms (≥10 recorded requests in each window — a real, measured delta).` : "Insufficient data — fewer than 10 recorded requests in a before/after window; a latency delta is not computed and not invented.",
+      affectedRoutes: [...new Set(afterReq.map((e) => e.route).filter((r): r is string => !!r))].slice(0, 5),
       incidentChange: null as number | null,
       incidentNote: "Incident registry entries carry timestamps; correlation is available in P23-19.",
     };
-  });
+  }));
   return {
     configured,
     current: { commit: env.commitSha, branch: env.commitBranch },
     deployments: withImpact,
-    method: "Before/after windows use REAL audit-event counts (24h before vs since deployment). Where telemetry cannot support a delta, the field says so.",
+    method: "Before/after windows use REAL audit-event counts (24h before vs since deployment) AND real Phase 25 request telemetry (5xx counts + p95 latency where ≥10 samples exist per window). Causal claims are never made — temporal deltas only.",
     sourceNote: note,
   };
 }
@@ -602,7 +843,7 @@ function changesPayload() {
   };
 }
 
-// ---- P23-19 · Incident Correlation ----
+// ---- P23-19 / P25-13 · Incident Correlation ----
 async function correlationPayload(q: Record<string, unknown>) {
   const s = opsStore();
   const os = store();
@@ -612,15 +853,23 @@ async function correlationPayload(q: Record<string, unknown>) {
   const incidents = s.incidents.filter((i) => i.startedAt >= since);
   const alerts = os.alerts.filter((a) => a.triggeredAt >= since);
   const changes = events.filter((e) => CHANGE_ACTIONS.some((c) => e.action.startsWith(c)));
+  // Phase 25: real server/client error events join the correlation timeline.
+  const tel = await readTelemetry({ kinds: ["error", "client-error", "request"], sinceMs: since, limit: 1_000 });
+  const telErrors = tel.events.filter((e) => e.kind === "error" || e.kind === "client-error" || (e.status ?? 0) >= 500);
   return {
     windowMs: since ? Date.now() - since : windowMs,
     incidents: incidents.map((i) => ({ id: i.id, severity: i.severity, title: i.title, startedAt: i.startedAt, status: i.status })),
     alerts,
     changes: changes.slice(0, 30).map((e) => ({ ts: e.ts, who: e.actor, action: e.action, resource: e.resource })),
-    errors: events.filter((e) => e.result === "Failure" || e.result === "Blocked").slice(0, 30).map((e) => ({ ts: e.ts, action: e.action, resource: e.resource, severity: e.severity })),
-    timeline: [...incidents.map((i) => ({ at: i.startedAt, kind: "incident", text: `${i.severity} ${i.title}` })), ...alerts.map((a) => ({ at: a.triggeredAt, kind: "alert", text: a.ruleName })), ...changes.map((e) => ({ at: e.ts, kind: "change", text: `${e.action} → ${e.resource}` }))].sort((a, b) => b.at - a.at).slice(0, 60),
-    rule: "Relationships are temporal co-occurrence in real data — the UI never asserts causality.",
-    sourceNote: "Correlation drawn exclusively from the audit trail + governance registries within the selected window.",
+    errors: [...events.filter((e) => e.result === "Failure" || e.result === "Blocked").slice(0, 30).map((e) => ({ ts: e.ts, action: e.action, resource: e.resource, severity: e.severity })), ...telErrors.slice(0, 30).map((e) => ({ ts: e.ts, action: e.kind, resource: e.route ?? e.screen ?? "(unknown)", severity: e.level === "error" ? "High" : "Warning" }))].sort((a, b) => b.ts - a.ts).slice(0, 40),
+    timeline: [
+      ...incidents.map((i) => ({ at: i.startedAt, kind: "incident", text: `${i.severity} ${i.title}` })),
+      ...alerts.map((a) => ({ at: a.triggeredAt, kind: "alert", text: a.ruleName })),
+      ...changes.map((e) => ({ at: e.ts, kind: "change", text: `${e.action} → ${e.resource}` })),
+      ...telErrors.slice(0, 40).map((e) => ({ at: e.ts, kind: "telemetry-error", text: `${e.kind}${e.route ? ` · ${e.route}` : e.screen ? ` · ${e.screen}` : ""}${e.errorCode ? ` · ${e.errorCode}` : ""}` })),
+    ].sort((a, b) => b.at - a.at).slice(0, 80),
+    rule: "Relationships are temporal co-occurrence in real data — the UI never asserts causality. With telemetry evidence (e.g., errors beginning within minutes of a deployment) the wording is 'Potential correlation detected', never 'caused'.",
+    sourceNote: "Correlation drawn exclusively from the audit trail, governance registries and Phase 25 telemetry within the selected window.",
   };
 }
 
@@ -645,7 +894,7 @@ function oncallPayload() {
   };
 }
 
-// ---- P23-22 · Reliability Reports ----
+// ---- P23-22 / P25-17 · Reliability Reports ----
 async function reportPayload(_from: number | null, _to: number | null) {
   const [dbP, apiP] = await Promise.all([dbProbe(), selfProbe()]);
   const s = opsStore();
@@ -653,15 +902,18 @@ async function reportPayload(_from: number | null, _to: number | null) {
   const events = auditEvents(400);
   const hourAgo = Date.now() - 3_600_000;
   const recent = events.filter((e) => e.ts >= hourAgo);
+  const [stats, avail, client] = await Promise.all([requestStats(86_400_000), availabilityStats(86_400_000), clientStats(86_400_000)]);
   return {
     report: {
       generatedAt: Date.now(),
-      window: "audit window (most recent 400 events) + live probes",
-      availability: { probeHealth: apiP.health, probeLatencyMs: apiP.latencyMs, note: "Single-request live probe — not an availability percentage (none configured)." },
-      sloCompliance: { slos: os.slos.length, note: os.slos.length ? "Defined; compliance needs retention." : "None configured." },
+      window: "audit window (most recent 400 events) + live probes + Phase 25 telemetry (24h)",
+      availability: { probeHealth: apiP.health, probeLatencyMs: apiP.latencyMs, requestSuccessPct: avail.requestSuccessPct, note: avail.requestSuccessPct != null ? avail.label : "Single-request live probe — not an availability percentage (insufficient telemetry)." },
+      requestTelemetry: { total: stats.total, errorRatePct: stats.errorRatePct, p50: stats.p50, p95: stats.p95, p99: stats.p99, note: stats.sampleLabel },
+      clientTelemetry: { jsErrors: client.jsErrors, vitalsSamples: client.vitalsSamples, note: "Real client-side events ingested over the last 24h." },
+      sloCompliance: { slos: os.slos.length, note: os.slos.length ? "Per-SLO evaluations on the SLO screen (P23-13) — computed from real telemetry." : "None configured." },
       incidents: { open: s.incidents.filter((i) => i.status !== "resolved").length, total: s.incidents.length },
       errorTrend: { failuresInWindow: events.filter((e) => e.result === "Failure").length, eventsLastHour: recent.length },
-      apiPerformance: { probeLatencyMs: apiP.latencyMs, note: "Point-in-time probe only." },
+      apiPerformance: { probeLatencyMs: apiP.latencyMs, p95: stats.p95, note: stats.p95 != null ? "p95 from real request telemetry." : "Point-in-time probe only." },
       databasePerformance: { probeLatencyMs: dbP.latencyMs, health: dbP.health },
       deploymentImpact: { currentCommit: runtimeEnv().commitSha, note: "See P23-17 (token-gated for history)." },
       dependencyHealth: { database: dbP.health, note: "See P23-06 for the full matrix." },
@@ -670,21 +922,25 @@ async function reportPayload(_from: number | null, _to: number | null) {
     },
     exportPolicy: "Report export (JSON) is client-side on this authorized screen; exports of underlying audit data follow the existing Data Export governance (P282).",
     scheduling: "Scheduled delivery reuses the existing Scheduled Reports infrastructure (P283) — no second reporting engine.",
-    sourceNote: "Every figure in the report traces to a probe, the audit trail or a registry.",
+    sourceNote: "Every figure in the report traces to a probe, the audit trail, a registry or the Phase 25 telemetry store.",
   };
 }
 
-// ---- P23-23 · Operational AI Insights ----
+// ---- P23-23 / P25-23 · Operational AI Insights ----
 async function aiInsightsPayload() {
   const env = runtimeEnv();
   const dbP = await dbProbe();
   const events = auditEvents(300);
   const hourAgo = Date.now() - 3_600_000;
   const recent = events.filter((e) => e.ts >= hourAgo);
+  const [stats, avail, client] = await Promise.all([requestStats(3_600_000), availabilityStats(86_400_000), clientStats(86_400_000)]);
   // Deterministic (non-AI) analysis — computed, real, labeled as such.
   const deterministic = [
     { kind: "Observed Fact" as const, text: `${recent.length} audit events in the last hour; ${recent.filter((e) => e.result === "Failure").length} failures.`, evidence: "Enterprise audit trail timestamps + results." },
     { kind: "Observed Fact" as const, text: `Database probe ${dbP.health}${dbP.latencyMs != null ? ` (${dbP.latencyMs} ms)` : ""} — measured on this request.`, evidence: "Live SELECT 1 (ops probe)." },
+    { kind: "Observed Fact" as const, text: stats.total > 0 ? `${stats.total} API request(s) recorded in the last hour${stats.errorRatePct != null ? `, error rate ${stats.errorRatePct}%` : ""}${stats.p95 != null ? `, p95 latency ${stats.p95} ms` : ""}.` : "No API requests recorded in the last hour — the telemetry store has nothing to report and none is invented.", evidence: "Phase 25 request metering (withMeter)." },
+    { kind: "Observed Fact" as const, text: avail.requestSuccessPct != null ? `24h request success rate ${avail.requestSuccessPct}% (${avail.serverErrors} 5xx of ${avail.requests}).` : "24h availability: Insufficient data — no recorded requests in the window.", evidence: "Phase 25 availability computation." },
+    { kind: "Observed Fact" as const, text: `${client.jsErrors} client JavaScript error(s) and ${client.vitalsSamples} vital sample(s) ingested in the last 24h.`, evidence: "Phase 25 client telemetry ingestion." },
     recent.filter((e) => e.result === "Blocked").length > 0
       ? { kind: "Inference" as const, text: `${recent.filter((e) => e.result === "Blocked").length} blocked events suggest active permission boundaries — review whether any are unexpected.`, evidence: "Audit records with result=Blocked." }
       : { kind: "Observed Fact" as const, text: "No blocked authorization events in the window.", evidence: "Audit trail." },
@@ -695,21 +951,168 @@ async function aiInsightsPayload() {
     aiAvailable: !env.onVercel,
     aiNote: env.onVercel ? "The AI gateway is not reachable from the serverless runtime — AI generation is unavailable here and the UI says so. Deterministic analysis below remains fully available." : "AI generation available through the Phase 15 engine (sandbox backend).",
     deterministic,
-    guardrails: ["AI never invents telemetry — prompts carry only real audit/probe context", "No causality claims without evidence", "No autonomous production actions — consequential actions route through the Phase 15 AI Action Approval", "No secrets in prompts or outputs"],
+    guardrails: ["AI never invents telemetry — prompts carry only real audit/probe/telemetry context", "No causality claims without evidence", "No autonomous production actions — consequential actions route through the Phase 15 AI Action Approval", "No secrets in prompts or outputs"],
     labels: ["Observed Fact", "Inference", "Recommendation", "Confidence", "Evidence"],
     sourceNote: "Deterministic analysis computed from real data; AI generation (when reachable) is grounded strictly on provided context.",
   };
 }
-// ---- P23-24 · Observability Settings ----
+// ---- P23-24 / P25-24 · Observability Settings ----
 function settingsPayload() {
   const s = store();
+  const cfg = telemetryConfigSnapshot();
+  const tel = telemetryPersistenceStatus();
   return {
     settings: s.settings,
-    editable: ["logRetentionDays", "metricRetentionDays", "traceRetentionDays", "samplingRatePct", "alertDefaults.cooldownMin"],
-    retentionNote: "Retention values are DECLARATIVE in this deployment (no telemetry store exists yet to prune). They define the policy this platform will enforce when retention backends are configured — changing them is audited.",
-    redactionNote: "Redaction rules are enforced at the source: writeAudit never persists secret values. The rules listed are the enforced policy statement.",
-    privacy: "Vitals and logs carry no identifiers or content; role-based access is enforced server-side on every section.",
+    telemetry: {
+      requestEnabled: cfg.requestEnabled,
+      clientEnabled: cfg.clientEnabled,
+      samplingRatePct: cfg.samplingRatePct,
+      telemetryRetentionDays: cfg.telemetryRetentionDays,
+      hardCapRows: cfg.hardCapRows,
+      bufferLen: cfg.bufferLen,
+      persistence: tel.persistence,
+      persistenceLabel: tel.persistenceLabel,
+    },
+    editable: ["logRetentionDays", "metricRetentionDays", "traceRetentionDays", "samplingRatePct", "alertDefaults.cooldownMin", "requestTelemetryEnabled", "clientTelemetryEnabled", "telemetryRetentionDays"],
+    retentionNote: "Phase 25: the telemetry retention value is ENFORCED — pruneTelemetry deletes TelemetryEvent rows older than the configured days (P25-22 'Run retention now' executes it on demand; the hard row cap is always enforced). Audit/notification retention values remain DECLARATIVE (their stores are provider-managed).",
+    redactionNote: "Redaction rules are enforced at the source: writeAudit never persists secret values and telemetry-server redactString/redactKeyValue mask secret-shaped values before storage.",
+    privacy: "Vitals and logs carry no identifiers or content; role-based access is enforced server-side on every section (P25-21).",
     sourceNote: "Configuration registry, audited changes, real current values.",
+  };
+}
+
+// ============================================================
+// Phase 25 sections — capabilities without a Phase 23 home
+// ============================================================
+
+// ---- P25-10 · Availability & Uptime ----
+async function availabilityPayload() {
+  const [day, week, series] = await Promise.all([
+    availabilityStats(86_400_000),
+    availabilityStats(7 * 86_400_000),
+    requestSeries(86_400_000, 24),
+  ]);
+  const { events: probes } = await readTelemetry({ kinds: ["probe"], sinceMs: Date.now() - 86_400_000, limit: 100 });
+  return {
+    current: {
+      successPct: day.requestSuccessPct,
+      requests: day.requests,
+      serverErrors: day.serverErrors,
+      label: day.label,
+    },
+    window7d: { successPct: week.requestSuccessPct, requests: week.requests, serverErrors: week.serverErrors, label: week.label },
+    series: { buckets: series, note: "Hourly request/error buckets from the real telemetry store — zeros are real zeros." },
+    healthChecks: {
+      ...day.healthChecks,
+      note: probes.length ? `${probes.length} probe measurement(s) recorded in 24h (db SELECT 1 checks recorded by operational sections + /api/health request metering).` : "No probe events recorded in the window — health checks appear here as they are measured.",
+    },
+    downtime: {
+      events: day.recentFailures,
+      note: day.recentFailures.length ? `${day.recentFailures.length} recent 5xx response(s) — the closest thing to a downtime record that real telemetry supports. Sustained-outage detection requires a scheduler (Not configured).` : "No 5xx responses recorded in the window — no downtime events to list.",
+    },
+    externalProber: { configured: false, note: "No external availability monitor exists (P22-10 documents the same fact). The figures here are measured from real request telemetry inside this deployment — an external prober would add independence and is the recommended next step." },
+    sloLink: "SLO evaluations over the same telemetry: P23-13 (P25-16).",
+    sourceNote: "Measured from real request + probe events. No SLA/uptime percentage is claimed without measured data.",
+  };
+}
+
+// ---- P25-20 · Operational Activity ----
+async function activityPayload(q: Record<string, unknown>) {
+  const windowMs = Number(q.windowMs ?? 86_400_000);
+  const since = Date.now() - (Number.isFinite(windowMs) ? windowMs : 86_400_000);
+  const s = opsStore();
+  const os = store();
+  const events = auditEvents(400).filter((e) => e.ts >= since);
+  const tel = await readTelemetry({ kinds: ["error", "client-error"], sinceMs: since, limit: 300 });
+  const timeline = [
+    ...events.filter((e) => CHANGE_ACTIONS.some((c) => e.action.startsWith(c))).map((e) => ({ at: e.ts, kind: "config-change", text: `${e.action} → ${e.resource}`, who: e.actor, severity: e.severity })),
+    ...events.filter((e) => e.action.startsWith("ops.release.")).map((e) => ({ at: e.ts, kind: "deployment", text: `${e.action} → ${e.resource}`, who: e.actor, severity: e.severity })),
+    ...events.filter((e) => e.action.includes("migration")).map((e) => ({ at: e.ts, kind: "migration", text: `${e.action} → ${e.resource}`, who: e.actor, severity: e.severity })),
+    ...s.incidents.filter((i) => i.startedAt >= since).map((i) => ({ at: i.startedAt, kind: "incident", text: `${i.severity} · ${i.title}`, who: "incident registry", severity: i.severity })),
+    ...s.incidents.filter((i) => i.status === "resolved" && i.startedAt >= since).map((i) => ({ at: i.startedAt + 1, kind: "recovery", text: `${i.title} (resolved)`, who: "incident registry", severity: "Info" })),
+    ...os.alerts.filter((a) => a.triggeredAt >= since).map((a) => ({ at: a.triggeredAt, kind: "alert", text: `${a.severity} · ${a.ruleName} (${a.status})`, who: a.owner, severity: a.severity })),
+    ...os.alerts.filter((a) => a.status === "Resolved" && a.evaluatedAt >= since).map((a) => ({ at: a.evaluatedAt, kind: "recovery", text: `${a.ruleName} resolved`, who: a.owner, severity: "Info" })),
+    ...tel.events.map((e) => ({ at: e.ts, kind: e.kind, text: `${e.errorCode ?? "error"}${e.route ? ` · ${e.route}` : e.screen ? ` · ${e.screen}` : ""}`, who: e.source === "client" ? "client browser" : "application", severity: e.level === "error" ? "High" : "Warning" })),
+    ...(lastPruneSnapshot() && lastPruneSnapshot()!.at >= since ? [{ at: lastPruneSnapshot()!.at, kind: "retention", text: `telemetry retention prune deleted ${lastPruneSnapshot()!.deleted} event(s)`, who: "system", severity: "Info" }] : []),
+  ].sort((a, b) => b.at - a.at).slice(0, 100);
+  const counts = timeline.reduce<Record<string, number>>((acc, t) => { acc[t.kind] = (acc[t.kind] ?? 0) + 1; return acc; }, {});
+  return {
+    windowMs: Date.now() - since,
+    timeline,
+    counts,
+    note: "One operational timeline assembled from REAL sources: the enterprise audit trail (config changes, releases, migrations), governance registries (incidents, alerts + recoveries), Phase 25 telemetry (server/client errors) and retention actions. Deployments via the Vercel API additionally appear in P22-02/P23-17 when VERCEL_TOKEN is configured.",
+    sourceNote: "Reuses the existing Audit + deployment + incident infrastructure — no second event store.",
+  };
+}
+
+// ---- P25-21 · Observability Access ----
+function accessPayload() {
+  const s = store();
+  return {
+    matrix: Object.values(s.accessMatrix).map((e) => ({ role: e.role, read: e.read === "all" ? "all" : [...e.read], updatedAt: e.updatedAt, updatedBy: e.updatedBy })),
+    delegableSections: [...DELEGABLE_SECTIONS],
+    allSections: [...OBS_SECTIONS],
+    enforcement: "Every /api/obs request is authorized server-side from the signed session cookie (fail-closed); the matrix above IS the enforced policy — the UI never decides access. Denials are recorded in the audit trail.",
+    sensitiveLogsNote: "The Logs Explorer (P23-03) is administrator-only regardless of grants — sensitive diagnostics are not delegable in this deployment.",
+    writePolicy: "All mutations (alert rules, SLOs, settings, runbooks, on-call, access matrix, retention) remain administrator-only.",
+    persistenceNote: "Grants live in the runtime registry; a cold start restores the deny-by-default default (fail-safe). Every grant/revoke is audited (obs.access.grant / obs.access.revoke).",
+    sourceNote: "Access matrix over the existing 5-role RBAC — no new identity system.",
+  };
+}
+
+// ---- P25-22 · Observability Data Retention ----
+async function retentionPayload() {
+  const cfg = telemetryConfigSnapshot();
+  const tel = telemetryPersistenceStatus();
+  let counts: { kind: string; count: number | string; store: string }[] = [];
+  try {
+    const grouped = await db.telemetryEvent.groupBy({ by: ["kind"], _count: { _all: true } });
+    counts = grouped.map((g) => ({ kind: g.kind, count: g._count._all, store: "database" }));
+  } catch {
+    const s = (globalThis as unknown as { __qubitTelemetryState?: { buffer: { kind: string }[] } }).__qubitTelemetryState;
+    const byKind = new Map<string, number>();
+    for (const e of s?.buffer ?? []) byKind.set(e.kind, (byKind.get(e.kind) ?? 0) + 1);
+    counts = [...byKind.entries()].map(([kind, count]) => ({ kind, count, store: "in-process buffer" }));
+  }
+  return {
+    config: { telemetryRetentionDays: cfg.telemetryRetentionDays, hardCapRows: cfg.hardCapRows, samplingRatePct: cfg.samplingRatePct, requestEnabled: cfg.requestEnabled, clientEnabled: cfg.clientEnabled },
+    persistence: { state: tel.persistence, note: tel.persistenceLabel, bufferLen: tel.bufferLen },
+    counts,
+    lastPrune: lastPruneSnapshot(),
+    policy: {
+      enforcement: "Phase 25 ENFORCED retention: 'Run retention now' (audited) deletes TelemetryEvent rows older than telemetryRetentionDays; the hard row cap is enforced during every prune regardless of the retention setting. The flush path also prunes opportunistically.",
+      providerFacts: [
+        "Application logs (stdout) are NOT shipped to any external log store — Vercel retains runtime logs per its platform policy (visible in the Vercel dashboard); the app does not export them (Not configured).",
+        "Prisma query logging goes to stdout only — not stored by this application.",
+        "TelemetryEvent rows live in Supabase PostgreSQL until pruned by this policy; Supabase platform backups follow the provider's own retention (see P22-15 — VERIFY in the Supabase dashboard).",
+        "The enterprise audit trail is bounded in-process (200 live events) — its durable retention is the platform log policy, not an application guarantee.",
+      ],
+    },
+    actions: ["retention.prune"],
+    sourceNote: "Real row counts where the store is reachable; honest labels where it is not.",
+  };
+}
+
+/**
+ * P25 §23 — global search snapshot: observability entities an
+ * administrator can find via Qubit One global search. Read-only,
+ * bounded, real registries; the search route gates it to
+ * administrators (server-derived role).
+ */
+export function obsSearchSnapshot(): {
+  alerts: { id: string; name: string; severity: string; status: string; triggeredAt: number }[];
+  incidents: { id: string; severity: string; title: string; status: string; startedAt: number }[];
+  runbooks: { id: string; title: string; incidentType: string }[];
+  slos: { id: string; name: string; kind: string; target: number }[];
+  alertRules: { id: string; name: string; metric: string; enabled: boolean }[];
+} {
+  const s = store();
+  return {
+    alerts: s.alerts.slice(0, 25).map((a) => ({ id: a.id, name: a.ruleName, severity: a.severity, status: a.status, triggeredAt: a.triggeredAt })),
+    incidents: opsStore().incidents.slice(0, 25).map((i) => ({ id: i.id, severity: i.severity, title: i.title, status: i.status, startedAt: i.startedAt })),
+    runbooks: s.runbooks.map((r) => ({ id: r.id, title: r.title, incidentType: r.incidentType })),
+    slos: s.slos.map((x) => ({ id: x.id, name: x.name, kind: x.kind, target: x.target })),
+    alertRules: s.alertRules.map((r) => ({ id: r.id, name: r.name, metric: r.metric, enabled: r.enabled })),
   };
 }
 
@@ -729,7 +1132,7 @@ export async function obsPost(role: WorkspaceRole, action: ObsAction): Promise<R
       const name = String(action.input.name ?? "").trim();
       if (name.length < 3) return fail(400, "invalid_name", "Rule name required (min 3 chars).");
       const metric = String(action.input.metric ?? "");
-      if (!["db-latency", "api-rtt", "rss", "audit-failures", "audit-events"].includes(metric)) return fail(400, "invalid_metric", "Unsupported metric (only live-measurable metrics are allowed).");
+      if (!["db-latency", "api-rtt", "rss", "audit-failures", "audit-events", "request-error-rate", "api-p95-latency", "request-count", "client-js-errors"].includes(metric)) return fail(400, "invalid_metric", "Unsupported metric (only real, measurable metrics are allowed).");
       const rule: AlertRule = {
         id: `AR-${now.toString(36).toUpperCase()}`, name: name.slice(0, 100), metric,
         condition: action.input.condition === "below" ? "below" : "above",
@@ -756,22 +1159,31 @@ export async function obsPost(role: WorkspaceRole, action: ObsAction): Promise<R
       return ok({ ok: true, message: `Rule ${id} deleted.` });
     }
     case "alert.evaluate": {
-      // Real evaluation against live measurements.
+      // Real evaluation against live measurements + Phase 25 telemetry.
       const [dbP, apiP] = await Promise.all([dbProbe(), selfProbe()]);
       const mem = process.memoryUsage();
       const events = auditEvents(300);
       const hourAgo = now - 3_600_000;
       const recent = events.filter((e) => e.ts >= hourAgo);
+      const [stats, client] = await Promise.all([requestStats(3_600_000), clientStats(3_600_000)]);
       const values: Record<string, number | null> = {
         "db-latency": dbP.latencyMs, "api-rtt": apiP.latencyMs,
         rss: Math.round(mem.rss / 1048576),
         "audit-failures": recent.filter((e) => e.result === "Failure").length,
         "audit-events": recent.length,
+        "request-error-rate": stats.total >= 10 ? stats.errorRatePct : null,
+        "api-p95-latency": stats.total >= 10 ? stats.p95 : null,
+        "request-count": stats.total,
+        "client-js-errors": client.jsErrors,
       };
       const created: Alert[] = [];
+      const insufficient: string[] = [];
       for (const rule of s.alertRules.filter((r) => r.enabled)) {
         const value = values[rule.metric];
-        if (value == null) continue;
+        if (value == null) {
+          if ("request-error-rate" === rule.metric || "api-p95-latency" === rule.metric) insufficient.push(rule.name);
+          continue;
+        }
         const breached = rule.condition === "above" ? value > rule.threshold : value < rule.threshold;
         if (!breached) continue;
         const existing = s.alerts.find((a) => a.ruleId === rule.id && (a.status === "Triggered" || a.status === "Acknowledged") && now - a.evaluatedAt < rule.cooldownMin * 60_000);
@@ -786,7 +1198,8 @@ export async function obsPost(role: WorkspaceRole, action: ObsAction): Promise<R
         created.push(alert);
         writeAudit({ actor, actorId: SESSION_USER_ID, action: "obs.alert.triggered", resource: alert.id, result: "Success", severity: rule.severity === "Critical" ? "Critical" : rule.severity === "High" ? "High" : "Warning", context: `${rule.name}: ${value} ${rule.condition} ${rule.threshold}` });
       }
-      return ok({ ok: true, evaluated: s.alertRules.filter((r) => r.enabled).length, triggered: created.length, alerts: created, measurements: values, message: created.length ? `${created.length} alert(s) triggered from real measurements.` : "All enabled rules evaluated — no breaches measured." });
+      const note = insufficient.length ? ` ${insufficient.length} telemetry rule(s) skipped — Insufficient data (<10 recorded requests in the window); no value was guessed.` : "";
+      return ok({ ok: true, evaluated: s.alertRules.filter((r) => r.enabled).length, triggered: created.length, alerts: created, measurements: values, message: created.length ? `${created.length} alert(s) triggered from real measurements.${note}` : `All enabled rules evaluated — no breaches measured.${note}` });
     }
     case "alert.status": {
       const id = String(action.input.id ?? "");
@@ -863,10 +1276,42 @@ export async function obsPost(role: WorkspaceRole, action: ObsAction): Promise<R
         if (cm == null) return fail(400, "invalid_cooldown", "Cooldown must be 0–1440 minutes.");
         st.alertDefaults.cooldownMin = cm;
       }
+      // Phase 25: telemetry pipeline configuration (applies to this runtime; defaults restore on cold start — fail-safe).
+      const telemetryPatch: Record<string, unknown> = {};
+      if (typeof action.input.requestTelemetryEnabled === "boolean") telemetryPatch.requestEnabled = action.input.requestTelemetryEnabled;
+      if (typeof action.input.clientTelemetryEnabled === "boolean") telemetryPatch.clientEnabled = action.input.clientTelemetryEnabled;
+      const tdr = num(action.input.telemetryRetentionDays, 1, 365); if (action.input.telemetryRetentionDays != null && tdr == null) return fail(400, "invalid_retention", "Telemetry retention must be 1–365 days.");
+      if (tdr != null) telemetryPatch.telemetryRetentionDays = tdr;
+      if (sr != null) telemetryPatch.samplingRatePct = sr;
+      if (Object.keys(telemetryPatch).length > 0) configureTelemetry(telemetryPatch);
       st.updatedBy = actor;
       st.updatedAt = now;
       writeAudit({ actor, actorId: SESSION_USER_ID, action: "obs.settings.update", resource: "observability-settings", result: "Success", severity: "Warning", context: JSON.stringify(action.input).slice(0, 200) });
-      return ok({ ok: true, message: "Observability settings updated and audited.", settings: st });
+      return ok({ ok: true, message: "Observability settings updated and audited.", settings: st, telemetry: telemetryConfigSnapshot() });
+    }
+    case "retention.prune": {
+      const result = await pruneTelemetry();
+      writeAudit({ actor, actorId: SESSION_USER_ID, action: "obs.retention.prune", resource: "telemetry-store", result: "Success", severity: "Warning", context: `${result.mode}: deleted ${result.deleted} event(s). ${result.note}`.slice(0, 200) });
+      return ok({ ok: true, message: `Retention enforced (${result.mode}): ${result.deleted} event(s) deleted.`, result });
+    }
+    case "access.grant": {
+      const role = String(action.input.role ?? "") as WorkspaceRole;
+      if (!(role in s.accessMatrix)) return fail(400, "invalid_role", "Unknown role.");
+      if (role === "administrator") return fail(400, "invalid_role", "The administrator role always holds full access and cannot be modified.");
+      const sections = Array.isArray(action.input.sections) ? action.input.sections.map(String) : [];
+      const invalid = sections.filter((x) => !DELEGABLE_SECTIONS.includes(x as ObsSection));
+      if (invalid.length) return fail(400, "invalid_section", `Non-delegable or unknown section(s): ${invalid.join(", ")}. The Logs Explorer is never delegable.`);
+      s.accessMatrix[role] = { role, read: sections, updatedAt: now, updatedBy: actor };
+      writeAudit({ actor, actorId: SESSION_USER_ID, action: "obs.access.grant", resource: `role:${role}`, result: "Success", severity: "High", context: `read granted: ${sections.length ? sections.join(", ") : "(none)"}` });
+      return ok({ ok: true, message: `Read access for '${role}' updated and audited.`, matrix: s.accessMatrix[role] });
+    }
+    case "access.revoke": {
+      const role = String(action.input.role ?? "") as WorkspaceRole;
+      if (!(role in s.accessMatrix)) return fail(400, "invalid_role", "Unknown role.");
+      if (role === "administrator") return fail(400, "invalid_role", "The administrator role always holds full access and cannot be modified.");
+      s.accessMatrix[role] = { role, read: [], updatedAt: now, updatedBy: actor };
+      writeAudit({ actor, actorId: SESSION_USER_ID, action: "obs.access.revoke", resource: `role:${role}`, result: "Success", severity: "High", context: "all read grants revoked (deny-by-default restored)" });
+      return ok({ ok: true, message: `All read grants for '${role}' revoked and audited.`, matrix: s.accessMatrix[role] });
     }
     case "probe.trace": {
       // REAL measured single-request trace: auth → SQL → HTTP self.
@@ -909,12 +1354,17 @@ export async function obsPost(role: WorkspaceRole, action: ObsAction): Promise<R
       const env = runtimeEnv();
       if (env.onVercel) return ok({ ok: false, message: "AI generation unavailable on the serverless runtime (gateway unreachable). Deterministic analysis in this section remains available.", facts: [] as unknown[] });
       const events = auditEvents(200);
+      const [stats, client] = await Promise.all([requestStats(3_600_000), clientStats(3_600_000)]);
       const context = {
         eventsLastHour: events.filter((e) => e.ts >= now - 3_600_000).length,
         failures: events.filter((e) => e.result === "Failure").length,
         blocked: events.filter((e) => e.result === "Blocked").length,
         topActions: [...new Set(events.map((e) => e.action))].slice(0, 10),
         openIncidents: opsStore().incidents.filter((i) => i.status !== "resolved").length,
+        requestsLastHour: stats.total,
+        requestErrorRatePct: stats.errorRatePct,
+        apiP95LatencyMs: stats.p95,
+        clientJsErrors24h: client.jsErrors,
       };
       try {
         const { runCompletion: run } = await import("@/lib/qubit/ai-engine");

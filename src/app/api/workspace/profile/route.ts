@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireIdentity } from "@/lib/qubit/auth-server";
 import { updateProfile, type WorkspaceRole } from "@/lib/qubit/workspace-server";
+// Phase 25: request metering (real telemetry, failure-isolated).
+import { withMeter } from "@/lib/qubit/telemetry-server";
 
 // Phase 21: the acting role is derived from the signed session cookie
 // (server-verified) — a client-declared role header is never trusted.
@@ -16,14 +18,16 @@ async function identityFrom(req: NextRequest): Promise<{ ok: true; role: Workspa
 // Company-controlled fields (employee ID, department, manager,
 // designation, employment status) are rejected server-side.
 export async function PATCH(req: NextRequest) {
-  const actor = await identityFrom(req);
-  if (!actor.ok) return actor.response;
-  let body: Record<string, unknown>;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ code: "bad_request", message: "Invalid request." }, { status: 400 });
-  }
-  const result = updateProfile(actor.role, body);
-  return result.ok ? NextResponse.json(result) : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
+  return withMeter(req, "PATCH /api/workspace/profile", async () => {
+    const actor = await identityFrom(req);
+    if (!actor.ok) return actor.response;
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ code: "bad_request", message: "Invalid request." }, { status: 400 });
+    }
+    const result = updateProfile(actor.role, body);
+    return result.ok ? NextResponse.json(result) : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
+  });
 }

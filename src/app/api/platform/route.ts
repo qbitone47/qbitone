@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireIdentity } from "@/lib/qubit/auth-server";
 import { platformGet, platformPost, sectionFor, type PlatformAction } from "@/lib/qubit/platform-server";
 import type { WorkspaceRole } from "@/lib/qubit/workspace-server";
+// Phase 25: request metering (real telemetry, failure-isolated).
+import { withMeter } from "@/lib/qubit/telemetry-server";
 
 // Phase 21: the acting role is derived from the signed session cookie
 // (server-verified) — a client-declared role header is never trusted.
@@ -18,18 +20,20 @@ async function identityFrom(req: NextRequest): Promise<{ ok: true; role: Workspa
 // audited); system-status is readable by every signed-in role.
 // All telemetry is measured live or honestly labeled unavailable.
 export async function GET(req: NextRequest) {
-  const actor = await identityFrom(req);
-  if (!actor.ok) return actor.response;
-  const section = req.nextUrl.searchParams.get("section");
-  const resolved = sectionFor(section);
-  if (!resolved) {
-    return NextResponse.json({ code: "bad_section", message: "Unknown platform section." }, { status: 400 });
-  }
-  const result = await platformGet(actor.role, resolved);
-  if (!result.ok) {
-    return NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
-  }
-  return NextResponse.json(result.data);
+  return withMeter(req, "GET /api/platform", async () => {
+    const actor = await identityFrom(req);
+    if (!actor.ok) return actor.response;
+    const section = req.nextUrl.searchParams.get("section");
+    const resolved = sectionFor(section);
+    if (!resolved) {
+      return NextResponse.json({ code: "bad_section", message: "Unknown platform section." }, { status: 400 });
+    }
+    const result = await platformGet(actor.role, resolved);
+    if (!result.ok) {
+      return NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
+    }
+    return NextResponse.json(result.data);
+  });
 }
 
 // POST /api/platform — backup/verify/restore-test (real file
@@ -37,23 +41,25 @@ export async function GET(req: NextRequest) {
 // REQUESTS (never automatic production restores), QA + a11y
 // governance records and the browser-vitals telemetry receiver.
 export async function POST(req: NextRequest) {
-  const actor = await identityFrom(req);
-  if (!actor.ok) return actor.response;
-  let body: Record<string, unknown>;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ code: "bad_request", message: "Invalid request." }, { status: 400 });
-  }
-  const type = typeof body.type === "string" ? body.type : undefined;
-  if (!type) {
-    return NextResponse.json({ code: "bad_request", message: "Provide the action type." }, { status: 400 });
-  }
-  const input = (body.input ?? {}) as Record<string, unknown>;
-  const result = await platformPost(actor.role, { type, input, confirm: body.confirm === true } as unknown as PlatformAction);
-  if (!result.ok) {
-    return NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
-  }
-  // platformPost already returns the flattened Qubit shape: { ok, message, ...payload }
-  return NextResponse.json(result);
+  return withMeter(req, "POST /api/platform", async () => {
+    const actor = await identityFrom(req);
+    if (!actor.ok) return actor.response;
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ code: "bad_request", message: "Invalid request." }, { status: 400 });
+    }
+    const type = typeof body.type === "string" ? body.type : undefined;
+    if (!type) {
+      return NextResponse.json({ code: "bad_request", message: "Provide the action type." }, { status: 400 });
+    }
+    const input = (body.input ?? {}) as Record<string, unknown>;
+    const result = await platformPost(actor.role, { type, input, confirm: body.confirm === true } as unknown as PlatformAction);
+    if (!result.ok) {
+      return NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
+    }
+    // platformPost already returns the flattened Qubit shape: { ok, message, ...payload }
+    return NextResponse.json(result);
+  });
 }

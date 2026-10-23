@@ -52,7 +52,16 @@ export function proxy(req: NextRequest) {
     }
   }
 
-  const res = NextResponse.next();
+  // Phase 25 (§10 correlation): assign a request id to EVERY request
+  // (honouring an inbound one), propagate it to route handlers via the
+  // request headers and echo it on the response. API metering reads the
+  // same id so error → request → deployment correlation is possible.
+  const requestId = req.headers.get("x-request-id") ?? crypto.randomUUID();
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-request-id", requestId);
+
+  const res = NextResponse.next({ request: { headers: requestHeaders } });
+  res.headers.set("x-request-id", requestId);
 
   // Security headers on every response (§31). Chosen to be compatible
   // with the Next.js runtime — no script-src/style-src restrictions that

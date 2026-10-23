@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireIdentity } from "@/lib/qubit/auth-server";
 import { obsGet, obsPost, obsSectionFor } from "@/lib/qubit/obs-server";
 import type { WorkspaceRole } from "@/lib/qubit/workspace-server";
+// Phase 25: request metering (real telemetry, failure-isolated).
+import { withMeter } from "@/lib/qubit/telemetry-server";
 
 // Phase 23 · Observability — telemetry correlation endpoint.
 // Same enforcement model as /api/ops and /api/platform: identity
@@ -14,40 +16,46 @@ async function identityFrom(req: NextRequest): Promise<{ ok: true; role: Workspa
     : { ok: false, response: auth.response };
 }
 
-// GET /api/obs?section=…
+// GET /api/obs?section=…[&filters]  — filters (q/level/source/route/requestId/
+// sinceMs/windowMs) are forwarded to the section payload for server-side
+// filtering (Phase 25 logs explorer + activity/correlation windows).
 export async function GET(req: NextRequest) {
-  const actor = await identityFrom(req);
-  if (!actor.ok) return actor.response;
-  const section = req.nextUrl.searchParams.get("section");
-  const resolved = obsSectionFor(section);
-  if (!resolved) {
-    return NextResponse.json({ code: "bad_section", message: "Unknown observability section." }, { status: 400 });
-  }
-  const result = await obsGet(actor.role, resolved);
-  if (!result.ok) {
-    return NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
-  }
-  return NextResponse.json(result.data);
+  return withMeter(req, "GET /api/obs", async () => {
+    const actor = await identityFrom(req);
+    if (!actor.ok) return actor.response;
+    const section = req.nextUrl.searchParams.get("section");
+    const resolved = obsSectionFor(section);
+    if (!resolved) {
+      return NextResponse.json({ code: "bad_section", message: "Unknown observability section." }, { status: 400 });
+    }
+    const result = await obsGet(actor.role, resolved, req.nextUrl.searchParams);
+    if (!result.ok) {
+      return NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
+    }
+    return NextResponse.json(result.data);
+  });
 }
 
 // POST /api/obs — audited observability actions.
 export async function POST(req: NextRequest) {
-  const actor = await identityFrom(req);
-  if (!actor.ok) return actor.response;
-  let body: Record<string, unknown>;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ code: "bad_request", message: "Invalid request." }, { status: 400 });
-  }
-  const type = typeof body.type === "string" ? body.type : undefined;
-  if (!type) {
-    return NextResponse.json({ code: "bad_request", message: "Provide the action type." }, { status: 400 });
-  }
-  const input = (body.input ?? {}) as Record<string, unknown>;
-  const result = await obsPost(actor.role, { type, input, confirm: body.confirm === true });
-  if (!result.ok) {
-    return NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
-  }
-  return NextResponse.json(result);
+  return withMeter(req, "POST /api/obs", async () => {
+    const actor = await identityFrom(req);
+    if (!actor.ok) return actor.response;
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ code: "bad_request", message: "Invalid request." }, { status: 400 });
+    }
+    const type = typeof body.type === "string" ? body.type : undefined;
+    if (!type) {
+      return NextResponse.json({ code: "bad_request", message: "Provide the action type." }, { status: 400 });
+    }
+    const input = (body.input ?? {}) as Record<string, unknown>;
+    const result = await obsPost(actor.role, { type, input, confirm: body.confirm === true });
+    if (!result.ok) {
+      return NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
+    }
+    return NextResponse.json(result);
+  });
 }

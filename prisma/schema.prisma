@@ -30,3 +30,36 @@ model Post {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// Phase 25 · Enterprise Observability — unified telemetry store.
+// One bounded, indexed table for REAL server/client telemetry:
+// request metering, structured application logs, server errors,
+// probe results and client events (vitals / JS errors / route
+// transitions / client-observed requests). Values are redacted at
+// the source; retention is enforced (see telemetry-server.ts).
+model TelemetryEvent {
+  id          String    @id @default(cuid())
+  ts          DateTime  @default(now())
+  kind        String // request | log | error | probe | client-vital | client-error | client-route | client-request
+  level       String    @default("info") // debug | info | warn | error
+  service     String    @default("qubit-one")
+  environment String    @default("runtime")
+  requestId   String?
+  traceId     String?
+  route       String?
+  method      String?
+  status      Int?
+  durationMs  Float?
+  actorId     String? // role label only — never PII
+  errorCode   String?
+  message     String? // redacted, length-capped
+  context     String? // redacted JSON, size-capped
+  release     String? // commit SHA — change intelligence
+  source      String    @default("server") // server | client
+  screen      String? // client screen name (client events)
+
+  @@index([ts])
+  @@index([kind, ts])
+  @@index([route, ts])
+  @@index([requestId])
+}
