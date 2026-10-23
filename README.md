@@ -13,7 +13,7 @@ This is an active development codebase. It implements 152 of the 308 screens def
 | Package | `qubit-one` (private) |
 | Version | 0.2.1 |
 | Application model | Single Next.js App Router application; one visible route with client-side screen switching via a typed screen registry |
-| Screens implemented | 152 across 12 modules (roadmap numbers 01–110 and 267–308) |
+| Screens implemented | 152 across 12 modules (roadmap numbers 01–110 and 267–308) + 24 operations screens (Phase 22, internal IDs P22-01–P22-24) |
 | Roles | `administrator`, `dept-head`, `sales-exec`, `hr-manager`, `employee` |
 | Data model | 9 typed in-process server stores seeded from structured fixtures; Prisma/PostgreSQL is currently scaffold-only |
 | Runtime | Bun (also runs under Node 20+ via the standalone output) |
