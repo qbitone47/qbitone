@@ -6,7 +6,8 @@
 // backup status, deployment state or integration health (§38).
 //
 // What is genuinely measured here:
-//   · Database latency — live Prisma `SELECT 1` against SQLite
+//   · Database latency — live Prisma `SELECT 1` against the
+//     configured datasource (PostgreSQL / Supabase in production)
 //   · System resources — os.memory/load/uptime + process RSS
 //   · API round-trip — a self-probe of the mounted platform API
 //   · Security headers — read from a real response of this server
@@ -191,7 +192,7 @@ async function probeDatabase(): Promise<{ health: ServiceHealth; latencyMs: numb
   const started = Date.now();
   try {
     await db.$queryRaw`SELECT 1`;
-    return { health: "healthy", latencyMs: Date.now() - started, note: "Live Prisma SELECT 1 against the SQLite platform database." };
+    return { health: "healthy", latencyMs: Date.now() - started, note: "Live Prisma SELECT 1 against the configured PostgreSQL database." };
   } catch (err) {
     return {
       health: "unavailable",
