@@ -1,6 +1,6 @@
 # Qubit One — Deployment Guide
 
-This is the **actual** deployment path for Qubit One as it exists today: development → build → CI → standalone artifact → process start behind a reverse proxy → health checks → logs/backup. It is a single-process deployment with a local SQLite file. Anything not provided is listed explicitly at the end.
+This is the **actual** deployment path for Qubit One as it exists today: development → build → CI → standalone artifact → process start behind a reverse proxy → health checks → logs/backup. The production deployment target is **Vercel (Next.js) + Supabase PostgreSQL**; a single-process self-hosted deployment via the standalone output remains available. Anything not provided is listed explicitly at the end.
 
 ## Pipeline Overview
 
@@ -24,7 +24,7 @@ Copy `.env.example` to `.env` in the deployment directory:
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `DATABASE_URL` | Yes for `db:*` scripts and the DB latency probe | Prisma URL for the local SQLite file (e.g. a file under `db/`) |
+| `DATABASE_URL` | Yes for `db:*` scripts and the DB latency probe | Prisma PostgreSQL connection URL (Supabase in production; server-only) |
 | `QUBIT_AUTH_SECRET` | No | Session signing secret (min 32 chars). If unset, a CSPRNG secret is generated once into `db/.auth-secret` |
 | `APP_URL` | No | Reserved for reverse-proxy deployments |
 
@@ -36,7 +36,7 @@ Inject secrets via your platform's secret store or GitHub Actions Secrets. Never
 bun run db:push
 ```
 
-`prisma db push --accept-data-loss` materializes the SQLite file configured in `DATABASE_URL` (under `db/`). **Note:** the Prisma schema is a scaffold (`User`, `Post` only); application domain state lives in the in-process server stores and is re-seeded from fixtures at process start (see [ARCHITECTURE.md](ARCHITECTURE.md#data-architecture)).
+`prisma db push` applies the Prisma models to the PostgreSQL database configured in `DATABASE_URL`. **Note:** the Prisma schema is a scaffold (`User`, `Post` only); application domain state lives in the in-process server stores and is re-seeded from fixtures at process start (see [ARCHITECTURE.md](ARCHITECTURE.md#data-architecture)).
 
 ## 4. Running (Development)
 
@@ -122,7 +122,7 @@ Forwarded headers are honored: over HTTPS the session cookie gains `Secure` and 
 
 ## 11. Rollback
 
-Deploy the previous tagged build: check out the prior release tag, run `bun install --frozen-lockfile && bun run build`, and restart the process (or redeploy the previously built `.next/standalone` artifact if it was archived). Because application state is per-process and fixture-seeded, rollback carries no data-migration concern for the in-process stores; the SQLite file is unaffected by application rollbacks.
+Deploy the previous tagged build: check out the prior release tag, run `bun install --frozen-lockfile && bun run build`, and restart the process (or redeploy the previously built `.next/standalone` artifact if it was archived). Because application state is per-process and fixture-seeded, rollback carries no data-migration concern for the in-process stores; the PostgreSQL database (scaffold models) is unaffected by application rollbacks.
 
 ## 12. Migration Safety
 

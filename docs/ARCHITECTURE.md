@@ -37,7 +37,7 @@ This document describes the system **as implemented**. Where a capability is par
 │  writeAudit (security-server.ts)  — ONE centralized audit trail                 │
 │                                                                                 │
 │  ai-engine.ts (server-only)   z-ai-web-dev-sdk behind a provider abstraction    │
-│  Prisma client (lib/db.ts)    SQLite, scaffold schema — latency probe/backups   │
+│  Prisma client (lib/db.ts)    PostgreSQL, scaffold schema — latency probe        │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -88,7 +88,7 @@ JSON responses to the client (client never imports server stores)
 ```
 
 - **Consequence:** application state is **per-process** and resets on process restart. Running multiple instances would give each its own divergent state. This is acceptable at demo fixture scale and is the most important constraint to understand before deploying.
-- **SQLite/Prisma scaffold.** `prisma/schema.prisma` (SQLite provider) contains only `User`/`Post` scaffold models. `bun run db:push` materializes `db/custom.db` (git-ignored); the Prisma client is used for a real database latency probe and backup/restore exercises in Platform Ops. Domain persistence is a roadmap item.
+- **PostgreSQL/Prisma scaffold.** `prisma/schema.prisma` (PostgreSQL provider) contains only `User`/`Post` scaffold models. `bun run db:push` applies the models to the database configured in `DATABASE_URL` (Supabase PostgreSQL in production); the Prisma client is used for a real database latency probe in Platform Ops. Domain persistence is a roadmap item.
 - **Synthetic data only.** Fixtures model "Qubit One Pvt Ltd" with deterministic values (including a fixed demo clock). No real PII is present.
 
 ## Authentication & Authorization

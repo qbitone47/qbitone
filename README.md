@@ -15,7 +15,7 @@ This is an active development codebase. It implements 152 of the 308 screens def
 | Application model | Single Next.js App Router application; one visible route with client-side screen switching via a typed screen registry |
 | Screens implemented | 152 across 12 modules (roadmap numbers 01–110 and 267–308) |
 | Roles | `administrator`, `dept-head`, `sales-exec`, `hr-manager`, `employee` |
-| Data model | 9 typed in-process server stores seeded from structured fixtures; Prisma/SQLite is currently scaffold-only |
+| Data model | 9 typed in-process server stores seeded from structured fixtures; Prisma/PostgreSQL is currently scaffold-only |
 | Runtime | Bun (also runs under Node 20+ via the standalone output) |
 | License | Proprietary — see [LICENSE](LICENSE) |
 
@@ -64,7 +64,7 @@ The stack below is the complete, real stack. No other frameworks, databases or i
 | Utilities | date-fns, qrcode.react, input-otp, uuid |
 | Realtime (reference) | socket.io-client (see `examples/websocket/`) |
 | AI | z-ai-web-dev-sdk — server-side only, behind `src/lib/qubit/ai-engine.ts` |
-| Database | Prisma 6 with SQLite provider (scaffold schema; see [Database](#10-database)) |
+| Database | Prisma 6 with PostgreSQL provider (scaffold schema; see [Database](#10-database)) |
 | Runtime / package manager | Bun (`bun.lock`) |
 | Reverse proxy (reference) | Caddy (repo-root `Caddyfile`) |
 
@@ -83,8 +83,8 @@ qubit-one/
 ├── tsconfig.json           # TypeScript strict configuration
 ├── components.json         # shadcn/ui configuration
 ├── prisma/
-│   └── schema.prisma       # SQLite provider (scaffold models only)
-├── db/                     # Git-ignored runtime: SQLite file, backups, generated auth secret
+│   └── schema.prisma       # PostgreSQL provider (scaffold models only)
+├── db/                     # Git-ignored runtime: backups, generated auth secret (local dev)
 ├── docs/                   # Engineering documentation (this documentation set)
 ├── examples/
 │   └── websocket/          # socket.io reference demo for optional mini-services
@@ -141,8 +141,8 @@ Security architecture, controls, known gaps and the security roadmap: [docs/SECU
 
 ## 10. Database
 
-- `prisma/schema.prisma` uses the **SQLite** provider and currently contains only scaffold models (`User`, `Post`). **The application domain state does not live in Prisma** — it lives in the 9 in-process server stores seeded deterministically from fixture modules at process start.
-- A runtime SQLite file (`db/custom.db`, git-ignored) can be activated with `bun run db:push`; the Prisma client is used by the Platform Ops store for a real database latency probe.
+- `prisma/schema.prisma` uses the **PostgreSQL** provider and currently contains only scaffold models (`User`, `Post`). **The application domain state does not live in Prisma** — it lives in the 9 in-process server stores seeded deterministically from fixture modules at process start.
+- The Prisma client is used by the Platform Ops store for a real database latency probe against the configured PostgreSQL database (Supabase in production); the schema is applied with `bun run db:push`.
 - Consequence: application state is **per-process** and resets on process restart (with the exception of backup artifacts under `db/backups/`, which are real files). A persistent domain data layer is a roadmap item.
 
 ## 11. AI Platform
@@ -180,7 +180,7 @@ The Analytics module (18 screens) is one architecture, not a second data engine:
 Prerequisites:
 
 - **Bun 1.2+** — required for install, scripts and the dev server (https://bun.sh).
-- No other services are required. The database is a local SQLite file.
+- No other services are required. The database is PostgreSQL (Supabase in production).
 
 ## 16. Environment Variables
 
@@ -188,7 +188,7 @@ Copy [.env.example](.env.example) to `.env` and fill in values. `.env` is git-ig
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `DATABASE_URL` | Yes (for `db:*` scripts and the Prisma-backed health probe) | Prisma connection URL for the local SQLite file |
+| `DATABASE_URL` | Yes (for `db:*` scripts and the Prisma-backed health probe) | Prisma PostgreSQL connection URL (Supabase in production; server-only) |
 | `QUBIT_AUTH_SECRET` | No | Session-token signing secret (min 32 chars). If unset, a CSPRNG secret is generated once and persisted to the git-ignored `db/.auth-secret` |
 | `APP_URL` | No | Reserved for deployment-specific configuration behind a reverse proxy |
 
@@ -201,7 +201,7 @@ bun install
 ## 18. Running Locally
 
 ```bash
-# 1. Initialize the runtime SQLite database (creates the file configured in DATABASE_URL)
+# 1. Initialize the database schema (applies the Prisma models to DATABASE_URL)
 bun run db:push
 
 # 2. Start the dev server on port 3000 (output is teed to dev.log)
@@ -262,7 +262,7 @@ There are no test jobs (there is no test suite), no artifact publishing and no a
 
 ## 25. Backup & Recovery
 
-- The Platform Ops module creates **real file copies** of the platform SQLite database into `db/backups/` with SHA-256 checksums (verified by re-hash and SQLite header check) and tests restores into a staging copy — production is never touched.
+- The Platform Ops module creates **real file copies** of the local development SQLite database into `db/backups/` with SHA-256 checksums (verified by re-hash and SQLite header check) and tests restores into a staging copy — production is never touched. In production (PostgreSQL/Supabase), use managed database backups instead; the file-based backup operations degrade gracefully where no local database file exists.
 - Operational backup is otherwise **manual**: copy the git-ignored SQLite file(s) under `db/`. Restore is file replacement while the process is stopped.
 - There is **no automated disaster recovery**, no offsite replication and no scheduled backup jobs.
 
