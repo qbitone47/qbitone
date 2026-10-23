@@ -179,6 +179,31 @@ import { P22FeatureFlagsScreen } from "./screens/p22-feature-flags";
 import { P22SystemConfigurationScreen } from "./screens/p22-system-configuration";
 import { P22MaintenanceModeScreen } from "./screens/p22-maintenance-mode";
 import { P22IncidentCenterScreen } from "./screens/p22-incident-center";
+// ——— Phase 23 · Observability ———
+import { P23ObservabilityHomeScreen } from "./screens/p23-observability-home";
+import { P23LogsExplorerScreen } from "./screens/p23-logs-explorer";
+import { P23MetricsExplorerScreen } from "./screens/p23-metrics-explorer";
+import { P23DistributedTracesScreen } from "./screens/p23-distributed-traces";
+import { P23ServiceMapScreen } from "./screens/p23-service-map";
+import { P23DependencyHealthScreen } from "./screens/p23-dependency-health";
+import { P23ApiPerformanceScreen } from "./screens/p23-api-performance";
+import { P23DatabasePerformanceScreen } from "./screens/p23-database-performance";
+import { P23WebPerformanceScreen } from "./screens/p23-web-performance";
+import { P23ErrorIntelligenceScreen } from "./screens/p23-error-intelligence";
+import { P23AlertCenterScreen } from "./screens/p23-alert-center";
+import { P23AlertRulesScreen } from "./screens/p23-alert-rules";
+import { P23SloManagementScreen } from "./screens/p23-slo-management";
+import { P23ReliabilityScorecardScreen } from "./screens/p23-reliability-scorecard";
+import { P23CapacityUsageScreen } from "./screens/p23-capacity-usage";
+import { P23InfrastructureHealthScreen } from "./screens/p23-infrastructure-health";
+import { P23DeploymentImpactScreen } from "./screens/p23-deployment-impact";
+import { P23ChangeIntelligenceScreen } from "./screens/p23-change-intelligence";
+import { P23IncidentCorrelationScreen } from "./screens/p23-incident-correlation";
+import { P23OperationalRunbooksScreen } from "./screens/p23-operational-runbooks";
+import { P23OnCallEscalationScreen } from "./screens/p23-oncall-escalation";
+import { P23ReliabilityReportsScreen } from "./screens/p23-reliability-reports";
+import { P23OperationalAiInsightsScreen } from "./screens/p23-operational-ai-insights";
+import { P23ObservabilitySettingsScreen } from "./screens/p23-observability-settings";
 
 export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "org-structure": OrganizationStructureScreen,
@@ -360,4 +385,29 @@ export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "p22-maintenance-mode": P22MaintenanceModeScreen,
   "p22-incident-center": P22IncidentCenterScreen,
   "p22-system-health-dashboard": P22SystemHealthDashboardScreen,
+  // ——— Phase 23 · Observability (P23-01…P23-24) ———
+  "p23-observability-home": P23ObservabilityHomeScreen,
+  "p23-logs-explorer": P23LogsExplorerScreen,
+  "p23-metrics-explorer": P23MetricsExplorerScreen,
+  "p23-distributed-traces": P23DistributedTracesScreen,
+  "p23-service-map": P23ServiceMapScreen,
+  "p23-dependency-health": P23DependencyHealthScreen,
+  "p23-api-performance": P23ApiPerformanceScreen,
+  "p23-database-performance": P23DatabasePerformanceScreen,
+  "p23-web-performance": P23WebPerformanceScreen,
+  "p23-error-intelligence": P23ErrorIntelligenceScreen,
+  "p23-alert-center": P23AlertCenterScreen,
+  "p23-alert-rules": P23AlertRulesScreen,
+  "p23-slo-management": P23SloManagementScreen,
+  "p23-reliability-scorecard": P23ReliabilityScorecardScreen,
+  "p23-capacity-usage": P23CapacityUsageScreen,
+  "p23-infrastructure-health": P23InfrastructureHealthScreen,
+  "p23-deployment-impact": P23DeploymentImpactScreen,
+  "p23-change-intelligence": P23ChangeIntelligenceScreen,
+  "p23-incident-correlation": P23IncidentCorrelationScreen,
+  "p23-operational-runbooks": P23OperationalRunbooksScreen,
+  "p23-oncall-escalation": P23OnCallEscalationScreen,
+  "p23-reliability-reports": P23ReliabilityReportsScreen,
+  "p23-operational-ai-insights": P23OperationalAiInsightsScreen,
+  "p23-observability-settings": P23ObservabilitySettingsScreen,
 };

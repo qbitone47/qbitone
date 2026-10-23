@@ -188,9 +188,34 @@ export type ScreenId =
   | "p22-system-configuration"
   | "p22-maintenance-mode"
   | "p22-incident-center"
-  | "p22-system-health-dashboard";
+  | "p22-system-health-dashboard"
+  // ——— Phase 23 · Observability, SRE & Operational Intelligence (P23-01…P23-24) ———
+  | "p23-observability-home"
+  | "p23-metrics-explorer"
+  | "p23-logs-explorer"
+  | "p23-distributed-traces"
+  | "p23-service-map"
+  | "p23-dependency-health"
+  | "p23-api-performance"
+  | "p23-database-performance"
+  | "p23-web-performance"
+  | "p23-error-intelligence"
+  | "p23-alert-center"
+  | "p23-alert-rules"
+  | "p23-slo-management"
+  | "p23-reliability-scorecard"
+  | "p23-capacity-usage"
+  | "p23-infrastructure-health"
+  | "p23-deployment-impact"
+  | "p23-change-intelligence"
+  | "p23-incident-correlation"
+  | "p23-operational-runbooks"
+  | "p23-oncall-escalation"
+  | "p23-reliability-reports"
+  | "p23-operational-ai-insights"
+  | "p23-observability-settings";
 
-export type ScreenModule = "enterprise" | "design-system" | "security" | "workspace" | "people" | "mail" | "executive" | "sales" | "sales-ai" | "analytics" | "mobile" | "platform" | "operations";
+export type ScreenModule = "enterprise" | "design-system" | "security" | "workspace" | "people" | "mail" | "executive" | "sales" | "sales-ai" | "analytics" | "mobile" | "platform" | "operations" | "observability";
 
 /** Screens rendered without the app shell (standalone authentication) */
 export const AUTH_SCREENS: ScreenId[] = ["login", "mfa-verification", "sso-provider-selection"];
@@ -394,6 +419,32 @@ export const SCREENS: ScreenMeta[] = [
   { id: "p22-maintenance-mode", num: "P22-22", title: "Maintenance Mode", shortTitle: "Maintenance", description: "Controlled maintenance states with the administrator emergency bypass guaranteed.", module: "operations" },
   { id: "p22-incident-center", num: "P22-23", title: "Production Incident Center", shortTitle: "Incidents", description: "SEV-1..SEV-4 incident lifecycle — detected through post-incident review — empty when none recorded.", module: "operations" },
   { id: "p22-system-health-dashboard", num: "P22-24", title: "System Health Dashboard", shortTitle: "System Health", description: "The consolidated operational command center — every signal measured and drillable.", module: "operations" },
+  // ——— Phase 23 · Observability, SRE & Operational Intelligence ———
+  // Internal IDs P23-01…P23-24. Extends Phase 22; no existing screen renumbered.
+  { id: "p23-observability-home", num: "P23-01", title: "Observability Home", shortTitle: "Observability", description: "Is Qubit One healthy right now — live probes, audit-derived signals, honest gaps.", module: "observability" },
+  { id: "p23-metrics-explorer", num: "P23-02", title: "Metrics Explorer", shortTitle: "Metrics", description: "Only metrics that can actually be measured — live values, no invented history.", module: "observability" },
+  { id: "p23-logs-explorer", num: "P23-03", title: "Logs Explorer", shortTitle: "Logs", description: "The enterprise audit trail read as the structured log stream — one audit system.", module: "observability" },
+  { id: "p23-distributed-traces", num: "P23-04", title: "Distributed Traces", shortTitle: "Traces", description: "Honest tracing state plus a real measured synthetic probe trace on demand.", module: "observability" },
+  { id: "p23-service-map", num: "P23-05", title: "Service Map", shortTitle: "Service Map", description: "Real dependency topology with live statuses — no fictional architecture drawn.", module: "observability" },
+  { id: "p23-dependency-health", num: "P23-06", title: "Dependency Health", shortTitle: "Dependencies", description: "Provider-by-provider status from live probes and credential presence.", module: "observability" },
+  { id: "p23-api-performance", num: "P23-07", title: "API Performance", shortTitle: "API Perf", description: "Real endpoint manifest with on-demand live probes; percentiles never faked.", module: "observability" },
+  { id: "p23-database-performance", num: "P23-08", title: "Database Performance", shortTitle: "DB Perf", description: "Live SQL probe plus honest unavailability for provider-internal metrics.", module: "observability" },
+  { id: "p23-web-performance", num: "P23-09", title: "Web Performance", shortTitle: "Web Perf", description: "Real browser vitals collected in-session by the platform — only what exists.", module: "observability" },
+  { id: "p23-error-intelligence", num: "P23-10", title: "Error Intelligence", shortTitle: "Error Intel", description: "Audit-derived error grouping with first/last seen and deployment context.", module: "observability" },
+  { id: "p23-alert-center", num: "P23-11", title: "Alert Center", shortTitle: "Alerts", description: "Alerts born only from real rule evaluations — lifecycle with audit.", module: "observability" },
+  { id: "p23-alert-rules", num: "P23-12", title: "Alert Rules", shortTitle: "Alert Rules", description: "Threshold rules over live-measurable metrics, evaluated on demand.", module: "observability" },
+  { id: "p23-slo-management", num: "P23-13", title: "SLO / SLA Management", shortTitle: "SLO / SLA", description: "Targets are configured, never invented; compliance honestly gated on retention.", module: "observability" },
+  { id: "p23-reliability-scorecard", num: "P23-14", title: "Reliability Scorecard", shortTitle: "Scorecard", description: "Explainable scoring — every category carries its drill-down evidence.", module: "observability" },
+  { id: "p23-capacity-usage", num: "P23-15", title: "Capacity & Resource Usage", shortTitle: "Capacity", description: "Real process and platform metrics; forecasts withheld without history.", module: "observability" },
+  { id: "p23-infrastructure-health", num: "P23-16", title: "Infrastructure Health", shortTitle: "Infrastructure", description: "Provider-neutral infrastructure view over detectable facts.", module: "observability" },
+  { id: "p23-deployment-impact", num: "P23-17", title: "Deployment Impact Analysis", shortTitle: "Deploy Impact", description: "Before/after audit deltas per deployment — deltas only where telemetry exists.", module: "observability" },
+  { id: "p23-change-intelligence", num: "P23-18", title: "Change Intelligence", shortTitle: "Changes", description: "Operational change timeline from the ONE audit trail — who, when, impact.", module: "observability" },
+  { id: "p23-incident-correlation", num: "P23-19", title: "Incident Correlation", shortTitle: "Correlation", description: "Temporal co-occurrence of changes, alerts and errors — causality never asserted.", module: "observability" },
+  { id: "p23-operational-runbooks", num: "P23-20", title: "Operational Runbooks", shortTitle: "Runbooks", description: "Authored guidance for this architecture — versioned, reviewed, never auto-executed.", module: "observability" },
+  { id: "p23-oncall-escalation", num: "P23-21", title: "On-Call & Escalation", shortTitle: "On-Call", description: "Escalation over the existing identity directory — no personal data exposure.", module: "observability" },
+  { id: "p23-reliability-reports", num: "P23-22", title: "Reliability Reports", shortTitle: "Reports", description: "Generated from probes, audit trail and registries — every figure traceable.", module: "observability" },
+  { id: "p23-operational-ai-insights", num: "P23-23", title: "Operational AI Insights", shortTitle: "AI Insights", description: "Phase 15 AI over real observability context — Fact/Inference/Recommendation/Evidence, never invented.", module: "observability" },
+  { id: "p23-observability-settings", num: "P23-24", title: "Observability Settings", shortTitle: "Obs Settings", description: "Retention, sampling, redaction and routing policy — declarative and audited.", module: "observability" },
 ];
 
 export const screenMeta = (id: ScreenId): ScreenMeta =>
