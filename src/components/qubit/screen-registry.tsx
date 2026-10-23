@@ -154,6 +154,31 @@ import { BackupRecoveryScreen } from "./screens/backup-recovery";
 import { MonitoringScreen } from "./screens/monitoring";
 import { ReleaseManagementScreen } from "./screens/release-management";
 import { SystemStatusScreen } from "./screens/system-status";
+// ——— Phase 22 · Operations ———
+import { P22ProductionEnvironmentScreen } from "./screens/p22-production-environment";
+import { P22SystemHealthDashboardScreen } from "./screens/p22-system-health-dashboard";
+import { P22DeploymentStatusScreen } from "./screens/p22-deployment-status";
+import { P22EnvVarsScreen } from "./screens/p22-env-vars";
+import { P22MigrationManagerScreen } from "./screens/p22-migration-manager";
+import { P22ApiHealthScreen } from "./screens/p22-api-health";
+import { P22ApplicationHealthScreen } from "./screens/p22-application-health";
+import { P22ErrorMonitoringScreen } from "./screens/p22-error-monitoring";
+import { P22UptimeMonitoringScreen } from "./screens/p22-uptime-monitoring";
+import { P22DatabaseHealthScreen } from "./screens/p22-database-health";
+import { P22PerformanceMonitoringScreen } from "./screens/p22-performance-monitoring";
+import { P22BackgroundJobsScreen } from "./screens/p22-background-jobs";
+import { P22IntegrationHealthScreen } from "./screens/p22-integration-health";
+import { P22SecurityConfigurationScreen } from "./screens/p22-security-configuration";
+import { P22SecretsGovernanceScreen } from "./screens/p22-secrets-governance";
+import { P22BackupRecoveryScreen } from "./screens/p22-backup-recovery";
+import { P22DisasterRecoveryScreen } from "./screens/p22-disaster-recovery";
+import { P22DeploymentHistoryScreen } from "./screens/p22-deployment-history";
+import { P22ReleaseApprovalScreen } from "./screens/p22-release-approval";
+import { P22RollbackCenterScreen } from "./screens/p22-rollback-center";
+import { P22FeatureFlagsScreen } from "./screens/p22-feature-flags";
+import { P22SystemConfigurationScreen } from "./screens/p22-system-configuration";
+import { P22MaintenanceModeScreen } from "./screens/p22-maintenance-mode";
+import { P22IncidentCenterScreen } from "./screens/p22-incident-center";
 
 export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "org-structure": OrganizationStructureScreen,
@@ -310,4 +335,29 @@ export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "monitoring": MonitoringScreen,
   "release-management": ReleaseManagementScreen,
   "system-status": SystemStatusScreen,
+  // ——— Phase 22 · Production Hardening (P22-01…P22-24) ———
+  "p22-production-environment": P22ProductionEnvironmentScreen,
+  "p22-deployment-status": P22DeploymentStatusScreen,
+  "p22-env-vars": P22EnvVarsScreen,
+  "p22-database-health": P22DatabaseHealthScreen,
+  "p22-migration-manager": P22MigrationManagerScreen,
+  "p22-api-health": P22ApiHealthScreen,
+  "p22-application-health": P22ApplicationHealthScreen,
+  "p22-error-monitoring": P22ErrorMonitoringScreen,
+  "p22-performance-monitoring": P22PerformanceMonitoringScreen,
+  "p22-uptime-monitoring": P22UptimeMonitoringScreen,
+  "p22-background-jobs": P22BackgroundJobsScreen,
+  "p22-integration-health": P22IntegrationHealthScreen,
+  "p22-security-configuration": P22SecurityConfigurationScreen,
+  "p22-secrets-governance": P22SecretsGovernanceScreen,
+  "p22-backup-recovery": P22BackupRecoveryScreen,
+  "p22-disaster-recovery": P22DisasterRecoveryScreen,
+  "p22-deployment-history": P22DeploymentHistoryScreen,
+  "p22-release-approval": P22ReleaseApprovalScreen,
+  "p22-rollback-center": P22RollbackCenterScreen,
+  "p22-feature-flags": P22FeatureFlagsScreen,
+  "p22-system-configuration": P22SystemConfigurationScreen,
+  "p22-maintenance-mode": P22MaintenanceModeScreen,
+  "p22-incident-center": P22IncidentCenterScreen,
+  "p22-system-health-dashboard": P22SystemHealthDashboardScreen,
 };

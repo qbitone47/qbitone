@@ -55,6 +55,7 @@ const MODULE_LABELS: Record<ScreenModule, string> = {
   analytics: "Analytics",
   mobile: "Mobile",
   platform: "Platform Ops",
+  operations: "Operations",
 };
 
 export function TopBar({

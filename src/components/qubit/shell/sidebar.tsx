@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import {
+  Activity,
   BarChart3,
   Building2,
   ChevronRight,
@@ -60,6 +61,7 @@ export const SIDEBAR_MODULES: SidebarModule[] = [
   { id: "documents", label: "Documents", icon: FolderClosed, section: "Intelligence", screen: "my-documents" },
   { id: "security", label: "Security", icon: ShieldCheck, section: "System", expandableModule: "security" },
   { id: "platform", label: "Platform Ops", icon: ServerCog, section: "System", expandableModule: "platform" },
+  { id: "operations", label: "Operations", icon: Activity, section: "System", expandableModule: "operations" },
   { id: "design-system", label: "Design System", icon: Palette, section: "System", expandableModule: "design-system" },
   { id: "settings", label: "Settings", icon: Settings2, section: "System" },
 ];
@@ -81,6 +83,7 @@ export const MODULE_PHASE: Record<string, string> = {
   analytics: "Phase 17 — Analytics & Audit",
   mobile: "Phase 18 — Mobile Experience",
   platform: "Phase 18 — Enterprise Hardening",
+  operations: "Phase 22 — Production Hardening",
   documents: "Phase 14 — Documents & Knowledge",
   "design-system": "Phase 2 — Enterprise Design System",
   security: "Phase 3 — Authentication & Security",
@@ -114,7 +117,7 @@ export function SidebarContent({
 }) {
   const { screen, navigate } = useQubitNav();
   // Executive module starts expanded (Phase 5); workspace starts collapsed.
-  const [open, setOpen] = React.useState<Record<string, boolean>>({ executive: true, workspace: false, enterprise: false, people: false, mail: false, "design-system": false, security: false, sales: false, ai: false, analytics: false, mobile: false, platform: false });
+  const [open, setOpen] = React.useState<Record<string, boolean>>({ executive: true, workspace: false, enterprise: false, people: false, mail: false, "design-system": false, security: false, sales: false, ai: false, analytics: false, mobile: false, platform: false, operations: false });
 
   const sections = React.useMemo(() => {
     const map = new Map<string, SidebarModule[]>();

@@ -163,9 +163,34 @@ export type ScreenId =
   | "backup-recovery"
   | "monitoring"
   | "release-management"
-  | "system-status";
+  | "system-status"
+  // ——— Phase 22 · Production Hardening (internal IDs P22-01…P22-24) ———
+  | "p22-production-environment"
+  | "p22-deployment-status"
+  | "p22-env-vars"
+  | "p22-database-health"
+  | "p22-migration-manager"
+  | "p22-api-health"
+  | "p22-application-health"
+  | "p22-error-monitoring"
+  | "p22-performance-monitoring"
+  | "p22-uptime-monitoring"
+  | "p22-background-jobs"
+  | "p22-integration-health"
+  | "p22-security-configuration"
+  | "p22-secrets-governance"
+  | "p22-backup-recovery"
+  | "p22-disaster-recovery"
+  | "p22-deployment-history"
+  | "p22-release-approval"
+  | "p22-rollback-center"
+  | "p22-feature-flags"
+  | "p22-system-configuration"
+  | "p22-maintenance-mode"
+  | "p22-incident-center"
+  | "p22-system-health-dashboard";
 
-export type ScreenModule = "enterprise" | "design-system" | "security" | "workspace" | "people" | "mail" | "executive" | "sales" | "sales-ai" | "analytics" | "mobile" | "platform";
+export type ScreenModule = "enterprise" | "design-system" | "security" | "workspace" | "people" | "mail" | "executive" | "sales" | "sales-ai" | "analytics" | "mobile" | "platform" | "operations";
 
 /** Screens rendered without the app shell (standalone authentication) */
 export const AUTH_SCREENS: ScreenId[] = ["login", "mfa-verification", "sso-provider-selection"];
@@ -342,6 +367,33 @@ export const SCREENS: ScreenMeta[] = [
   { id: "monitoring", num: "306", title: "Monitoring", shortTitle: "Monitoring", description: "One monitoring view over application, database, integrations, jobs and AI services.", module: "platform" },
   { id: "release-management", num: "307", title: "Release Management", shortTitle: "Releases", description: "Release history, environments and rollback readiness — safe by default.", module: "platform" },
   { id: "system-status", num: "308", title: "System Status", shortTitle: "System Status", description: "The one authoritative health view of Qubit One — calm, honest, current.", module: "platform" },
+  // ——— Phase 22 · Production Hardening & Deployment Validation ———
+  // Operational/administrative extension. Internal IDs P22-01…P22-24;
+  // existing 308-screen core inventory is NOT renumbered or overwritten.
+  { id: "p22-production-environment", num: "P22-01", title: "Production Environment Overview", shortTitle: "Environment", description: "What is actually running — environment, commit, versions, live database and API probes, honest gaps.", module: "operations" },
+  { id: "p22-deployment-status", num: "P22-02", title: "Deployment Status", shortTitle: "Deployment", description: "Live deployment lifecycle from the Vercel REST API when configured — never simulated.", module: "operations" },
+  { id: "p22-env-vars", num: "P22-03", title: "Environment Variables Manager", shortTitle: "Env Variables", description: "Governance over environment variables — names, scope and presence; values are never displayed.", module: "operations" },
+  { id: "p22-database-health", num: "P22-04", title: "Database Health", shortTitle: "Database", description: "Live PostgreSQL probe against Supabase — latency, provider, honest unavailability for what the runtime cannot see.", module: "operations" },
+  { id: "p22-migration-manager", num: "P22-05", title: "Database Migration Manager", shortTitle: "Migrations", description: "Real migration state under the Prisma workflow — production destructive actions are blocked by design.", module: "operations" },
+  { id: "p22-api-health", num: "P22-06", title: "API Health", shortTitle: "API Health", description: "The real endpoint manifest with on-demand live reachability probes — 401 under no session is healthy.", module: "operations" },
+  { id: "p22-application-health", num: "P22-07", title: "Application Health", shortTitle: "App Health", description: "Dependency-health model — one failing dependency never implies the whole system is down.", module: "operations" },
+  { id: "p22-error-monitoring", num: "P22-08", title: "Error Monitoring", shortTitle: "Errors", description: "Honest error telemetry state — aggregator configuration, empty register, real audit exceptions.", module: "operations" },
+  { id: "p22-performance-monitoring", num: "P22-09", title: "Performance Monitoring", shortTitle: "Performance", description: "Live measured latency and resources — historical ranges shown only when a metrics backend exists.", module: "operations" },
+  { id: "p22-uptime-monitoring", num: "P22-10", title: "Uptime Monitoring", shortTitle: "Uptime", description: "No external prober exists, so no uptime percentage is claimed — configuration guidance instead.", module: "operations" },
+  { id: "p22-background-jobs", num: "P22-11", title: "Background Jobs Monitor", shortTitle: "Background Jobs", description: "Background job infrastructure not configured — stated plainly, no fake workers.", module: "operations" },
+  { id: "p22-integration-health", num: "P22-12", title: "Integration Health", shortTitle: "Integrations", description: "Provider states derived from live probes and credential presence — nothing claimed connected unverified.", module: "operations" },
+  { id: "p22-security-configuration", num: "P22-13", title: "Security Configuration", shortTitle: "Security Config", description: "What actually protects this deployment — session plane, RBAC, rate limiting, audit, headers — measured.", module: "operations" },
+  { id: "p22-secrets-governance", num: "P22-14", title: "Secrets & Credential Governance", shortTitle: "Secrets", description: "Metadata-only secret governance — names, presence, rotation unknowns; values never leave the process.", module: "operations" },
+  { id: "p22-backup-recovery", num: "P22-15", title: "Backup & Recovery Status", shortTitle: "Backups", description: "Backup reality — platform-managed backups unverifiable from the app, file backups unavailable on serverless.", module: "operations" },
+  { id: "p22-disaster-recovery", num: "P22-16", title: "Disaster Recovery", shortTitle: "DR Readiness", description: "DR readiness computed only from real checks — every gap displayed, RPO/RTO honestly undefined.", module: "operations" },
+  { id: "p22-deployment-history", num: "P22-17", title: "Deployment History", shortTitle: "History", description: "Real deployment history from the Vercel REST API when configured, with search and detail.", module: "operations" },
+  { id: "p22-release-approval", num: "P22-18", title: "Release Approval", shortTitle: "Release Approval", description: "The release train — draft to completed — audited through the enterprise audit trail.", module: "operations" },
+  { id: "p22-rollback-center", num: "P22-19", title: "Rollback Center", shortTitle: "Rollback", description: "Authorized rollback management — explicit confirmation, audited, database never auto-rolled-back.", module: "operations" },
+  { id: "p22-feature-flags", num: "P22-20", title: "Feature Flags", shortTitle: "Feature Flags", description: "Governed flag registry — on, off, percentage, role and environment based; every change audited.", module: "operations" },
+  { id: "p22-system-configuration", num: "P22-21", title: "System Configuration", shortTitle: "System Config", description: "Non-secret system configuration with real current values — validated and audited changes.", module: "operations" },
+  { id: "p22-maintenance-mode", num: "P22-22", title: "Maintenance Mode", shortTitle: "Maintenance", description: "Controlled maintenance states with the administrator emergency bypass guaranteed.", module: "operations" },
+  { id: "p22-incident-center", num: "P22-23", title: "Production Incident Center", shortTitle: "Incidents", description: "SEV-1..SEV-4 incident lifecycle — detected through post-incident review — empty when none recorded.", module: "operations" },
+  { id: "p22-system-health-dashboard", num: "P22-24", title: "System Health Dashboard", shortTitle: "System Health", description: "The consolidated operational command center — every signal measured and drillable.", module: "operations" },
 ];
 
 export const screenMeta = (id: ScreenId): ScreenMeta =>
