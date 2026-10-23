@@ -204,6 +204,11 @@ import { P23OnCallEscalationScreen } from "./screens/p23-oncall-escalation";
 import { P23ReliabilityReportsScreen } from "./screens/p23-reliability-reports";
 import { P23OperationalAiInsightsScreen } from "./screens/p23-operational-ai-insights";
 import { P23ObservabilitySettingsScreen } from "./screens/p23-observability-settings";
+// ——— Phase 25 · Enterprise Observability additions ———
+import { P25AvailabilityScreen } from "./screens/p25-availability";
+import { P25ActivityScreen } from "./screens/p25-activity";
+import { P25AccessScreen } from "./screens/p25-access";
+import { P25RetentionScreen } from "./screens/p25-retention";
 
 export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "org-structure": OrganizationStructureScreen,
@@ -410,4 +415,9 @@ export const SCREEN_COMPONENTS: Record<ScreenId, ComponentType> = {
   "p23-reliability-reports": P23ReliabilityReportsScreen,
   "p23-operational-ai-insights": P23OperationalAiInsightsScreen,
   "p23-observability-settings": P23ObservabilitySettingsScreen,
+  // ——— Phase 25 · Enterprise Observability (P25 additions) ———
+  "p25-availability": P25AvailabilityScreen,
+  "p25-activity": P25ActivityScreen,
+  "p25-access": P25AccessScreen,
+  "p25-retention": P25RetentionScreen,
 };

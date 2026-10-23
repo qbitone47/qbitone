@@ -7,7 +7,8 @@ import { FactRow, NotConfiguredCard, OpsError, OpsHealthBadge, OpsSkeleton, Sour
 
 // ============================================================
 // P23-17 · Deployment Impact Analysis — before/after deltas from
-// REAL audit-event counts around each deployment timestamp. Where
+// REAL audit-event counts AND Phase 25 request telemetry (5xx
+// counts + p95 latency) around each deployment timestamp. Where
 // telemetry cannot support a delta (latency, incidents), the field
 // says so verbatim instead of inventing a number.
 // ============================================================
@@ -15,8 +16,9 @@ import { FactRow, NotConfiguredCard, OpsError, OpsHealthBadge, OpsSkeleton, Sour
 interface ImpactDeployment {
   id: string; sha: string | null; createdAt: number; state: string;
   errorChange: { before: number; after: number };
-  eventChange: { before: number; after: number };
-  latencyChange: number | null;
+  auditEventChange: { before: number; after: number };
+  requestErrorChange: { before: number; after: number; beforeSamples: number; afterSamples: number };
+  latencyChange: { beforeMs: number; afterMs: number } | null;
   latencyNote: string;
   affectedRoutes: string[];
   incidentChange: number | null;
@@ -39,7 +41,7 @@ function stateHealth(state: string): string {
   return "unknown"; // building / queued / initializing / canceled / unknown
 }
 
-function DeltaStat({ label, before, after }: { label: string; before: number; after: number }) {
+function DeltaStat({ label, before, after, sub }: { label: string; before: number; after: number; sub?: string }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
       <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-slate-400">{label}</p>
@@ -48,6 +50,7 @@ function DeltaStat({ label, before, after }: { label: string; before: number; af
         <span aria-hidden className="mx-1.5 text-slate-400">→</span>
         {after}
       </p>
+      {sub && <p className="mt-0.5 text-[10.5px] leading-snug text-slate-400">{sub}</p>}
     </div>
   );
 }
@@ -60,7 +63,7 @@ export function P23DeploymentImpactScreen() {
       <PageHeader
         crumbs={[{ label: "Observability" }]}
         title="Deployment Impact Analysis"
-        description="Before/after windows of real audit-event counts around each production deployment. Deltas that telemetry cannot support are labeled — never estimated."
+        description="Before/after windows of real audit-event counts and Phase 25 request telemetry (5xx + p95 latency) around each production deployment. Deltas that telemetry cannot support are labeled — never estimated."
         actions={
           <button type="button" onClick={reload} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
             Refresh
@@ -86,7 +89,7 @@ export function P23DeploymentImpactScreen() {
           </SectionCard>
 
           {data.configured === true && (
-            <SectionCard title="Deployments" description="Newest first, from the Vercel REST API — with before/after audit-event deltas.">
+            <SectionCard title="Deployments" description="Newest first, from the Vercel REST API — with before/after audit-event and request-telemetry deltas.">
               {data.deployments.length === 0 ? (
                 <p className="py-8 text-center text-[12.5px] text-slate-500">
                   No deployments returned by the Vercel API for production yet — the list fills as real deployments happen.
@@ -110,12 +113,28 @@ export function P23DeploymentImpactScreen() {
                           ) : "time unavailable"}
                         </span>
                       </div>
-                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                         <DeltaStat label="Audit failures · 24h before → since" before={d.errorChange.before} after={d.errorChange.after} />
-                        <DeltaStat label="Audit events · 24h before → since" before={d.eventChange.before} after={d.eventChange.after} />
+                        <DeltaStat label="Audit events · 24h before → since" before={d.auditEventChange.before} after={d.auditEventChange.after} />
+                        <DeltaStat
+                          label="Request 5xx · 24h before → since"
+                          before={d.requestErrorChange.before}
+                          after={d.requestErrorChange.after}
+                          sub={`5xx before/after (samples ${d.requestErrorChange.beforeSamples}/${d.requestErrorChange.afterSamples})`}
+                        />
                       </div>
+                      {d.latencyChange !== null && (
+                        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                          <DeltaStat
+                            label="p95 latency (ms) · 24h before → since"
+                            before={d.latencyChange.beforeMs}
+                            after={d.latencyChange.afterMs}
+                            sub="Measured only when ≥10 recorded requests exist in each window."
+                          />
+                        </div>
+                      )}
                       <div className="mt-3">
-                        <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-slate-400">Affected routes (from real audit records)</p>
+                        <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-slate-400">Affected routes (from real request telemetry)</p>
                         {d.affectedRoutes.length === 0 ? (
                           <p className="mt-1 text-[12px] text-slate-500">None recorded in the window since this deployment.</p>
                         ) : (
@@ -140,7 +159,7 @@ export function P23DeploymentImpactScreen() {
           )}
 
           <SectionCard title="Method" description="How every delta on this screen is computed.">
-            <FactRow label="Before/after windows" value="Real audit-event counts" note={data.method} />
+            <FactRow label="Before/after windows" value="Real audit-event + request-telemetry counts" note={data.method} />
           </SectionCard>
 
           <SourceLine>{data.sourceNote}</SourceLine>

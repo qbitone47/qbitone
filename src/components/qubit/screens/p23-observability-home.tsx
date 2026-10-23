@@ -7,8 +7,10 @@ import { FactRow, OpsError, OpsHealthBadge, OpsSkeleton, SourceLine, fmtIST, tim
 
 // ============================================================
 // P23-01 · Observability Home — "Is Qubit One healthy right now?"
-// Live probes + audit-derived signals + governance registries.
-// Absent telemetry is labeled, never invented.
+// Live probes + audit-derived signals + Phase 25 real telemetry
+// (availability, error rate, request volume, client errors,
+// pipeline persistence) + governance registries. Absent telemetry
+// is labeled, never invented.
 // ============================================================
 
 interface HomePayload {
@@ -20,6 +22,9 @@ interface HomePayload {
     api: { health: string; latencyMs: number | null; note: string };
     availability: { value: number | null; note: string };
     errorRate: { value: number | null; note: string };
+    requestVolume: { value: number; note: string };
+    clientErrorsLastHour: number;
+    telemetry: { persistence: string; note: string }; // "ok" | "degraded" | "unavailable"
     auditFailuresLastHour: number;
     auditEventsLastHour: number;
     sloCompliance: { value: string | null; note: string };
@@ -35,6 +40,12 @@ const overallTone: Record<string, string> = {
   Healthy: "border-emerald-200 bg-emerald-50 text-emerald-800",
   Degraded: "border-amber-200 bg-amber-50 text-amber-800",
   "Attention required": "border-red-200 bg-red-50 text-red-800",
+};
+
+const persistenceHealth: Record<string, string> = {
+  ok: "healthy",
+  degraded: "degraded",
+  unavailable: "unavailable",
 };
 
 export function P23ObservabilityHomeScreen() {
@@ -79,8 +90,21 @@ export function P23ObservabilityHomeScreen() {
               <div>
                 <FactRow label="Database" value={data.signals.database.latencyMs != null ? `${data.signals.database.latencyMs} ms` : "—"} health={data.signals.database.health} note={data.signals.database.note} />
                 <FactRow label="API self-probe" value={data.signals.api.latencyMs != null ? `${data.signals.api.latencyMs} ms` : "—"} health={data.signals.api.health} note={data.signals.api.note} />
-                <FactRow label="Availability" value="Not configured" health="not-configured" note={data.signals.availability.note} />
-                <FactRow label="Error rate" value="Not configured" health="not-configured" note={data.signals.errorRate.note} />
+                <FactRow
+                  label="Availability"
+                  value={data.signals.availability.value == null ? "Insufficient data" : `${data.signals.availability.value}%`}
+                  health={data.signals.availability.value == null ? "not-configured" : data.signals.availability.value < 99.5 ? "degraded" : "healthy"}
+                  note={data.signals.availability.note}
+                />
+                <FactRow
+                  label="Error rate"
+                  value={data.signals.errorRate.value == null ? "Insufficient data" : `${data.signals.errorRate.value}%`}
+                  health={data.signals.errorRate.value == null ? "not-configured" : data.signals.errorRate.value > 5 ? "degraded" : "healthy"}
+                  note={data.signals.errorRate.note}
+                />
+                <FactRow label="Request volume · last hour" value={data.signals.requestVolume.value} note={data.signals.requestVolume.note} />
+                <FactRow label="Client JS errors · last hour" value={data.signals.clientErrorsLastHour} health={data.signals.clientErrorsLastHour > 0 ? "degraded" : "healthy"} note="Real window.onerror / unhandledrejection reports ingested from clients (Phase 25)." />
+                <FactRow label="Telemetry pipeline" value={data.signals.telemetry.persistence} health={persistenceHealth[data.signals.telemetry.persistence] ?? "unknown"} note={data.signals.telemetry.note} />
                 <FactRow label="Audit events · last hour" value={data.signals.auditEventsLastHour} note="Derived from real audit timestamps." />
                 <FactRow label="Audit failures · last hour" value={data.signals.auditFailuresLastHour} health={data.signals.auditFailuresLastHour ? "degraded" : "healthy"} note="Real Failure records in the window." />
                 <FactRow label="SLO compliance" value={data.signals.sloCompliance.value ?? "Not configured"} health="not-configured" note={data.signals.sloCompliance.note} />

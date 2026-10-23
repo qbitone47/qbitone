@@ -7,16 +7,19 @@ import { FactRow, OpsError, OpsSkeleton, SourceLine, fmtIST, useObsSection } fro
 
 // ============================================================
 // P23-22 · Reliability Reports — a document generated from real
-// figures only: live probes, the audit trail and governance
-// registries. Export is a client-side JSON download of exactly
-// what the server produced — nothing is re-computed in the UI.
+// figures only: live probes, the audit trail, governance
+// registries and the Phase 25 telemetry store. Export is a
+// client-side JSON download of exactly what the server produced —
+// nothing is re-computed in the UI.
 // ============================================================
 
 interface ReportPayload {
   report: {
     generatedAt: number;
     window: string;
-    availability: { probeHealth: string; probeLatencyMs: number | null; note: string };
+    availability: { probeHealth: string; probeLatencyMs: number | null; requestSuccessPct: number | null; note: string };
+    requestTelemetry: { total: number; errorRatePct: number | null; p50: number | null; p95: number | null; p99: number | null; note: string };
+    clientTelemetry: { jsErrors: number; vitalsSamples: number; note: string };
     sloCompliance: { slos: number; note: string };
     incidents: { open: number; total: number };
     errorTrend: { failuresInWindow: number; eventsLastHour: number };
@@ -33,6 +36,9 @@ interface ReportPayload {
 }
 
 const ms = (v: number | null) => (v != null ? `${v} ms` : "—");
+
+const successTone = (pct: number | null): "healthy" | "degraded" | "not-configured" =>
+  pct == null ? "not-configured" : pct >= 99.5 ? "healthy" : "degraded";
 
 export function P23ReliabilityReportsScreen() {
   const { data, loading, error, forbidden, reload } = useObsSection<ReportPayload>("reports");
@@ -56,7 +62,7 @@ export function P23ReliabilityReportsScreen() {
       <PageHeader
         crumbs={[{ label: "Observability" }]}
         title="Reliability Reports"
-        description="A generated reliability document whose every figure traces to a live probe, the audit trail or a governance registry."
+        description="A generated reliability document whose every figure traces to a live probe, the audit trail, a governance registry or the Phase 25 telemetry store."
         actions={
           <>
             <button type="button" onClick={reload} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
@@ -155,6 +161,37 @@ export function P23ReliabilityReportsScreen() {
               </div>
             </div>
           </div>
+
+          <SectionCard
+            title="Telemetry summary (24h)"
+            description="Phase 25 telemetry figures over the last 24 hours — every number is measured from the real telemetry store; gaps are labeled."
+          >
+            <FactRow
+              label="Request success %"
+              value={r.availability.requestSuccessPct == null ? "Insufficient data" : `${r.availability.requestSuccessPct}%`}
+              health={successTone(r.availability.requestSuccessPct)}
+              note={r.availability.requestSuccessPct == null ? "No recorded requests in the window — no percentage is computed." : undefined}
+            />
+            <FactRow label="Requests total" value={r.requestTelemetry.total.toLocaleString()} />
+            <FactRow
+              label="Request error rate"
+              value={r.requestTelemetry.errorRatePct == null ? "Insufficient data" : `${r.requestTelemetry.errorRatePct}%`}
+              health={r.requestTelemetry.errorRatePct == null ? "not-configured" : r.requestTelemetry.errorRatePct > 0 ? "degraded" : "healthy"}
+            />
+            <FactRow
+              label="Request latency p50 / p95 / p99"
+              value={r.requestTelemetry.p50 == null && r.requestTelemetry.p95 == null && r.requestTelemetry.p99 == null ? "Insufficient data" : `${ms(r.requestTelemetry.p50)} / ${ms(r.requestTelemetry.p95)} / ${ms(r.requestTelemetry.p99)}`}
+              health={r.requestTelemetry.p50 == null ? "not-configured" : "healthy"}
+            />
+            <p className="py-1 text-[11px] leading-relaxed text-slate-400" role="note">{r.requestTelemetry.note}</p>
+            <FactRow
+              label="Client JS errors"
+              value={r.clientTelemetry.jsErrors}
+              health={r.clientTelemetry.jsErrors > 0 ? "degraded" : "healthy"}
+            />
+            <FactRow label="Client vitals samples" value={r.clientTelemetry.vitalsSamples} health={r.clientTelemetry.vitalsSamples > 0 ? "healthy" : "not-configured"} />
+            <p className="py-1 text-[11px] leading-relaxed text-slate-400" role="note">{r.clientTelemetry.note}</p>
+          </SectionCard>
 
           <SectionCard title="Report governance" description="How this document may leave the screen.">
             <p className="text-[12.5px] leading-relaxed text-slate-600" role="note">{data.exportPolicy}</p>

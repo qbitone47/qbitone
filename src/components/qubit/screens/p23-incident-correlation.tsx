@@ -7,7 +7,8 @@ import { OpsError, OpsSkeleton, SourceLine, fmtIST, timeAgo, useObsSection } fro
 
 // ============================================================
 // P23-19 · Incident Correlation — one window over the real
-// audit trail + governance registries. Relationships shown are
+// audit trail, governance registries and Phase 25 telemetry
+// (server + client error events). Relationships shown are
 // temporal co-occurrence in real data — causality is never
 // asserted. Empty groups are honest results.
 // ============================================================
@@ -42,6 +43,14 @@ const kindTone: Record<string, string> = {
   incident: "border-red-200 bg-red-50 text-red-800",
   alert: "border-amber-200 bg-amber-50 text-amber-800",
   change: "border-blue-200 bg-blue-50 text-blue-800",
+  "telemetry-error": "border-red-200 bg-red-50 text-red-800",
+};
+
+const kindDot: Record<string, string> = {
+  incident: "bg-red-500 ring-red-300",
+  alert: "bg-amber-500 ring-amber-300",
+  change: "bg-blue-500 ring-blue-300",
+  "telemetry-error": "bg-red-400 ring-red-300",
 };
 
 function SevChip({ severity }: { severity: string }) {
@@ -65,8 +74,8 @@ const WINDOW_OPTIONS = [
 ];
 
 export function P23IncidentCorrelationScreen() {
-  const { data, loading, error, forbidden, reload } = useObsSection<CorrelationPayload>("correlation");
   const [windowSel, setWindowSel] = React.useState("86400000");
+  const { data, loading, error, forbidden, reload } = useObsSection<CorrelationPayload>("correlation", { windowMs: windowSel });
 
   const timeline = React.useMemo(
     () => (data ? [...data.timeline].sort((a, b) => b.at - a.at) : []),
@@ -97,7 +106,7 @@ export function P23IncidentCorrelationScreen() {
             {data.rule}
           </div>
 
-          <SectionCard title="Correlation window" description="Server-side scope. The payload below was produced with the endpoint's default window.">
+          <SectionCard title="Correlation window" description="Server-side scope — changing the selection refetches this section with the selected window (windowMs).">
             <div className="grid gap-3 sm:grid-cols-[14rem_1fr] sm:items-start">
               <div>
                 <label htmlFor="corr-window" className="mb-1 block text-[11px] font-semibold text-slate-600">Window</label>
@@ -111,9 +120,9 @@ export function P23IncidentCorrelationScreen() {
                 </select>
               </div>
               <p className="text-[11.5px] leading-relaxed text-slate-500 sm:pt-6" role="note">
-                Hint: this screen renders exactly what the payload returned — the current payload was fetched with the
-                server&rsquo;s default 24&nbsp;h window (<span className="tabular-nums">{data.windowMs.toLocaleString()} ms{windowHours != null ? ` ≈ ${windowHours} h` : ""}</span>).
-                The selection ({selected?.label ?? "custom"}) is a client-side reference only and does not refetch.
+                The payload below was fetched server-side with a
+                {" "}<span className="tabular-nums">{data.windowMs.toLocaleString()} ms{windowHours != null ? ` ≈ ${windowHours} h` : ""}</span>{" "}
+                window ({selected?.label ?? "custom"}). All groups and the unified timeline cover exactly this window — the server computes the scope, never the client.
               </p>
             </div>
           </SectionCard>
@@ -181,7 +190,7 @@ export function P23IncidentCorrelationScreen() {
               )}
             </SectionCard>
 
-            <SectionCard title={`Errors (${data.errors.length})`} description="Failure/Blocked audit events within the window (first 30).">
+            <SectionCard title={`Errors (${data.errors.length})`} description="Failure/Blocked audit events + Phase 25 telemetry errors (server + client) merged, most recent first.">
               {data.errors.length === 0 ? (
                 <EmptyGroup label="errors" />
               ) : (
@@ -201,14 +210,14 @@ export function P23IncidentCorrelationScreen() {
             </SectionCard>
           </div>
 
-          <SectionCard title={`Unified timeline (${timeline.length})`} description="All window events merged, most recent first (first 60).">
+          <SectionCard title={`Unified timeline (${timeline.length})`} description="Incidents, alerts, changes and telemetry errors merged, most recent first. Chips are color-coded by kind — telemetry errors carry the amber/red tone.">
             {timeline.length === 0 ? (
               <EmptyGroup label="events in the unified timeline" />
             ) : (
               <ol className="relative ml-1 max-h-96 space-y-0 overflow-y-auto border-l border-slate-200 pl-5 qubit-scroll" aria-label="Unified correlation timeline">
                 {timeline.map((t, idx) => (
                   <li key={`${t.at}-${idx}`} className="relative pb-4 last:pb-0">
-                    <span aria-hidden="true" className={`absolute -left-[26.5px] top-1.5 h-2.5 w-2.5 rounded-full border-2 border-white ring-1 ${t.kind === "incident" ? "bg-red-500 ring-red-300" : t.kind === "alert" ? "bg-amber-500 ring-amber-300" : "bg-blue-500 ring-blue-300"}`} />
+                    <span aria-hidden="true" className={`absolute -left-[26.5px] top-1.5 h-2.5 w-2.5 rounded-full border-2 border-white ring-1 ${kindDot[t.kind] ?? "bg-slate-400 ring-slate-300"}`} />
                     <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
                       <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold capitalize ${kindTone[t.kind] ?? "border-slate-200 bg-slate-50 text-slate-600"}`}>{t.kind}</span>
                       <span className="min-w-0 flex-1 text-[12.5px] text-slate-700">{t.text}</span>

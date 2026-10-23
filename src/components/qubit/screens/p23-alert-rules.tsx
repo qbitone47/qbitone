@@ -31,7 +31,7 @@ interface AlertRulesPayload {
   sourceNote: string;
 }
 
-interface ActionResult { ok?: boolean; message?: string; data?: { ok?: boolean; message?: string; evaluated?: number; triggered?: number } }
+interface ActionResult { ok?: boolean; message?: string; data?: { ok?: boolean; message?: string; evaluated?: number; triggered?: number; measurements?: Record<string, number | null> } }
 
 /** The obs route returns the Result envelope { ok, data: { ok, message, … } } — unwrap defensively. */
 function messageOf(res: ActionResult): string | undefined {
@@ -85,6 +85,8 @@ export function P23AlertRulesScreen() {
   const [environment, setEnvironment] = React.useState("production");
   const [recipients, setRecipients] = React.useState("");
   const [cooldownMin, setCooldownMin] = React.useState("15");
+  // Measurements captured by the most recent "Evaluate now" run — rendered generically (no hardcoded metric keys).
+  const [lastEval, setLastEval] = React.useState<Record<string, number | null> | null>(null);
 
   const resetForm = () => {
     setName(""); setMetric("db-latency"); setCondition("above"); setThreshold("");
@@ -130,6 +132,7 @@ export function P23AlertRulesScreen() {
     try {
       const res = await obsPost<ActionResult>("alert.evaluate");
       const triggered = res.data?.triggered ?? 0;
+      setLastEval(res.data?.measurements ?? null);
       toast({
         title: triggered > 0 ? `${triggered} alert${triggered === 1 ? "" : "s"} triggered` : "No breaches measured",
         description: [messageOf(res), `${res.data?.evaluated ?? 0} enabled rule(s) evaluated against live probes`].filter(Boolean).join(" · "),
@@ -301,6 +304,21 @@ export function P23AlertRulesScreen() {
               ]}
             />
           </SectionCard>
+
+          {lastEval && Object.keys(lastEval).length > 0 && (
+            <SectionCard title="Last evaluation" description="Measurements captured by the most recent 'Evaluate now' run — every value is real; 'Insufficient data' means the metric could not be measured in the window and no rule using it fired.">
+              <dl className="grid gap-x-6 sm:grid-cols-2" aria-label="Last evaluation measurements">
+                {Object.entries(lastEval).map(([key, value]) => (
+                  <div key={key} className="flex items-baseline justify-between gap-3 border-b border-slate-100 py-2.5 last:border-b-0">
+                    <dt className="min-w-0 truncate font-mono text-[11.5px] text-slate-600" title={key}>{key}</dt>
+                    <dd className={`shrink-0 text-[12.5px] font-semibold tabular-nums ${value == null ? "text-slate-400" : "text-slate-900"}`}>
+                      {value == null ? "Insufficient data" : String(value)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </SectionCard>
+          )}
 
           <SectionCard title="Metric & notification notes" description="Straight from the server contract — what is measurable and how notifications route.">
             <div className="space-y-2.5">

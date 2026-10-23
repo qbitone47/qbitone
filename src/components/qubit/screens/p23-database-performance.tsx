@@ -4,7 +4,7 @@ import * as React from "react";
 import { ShieldAlert } from "lucide-react";
 import { PageHeader } from "../page-header";
 import { SectionCard } from "../primitives";
-import { FactRow, OpsError, OpsHealthBadge, OpsSkeleton, SourceLine, fmtIST, useObsSection } from "../obs/parts";
+import { FactRow, OpsError, OpsHealthBadge, OpsSkeleton, OpsTable, SourceLine, fmtIST, useObsSection } from "../obs/parts";
 
 // ============================================================
 // P23-08 · Database Performance — one real live probe plus the
@@ -20,8 +20,15 @@ interface QueryErrorSample {
   context?: string;
 }
 
+interface ProbeSample {
+  ts: number;
+  durationMs: number | null;
+  status: number | null;
+}
+
 interface DbPerfPayload {
   probe: { health: string; latencyMs: number | null; note: string };
+  probeHistory: { samples: ProbeSample[]; count: number; p50: number | null; p95: number | null; note: string };
   slowQueries: unknown;
   slowQueriesNote: string;
   connectionUsage: unknown;
@@ -66,6 +73,48 @@ export function P23DatabasePerformanceScreen() {
               <OpsHealthBadge health={data.probe.health} />
             </div>
           </div>
+
+          {/* Phase 25: real probe history from the telemetry store */}
+          <SectionCard
+            title="SELECT 1 probe history (24h)"
+            description={data.probeHistory.note}
+          >
+            <div className="grid gap-x-8 md:grid-cols-2">
+              <div>
+                <FactRow label="Recorded samples (24h)" value={data.probeHistory.count} />
+                <FactRow
+                  label="p50 duration"
+                  value={data.probeHistory.p50 == null ? "Insufficient data" : `${data.probeHistory.p50} ms`}
+                  health={data.probeHistory.p50 == null ? "not-configured" : "healthy"}
+                />
+                <FactRow
+                  label="p95 duration"
+                  value={data.probeHistory.p95 == null ? "Insufficient data" : `${data.probeHistory.p95} ms`}
+                  health={data.probeHistory.p95 == null ? "not-configured" : data.probeHistory.p95 > 1000 ? "degraded" : "healthy"}
+                />
+              </div>
+              <div>
+                <p className="pt-2.5 text-[11.5px] leading-relaxed text-slate-500" role="note">
+                  Percentiles are computed only once at least 3 real samples exist — below that the honest answer is
+                  {" "}<span className="font-semibold text-slate-600">Insufficient data</span>. Nothing is interpolated between probe runs.
+                </p>
+              </div>
+            </div>
+            <div className="mt-3 border-t border-slate-100 pt-3">
+              <p className="mb-2 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-slate-400">Recent samples (most recent first)</p>
+              <OpsTable
+                rows={[...data.probeHistory.samples].sort((a, b) => b.ts - a.ts).map((s, i) => ({ ...s, rowKey: `${s.ts}-${i}` }))}
+                keyOf={(s) => s.rowKey}
+                columns={[
+                  { header: "When", cell: (s) => <span className="tabular-nums"><span className="whitespace-nowrap">{fmtIST(s.ts)}</span></span> },
+                  { header: "Duration", cell: (s) => <span className="tabular-nums font-semibold">{s.durationMs != null ? `${s.durationMs} ms` : "—"}</span> },
+                  { header: "Status", cell: (s) => <OpsHealthBadge health={s.status != null && s.status < 500 ? "healthy" : s.status != null ? "unavailable" : "unknown"} /> },
+                ]}
+                empty={<p className="text-[12.5px] text-slate-500">No probe measurements recorded in the window yet — samples appear as operational sections run.</p>}
+                maxH="max-h-56 overflow-y-auto"
+              />
+            </div>
+          </SectionCard>
 
           <div className="grid gap-5 lg:grid-cols-2">
             {/* Runtime-observable facts — honest not-available states */}

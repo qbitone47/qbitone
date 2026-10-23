@@ -213,7 +213,12 @@ export type ScreenId =
   | "p23-oncall-escalation"
   | "p23-reliability-reports"
   | "p23-operational-ai-insights"
-  | "p23-observability-settings";
+  | "p23-observability-settings"
+  // Phase 25 · Enterprise Observability — capabilities without a Phase 23 home
+  | "p25-availability"
+  | "p25-activity"
+  | "p25-access"
+  | "p25-retention";
 
 export type ScreenModule = "enterprise" | "design-system" | "security" | "workspace" | "people" | "mail" | "executive" | "sales" | "sales-ai" | "analytics" | "mobile" | "platform" | "operations" | "observability";
 
@@ -445,6 +450,13 @@ export const SCREENS: ScreenMeta[] = [
   { id: "p23-reliability-reports", num: "P23-22", title: "Reliability Reports", shortTitle: "Reports", description: "Generated from probes, audit trail and registries — every figure traceable.", module: "observability" },
   { id: "p23-operational-ai-insights", num: "P23-23", title: "Operational AI Insights", shortTitle: "AI Insights", description: "Phase 15 AI over real observability context — Fact/Inference/Recommendation/Evidence, never invented.", module: "observability" },
   { id: "p23-observability-settings", num: "P23-24", title: "Observability Settings", shortTitle: "Obs Settings", description: "Retention, sampling, redaction and routing policy — declarative and audited.", module: "observability" },
+  // ——— Phase 25 · Enterprise Observability & Operational Visibility ———
+  // Only capabilities without a Phase 23 home get new screens; every other
+  // Phase 25 capability extends the existing P23 screens (no duplication).
+  { id: "p25-availability", num: "P25-10", title: "Availability & Uptime", shortTitle: "Availability", description: "Availability measured from real request telemetry — success ratio, hourly buckets, 5xx events; no SLA claimed without data.", module: "observability" },
+  { id: "p25-activity", num: "P25-20", title: "Operational Activity", shortTitle: "Activity", description: "One operational timeline — deployments, changes, incidents, alerts, recoveries, errors — from real sources only.", module: "observability" },
+  { id: "p25-access", num: "P25-21", title: "Observability Access", shortTitle: "Obs Access", description: "Role-based observability access matrix — server-enforced, audited, deny-by-default.", module: "observability" },
+  { id: "p25-retention", num: "P25-22", title: "Data Retention", shortTitle: "Retention", description: "Enforced telemetry retention — real row counts, audited prune action, provider retention facts.", module: "observability" },
 ];
 
 export const screenMeta = (id: ScreenId): ScreenMeta =>

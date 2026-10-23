@@ -18,9 +18,19 @@ export {
   type OpsHealth,
 } from "../ops/parts";
 
-export async function obsGet<T>(section: string, role: string): Promise<T> {
+export async function obsGet<T>(
+  section: string,
+  role: string,
+  params?: Record<string, string | number | undefined>,
+): Promise<T> {
   await ensureSession(role);
-  const res = await fetch(`/api/obs?section=${encodeURIComponent(section)}`, {
+  const qs = params
+    ? Object.entries(params)
+        .filter(([, v]) => v !== undefined && v !== "")
+        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+        .join("&")
+    : "";
+  const res = await fetch(`/api/obs?section=${encodeURIComponent(section)}${qs ? `&${qs}` : ""}`, {
     headers: { "Content-Type": "application/json", "X-Qubit-Role": role },
     cache: "no-store",
   });
@@ -70,7 +80,7 @@ export interface ObsSectionState<T> {
   reload: () => void;
 }
 
-export function useObsSection<T>(section: string): ObsSectionState<T> {
+export function useObsSection<T>(section: string, params?: Record<string, string | number | undefined>): ObsSectionState<T> {
   const { role } = useRole();
   const [data, setData] = React.useState<T | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -78,13 +88,14 @@ export function useObsSection<T>(section: string): ObsSectionState<T> {
   const [forbidden, setForbidden] = React.useState(false);
   const [tick, setTick] = React.useState(0);
   const reload = React.useCallback(() => setTick((t) => t + 1), []);
+  const paramKey = JSON.stringify(params ?? {});
 
   React.useEffect(() => {
     let alive = true;
     setLoading(true);
     setError(null);
     setForbidden(false);
-    obsGet<T>(section, role)
+    obsGet<T>(section, role, paramKey === "{}" ? undefined : (JSON.parse(paramKey) as Record<string, string | number | undefined>))
       .then((d) => { if (alive) setData(d); })
       .catch((e: unknown) => {
         if (!alive) return;
@@ -97,7 +108,7 @@ export function useObsSection<T>(section: string): ObsSectionState<T> {
       })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [section, role, tick]);
+  }, [section, role, tick, paramKey]);
 
   return { data, loading, error, forbidden, reload };
 }

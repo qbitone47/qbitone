@@ -13,6 +13,7 @@ import { TopBar } from "./topbar";
 import { CommandPalette } from "./command-palette";
 import { ModulePlaceholder } from "./module-placeholder";
 import { SCREEN_COMPONENTS } from "../screen-registry";
+import { TelemetryReporter } from "../obs/telemetry-reporter";
 
 function ShellFooter({ phase }: { phase: string }) {
   return (
@@ -122,6 +123,9 @@ export function AppShell() {
           </div>
         </main>
       </div>
+
+      {/* Phase 25 — global client telemetry collector (headless, fire-and-forget) */}
+      <TelemetryReporter screen={screen} />
 
       {/* Mobile navigation */}
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>

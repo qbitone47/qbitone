@@ -7,19 +7,23 @@ import { OpsError, OpsSkeleton, SourceLine, fmtIST, timeAgo, useObsSection } fro
 
 // ============================================================
 // P23-10 · Error Intelligence — failure/blocked events grouped
-// from the ONE enterprise audit trail. No synthetic groups; an
-// empty list genuinely means no failures in the audit window.
+// from the ONE enterprise audit trail PLUS Phase 25 error
+// telemetry (server + client). No synthetic groups; an empty
+// list genuinely means no failures in the window.
 // ============================================================
 
 interface ErrorGroup {
   key: string;
   title: string;
+  source: "audit-trail" | "application-error" | "client-error";
   frequency: number;
   affectedRoutes: string[];
+  affectedScreens: string[];
   firstSeen: number;
   lastSeen: number;
   severity: string;
   status: string;
+  releases: string[];
   deploymentVersion: string | null;
   trend: string;
 }
@@ -29,6 +33,17 @@ interface ErrorsPayload {
   basis: string;
   links: { deployments: string; logs: string; incidents: string };
   sourceNote: string;
+}
+
+/** audit-trail → slate, application-error → red tone, client-error → amber tone. */
+function sourceChip(source: string): React.ReactNode {
+  if (source === "application-error") {
+    return <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-800">application-error</span>;
+  }
+  if (source === "client-error") {
+    return <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800">client-error</span>;
+  }
+  return <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-600">{source}</span>;
 }
 
 function trendChip(trend: string): React.ReactNode {
@@ -44,7 +59,8 @@ function GroupCard({ group }: { group: ErrorGroup }) {
     <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.05)]" aria-label={`Error group ${group.title}`}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <p className="min-w-0 font-mono text-[12px] font-semibold text-slate-800" title={group.title}>{group.title}</p>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          {sourceChip(group.source)}
           <span className="rounded-full border border-slate-900 bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-white tabular-nums" aria-label={`Occurred ${group.frequency} times`}>×{group.frequency}</span>
           <StatusBadge status={group.severity} size="sm" />
         </div>
@@ -81,6 +97,28 @@ function GroupCard({ group }: { group: ErrorGroup }) {
           </ul>
         )}
       </div>
+
+      {group.affectedScreens.length > 0 && (
+        <div className="mt-3">
+          <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-slate-400">Affected screens</p>
+          <ul className="mt-1 flex flex-wrap gap-1.5">
+            {group.affectedScreens.map((s) => (
+              <li key={s} className="max-w-full truncate rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10.5px] text-slate-600" title={s}>{s}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {group.releases.length > 0 && (
+        <div className="mt-3">
+          <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-slate-400">Releases</p>
+          <ul className="mt-1 flex flex-wrap gap-1.5">
+            {group.releases.map((r) => (
+              <li key={r} className="rounded border border-slate-200 bg-white px-1.5 py-0.5 font-mono text-[10.5px] text-slate-500" title={r}>{r.slice(0, 7)}</li>
+            ))}
+          </ul>
+        </div>
+      )}
     </article>
   );
 }
