@@ -1076,7 +1076,7 @@ async function retentionPayload() {
   }
   return {
     config: { telemetryRetentionDays: cfg.telemetryRetentionDays, hardCapRows: cfg.hardCapRows, samplingRatePct: cfg.samplingRatePct, requestEnabled: cfg.requestEnabled, clientEnabled: cfg.clientEnabled },
-    persistence: { state: tel.persistence, note: tel.persistenceLabel, bufferLen: tel.bufferLen },
+    persistence: { state: tel.persistence, note: tel.persistenceLabel, bufferLen: tel.bufferLen, lastFlushError: tel.lastFlushError ? redactString(tel.lastFlushError).slice(0, 160) : null },
     counts,
     lastPrune: lastPruneSnapshot(),
     policy: {

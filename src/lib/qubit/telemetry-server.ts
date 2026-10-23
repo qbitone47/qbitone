@@ -318,8 +318,10 @@ export async function withMeter(req: Request, routeLabel: string, handler: () =>
 // additive and non-destructive; it runs at most once per process and only
 // when the table is missing. This keeps production (Vercel + Supabase)
 // self-provisioning without requiring credentials in CI or the sandbox.
-const PROVISION_SQL = `
-CREATE TABLE IF NOT EXISTS "TelemetryEvent" (
+// NOTE: statements are executed SEQUENTIALLY — Prisma rejects multi-statement
+// strings under the extended query protocol.
+const PROVISION_STATEMENTS: readonly string[] = [
+  `CREATE TABLE IF NOT EXISTS "TelemetryEvent" (
   "id" TEXT NOT NULL,
   "ts" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "kind" TEXT NOT NULL,
@@ -340,12 +342,12 @@ CREATE TABLE IF NOT EXISTS "TelemetryEvent" (
   "source" TEXT NOT NULL DEFAULT 'server',
   "screen" TEXT,
   CONSTRAINT "TelemetryEvent_pkey" PRIMARY KEY ("id")
-);
-CREATE INDEX IF NOT EXISTS "TelemetryEvent_ts_idx" ON "TelemetryEvent"("ts");
-CREATE INDEX IF NOT EXISTS "TelemetryEvent_kind_ts_idx" ON "TelemetryEvent"("kind", "ts");
-CREATE INDEX IF NOT EXISTS "TelemetryEvent_route_ts_idx" ON "TelemetryEvent"("route", "ts");
-CREATE INDEX IF NOT EXISTS "TelemetryEvent_requestId_idx" ON "TelemetryEvent"("requestId");
-`;
+)`,
+  `CREATE INDEX IF NOT EXISTS "TelemetryEvent_ts_idx" ON "TelemetryEvent"("ts")`,
+  `CREATE INDEX IF NOT EXISTS "TelemetryEvent_kind_ts_idx" ON "TelemetryEvent"("kind", "ts")`,
+  `CREATE INDEX IF NOT EXISTS "TelemetryEvent_route_ts_idx" ON "TelemetryEvent"("route", "ts")`,
+  `CREATE INDEX IF NOT EXISTS "TelemetryEvent_requestId_idx" ON "TelemetryEvent"("requestId")`,
+];
 
 async function ensureTable(): Promise<boolean> {
   const s = state();
@@ -355,16 +357,19 @@ async function ensureTable(): Promise<boolean> {
     try {
       if (!s.provisionAttempted) {
         s.provisionAttempted = true;
-        await db.$executeRawUnsafe(PROVISION_SQL);
+        for (const stmt of PROVISION_STATEMENTS) {
+          await db.$executeRawUnsafe(stmt);
+        }
       } else {
         await db.$queryRaw`SELECT 1 FROM "TelemetryEvent" LIMIT 1`;
       }
       s.dbReady = true;
       s.dbFailed = false;
       return true;
-    } catch {
+    } catch (err) {
       s.dbReady = false;
       s.dbFailed = true;
+      s.lastFlushError = err instanceof Error ? err.message.slice(0, 200) : "Unknown provision failure.";
       // allow a later retry on the next flush cycle
       setTimeout(() => { const st = state(); st.provisionPromise = null; }, 30_000);
       return false;
