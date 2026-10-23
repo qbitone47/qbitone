@@ -40,6 +40,7 @@ import {
   pruneTelemetry,
   readTelemetry,
   recordTelemetry,
+  redactString,
   requestSeries,
   requestStats,
   telemetryConfigSnapshot,
