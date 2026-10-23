@@ -130,6 +130,10 @@ interface PlatformStore {
 // Phase 20 — globalThis singleton (see workspace-server): backup/restore
 // state must be one store across route bundles.
 const g = globalThis as unknown as { __qubitPlatformStore?: PlatformStore };
+export function platformVitalsSnapshot(): VitalsSample[] {
+  return store().vitals.slice(-50);
+}
+
 function store(): PlatformStore {
   if (!g.__qubitPlatformStore) {
     g.__qubitPlatformStore = {

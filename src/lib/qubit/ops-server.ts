@@ -69,7 +69,7 @@ function requireOpsAdmin(role: WorkspaceRole, resource: string): Result<never> |
 const APP_VERSION = "0.2.1";
 const REPO = "qbitone47/qbitone";
 
-function runtimeEnv() {
+export function runtimeEnv() {
   const e = process.env;
   return {
     onVercel: e.VERCEL === "1",
@@ -107,7 +107,7 @@ async function withTimeout<T>(p: (signal: AbortSignal) => Promise<T>, ms = 6000)
 }
 
 /** Real database probe — one live SELECT 1, latency measured. */
-async function dbProbe(): Promise<{ health: "healthy" | "unavailable"; latencyMs: number | null; note: string }> {
+export async function dbProbe(): Promise<{ health: "healthy" | "unavailable"; latencyMs: number | null; note: string }> {
   const started = Date.now();
   try {
     await db.$queryRaw`SELECT 1`;
@@ -118,7 +118,7 @@ async function dbProbe(): Promise<{ health: "healthy" | "unavailable"; latencyMs
 }
 
 /** Real self-probe: fetch this deployment's own homepage over HTTP. */
-async function selfProbe(): Promise<{ health: "healthy" | "degraded" | "unavailable"; latencyMs: number | null; note: string }> {
+export async function selfProbe(): Promise<{ health: "healthy" | "degraded" | "unavailable"; latencyMs: number | null; note: string }> {
   const env = runtimeEnv();
   const base = env.deploymentUrl ? `https://${env.deploymentUrl}` : env.onVercel && env.projectUrl ? `https://${env.projectUrl}` : "http://127.0.0.1:3000";
   const started = Date.now();
@@ -244,7 +244,7 @@ interface OpsStore {
   config: SystemConfig;
 }
 const g = globalThis as unknown as { __qubitOpsStore?: OpsStore };
-function store(): OpsStore {
+export function store(): OpsStore {
   if (!g.__qubitOpsStore) {
     // Seeded EMPTY deliberately: no fake flags, incidents or releases exist.
     g.__qubitOpsStore = {
