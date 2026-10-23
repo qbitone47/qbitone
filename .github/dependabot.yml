@@ -1,0 +1,21 @@
+version: 2
+updates:
+  # Keep the GitHub Actions pins in .github/workflows current.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+
+  # NOTE: the npm / Bun package ecosystems are intentionally NOT
+  # enabled. The project installs with Bun (bun.lock) and Dependabot
+  # has no Bun lockfile support (verified against dependabot-core in
+  # Phase 24), so npm-based PRs could not update the lockfile and
+  # would fail the frozen-lockfile CI install.
+  #
+  # Dependency vulnerability scanning is therefore enforced natively:
+  #   - `bun audit` runs inside scripts/deploy/deployment-gate.ts on
+  #     every push/PR (critical advisories block the pipeline), and
+  #   - upgrade policy + cadence are documented in docs/DEPLOYMENT.md
+  #     (targeted, compatibility-reviewed updates — no blind churn).

@@ -228,31 +228,31 @@ bun run typecheck   # tsc --noEmit
 bun run build       # production build
 ```
 
-CI runs the same three gates (see [CI/CD](#23-cicd)). Changes are otherwise verified manually (route probes with session cookies, browser walkthroughs). Adding a real test suite is a roadmap item; until then, do not describe the project as test-covered.
+CI runs these gates plus a secret scan, a deployment gate (env-var coverage, Prisma validation, dependency-audit critical gate), a schema push against a throwaway PostgreSQL service and standalone smoke tests (see [CI/CD](#23-cicd)). Changes are otherwise verified manually (route probes with session cookies, browser walkthroughs). Adding a real test suite is a roadmap item; until then, do not describe the project as test-covered.
 
 ## 21. Production Deployment
 
-The actual deployment path — build, CI artifact, standalone start, reverse proxy, health checks, logging, backup/restore and rollback: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+The primary deployment path is git-connected: **GitHub** (`github.com/qbitone47/qbitone`, branch `main`) → **GitHub Actions CI** → **Vercel** (project `qbitone`, auto-deploy on push to `main`) → **Supabase PostgreSQL**. Production URL: https://qbitone-qbit-one.vercel.app. The full lifecycle — CI stages, environment-variable matrix, preview deployments, database migration policy, application vs database rollback, incident procedure and the Phase 24 deployment tooling (`/api/health` probe, smoke tests, deployment gate, secret scan, release tagging) — is documented in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). A self-hosted standalone deployment remains available there as an explicitly-labeled alternative.
 
 ## 22. Docker
 
-**No Docker image, Dockerfile or docker-compose setup is provided in this repository.** Container packaging is not implemented. Deployment today is a process running the standalone server behind a reverse proxy.
+**No Docker image, Dockerfile or docker-compose setup is provided in this repository.** Container packaging is not implemented. Deployment is managed on Vercel (see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)); a self-hosted standalone server behind a reverse proxy remains a documented alternative.
 
 ## 23. CI/CD
 
-The CI pipeline runs on **GitHub Actions** and validates every push and pull request with the three gates the project actually has:
+The CI pipeline runs on **GitHub Actions** ([.github/workflows/ci.yml](.github/workflows/ci.yml)) on every push and pull request to `main`, under least-privilege permissions (`contents: read`) with cancel-in-progress concurrency:
 
-```yaml
-# Canonical pipeline (lint + typecheck + production build)
-- checkout
-- setup Bun (>= 1.2)
-- bun install --frozen-lockfile
-- bun run lint
-- bun run typecheck
-- bun run build
+```text
+checkout → Bun install (frozen lockfile)
+→ secret scan (scripts/security/secret-scan.ts)
+→ deployment gate (scripts/deploy/deployment-gate.ts --ci: env-var coverage ·
+   prisma validate · bun audit, CRITICAL advisories blocking)
+→ lint → prisma generate → prisma db push (throwaway postgres:16-alpine service)
+→ next typegen → typecheck → production build
+→ artifact size report (report-only) → standalone smoke tests (scripts/deploy/smoke-test.ts --strict-db)
 ```
 
-There are no test jobs (there is no test suite), no artifact publishing and no automatic deployments; deployment is performed from a tagged build as described in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+No production secrets are used in CI (the PostgreSQL service is throwaway; the CI session secret is a non-credential test value). A failed check blocks merge and deploy — failures are never masked. There are no test jobs (there is no test suite) and CI does not deploy: **Vercel auto-deploys when `main` advances**. Dependabot is enabled for the `github-actions` ecosystem only — the npm/Bun ecosystems are intentionally not enabled because Dependabot has no Bun lockfile support, and dependency auditing is enforced natively by `bun audit` in the deployment gate. Full detail, including the Phase 24 deployment tooling: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## 24. Monitoring
 
@@ -284,8 +284,8 @@ There are no test jobs (there is no test suite), no artifact publishing and no a
 ## 28. Release Process
 
 1. Cut a `release/*` branch; verify `lint`, `typecheck` and `build` pass.
-2. Merge to `main` and tag with **Conventional Commits**-derived semver (e.g. `v0.3.0`).
-3. Deploy from the tagged build per [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+2. Merge to `main` and tag with **Conventional Commits**-derived semver (e.g. `v0.3.0`) — `bun scripts/deploy/create-release.ts --summary "…"` records the annotated tag (version ↔ commit ↔ summary).
+3. Vercel auto-deploys from `main`; the tag is the immutable release record, not a deployment. Verification and rollback: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 Commit messages follow Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `ci:`, `refactor:`).
 

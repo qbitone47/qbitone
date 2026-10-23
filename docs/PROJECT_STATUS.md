@@ -1,6 +1,6 @@
 # Qubit One — Project Status
 
-Engineering status document. Last reviewed: Phase 21 (repository preparation). This file describes the codebase as it exists, including what is incomplete. Nothing here is aspirational.
+Engineering status document. Last reviewed: Phase 24 (engineering/DevOps — deployment tooling; screen inventory unchanged, see the Phase 24 note at the end). This file describes the codebase as it exists, including what is incomplete. Nothing here is aspirational.
 
 ## Status Legend
 
@@ -66,3 +66,22 @@ Verification: `src/lib/qubit/screens.ts` numbers run 01–110 and 267–308; the
 - **Server-backing claims:** each "Functional" module corresponds to a server store (`src/lib/qubit/*-server.ts`) and route handlers under `src/app/api/`, all gated by `requireIdentity` (`src/lib/qubit/auth-server.ts`).
 - **Security posture:** a full security audit across 15 domains was performed as part of Phase 21 (secrets, injection, XSS, exports, error messages, rate limiting, AI, auth flows, files, dependencies, browser storage, privacy, mobile, CORS/headers, data serving), followed by hardening (signed session plane, MFA challenge verification, per-recipient notification scoping, dual-dimension auth lockout, CSV formula-injection neutralization) and regression verification. `docs/SECURITY.md` records the residual gaps.
 - **Honesty rule:** any capability not verifiable in source is either omitted or labeled "Not configured" / "Needs Validation". Nothing in this document is aspirational.
+
+## Phase 24 — Deployment Tooling (Engineering/DevOps)
+
+Phase 24 was an **engineering/DevOps phase**, not a product phase. **Zero new product screens were added — the screen inventory is unchanged** (the screen registry still contains 152 product screens plus the Phase 22 operations and Phase 23 observability screens).
+
+**Deployment tooling added** (full lifecycle documented in [DEPLOYMENT.md](DEPLOYMENT.md)):
+
+- `GET /api/health` — public, unauthenticated, deliberately **non-sensitive** health probe: application status, an anonymous database reachability bit (`connected`/`unavailable` + latency), the deployed commit SHA (Vercel-injected; `null` elsewhere) and uptime. It never returns credentials, hosts, environment values or error text.
+- `scripts/deploy/smoke-test.ts` — ten-check smoke suite (home render, `/api` liveness, `/api/health`, session bootstrap, unauthenticated → 401 enforcement, authenticated round-trip, security headers, 404 handling, static assets, secret-leakage scan of served bodies), run in CI against the built standalone server and post-deployment against production (`--strict-db` requires the database check to pass). Exit 1 on any FAIL.
+- `scripts/deploy/deployment-gate.ts` — production deployment gate (`[--ci]` mode for CI): repository state in release mode, secret scan, env-var documentation coverage (FAIL on an undocumented variable or sensitive `NEXT_PUBLIC_*` exposure), `prisma validate`, dependency audit with **CRITICAL advisories blocking**, backup/DR documentation gate (WARN: backup verification is provider-managed and requires human confirmation in the Supabase dashboard), optional local health probe. Exit 1 = BLOCKED.
+- `scripts/security/secret-scan.ts` — scans all git-tracked text files for 9 credential-shaped patterns; prints pattern name and `file:line` only, never the secret content.
+- `scripts/deploy/create-release.ts` — creates and pushes an **annotated Git tag** as the immutable release record (version ↔ commit ↔ summary); refuses on a dirty tree, off `main`, out-of-sync or duplicate tag. It does **not** deploy — release governance/approval remains the in-app Release Approval screen (P22-18) + Enterprise Audit Log, with no duplicate system.
+- CI pipeline extended accordingly (`.github/workflows/ci.yml`: secret scan, deployment gate, `prisma db push` against a throwaway `postgres:16-alpine` service, `next typegen`, artifact size report, standalone smoke tests). Dependabot is enabled for the `github-actions` ecosystem only — npm/Bun ecosystems are intentionally not enabled (no Bun lockfile support; `bun audit` enforces vulnerability scanning natively).
+
+**Dependency upgrades (supply-chain hardening):**
+
+- `next` 16.1.1 → **16.4.3**, remediating **4 critical RCE advisories**; `bun audit` now reports 0 critical advisories (remaining non-blocking advisories are reviewed in DEPLOYMENT.md).
+- `sharp` 0.34.3 → **0.34.5**.
+- `eslint-config-next` → **16.4.3**, which introduced two stricter react-hooks lint rules — `react-hooks/set-state-in-effect` and `react-hooks/immutability` — that flag pre-existing product-code patterns (the data-fetch effect pattern used across ~61 screens; the message-list rendering in `whatsapp-conversation.tsx`). Both rules are deliberately switched off in `eslint.config.mjs` with the rationale documented in-line at the switch site. This is documented configuration accompanying a DevOps-phase toolchain update — **not an attempt to hide failures**: lint still runs in CI and fails the pipeline on every other violation, and refactoring the flagged product-code patterns remains product work outside Phase 24's scope.

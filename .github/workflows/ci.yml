@@ -1,11 +1,19 @@
 name: CI
 
-# Qubit One — continuous validation.
-# Validates dependency installation, lint, TypeScript type checking
-# and the production build on every push to main and every pull
-# request targeting main. No production secrets are required: the
-# pipeline provisions a throwaway PostgreSQL service for the
-# Prisma schema validation.
+# Qubit One — continuous validation + deployment gate (Phase 24).
+#
+# Pipeline (spec §10/§11/§36):
+#   checkout → Bun install (frozen lockfile) → secret scan →
+#   deployment gate (env-var coverage · Prisma schema validation ·
+#   dependency-audit critical gate) → lint → Prisma generate →
+#   CI PostgreSQL schema push → Next route typegen → typecheck →
+#   production build → artifact size report → standalone smoke tests
+#   against the built server.
+#
+# No production secrets are required: PostgreSQL is a throwaway CI
+# service and QUBIT_AUTH_SECRET is a CI-local non-credential test
+# value. A failed check blocks the pipeline — failures are never
+# masked (§37).
 
 on:
   push:
@@ -16,9 +24,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
-    name: Lint, typecheck and build
+    name: Validate, build and smoke test
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
@@ -38,6 +50,10 @@ jobs:
     env:
       # Throwaway CI database (never a real environment).
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qubit_ci?sslmode=disable
+      # CI-local signing secret for the smoke-tested server. This is a
+      # non-credential test value (allowlisted in the secret scanner),
+      # not a production secret.
+      QUBIT_AUTH_SECRET: ci-test-secret-not-a-real-credential-0000000000000000
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -49,6 +65,12 @@ jobs:
 
       - name: Install dependencies (frozen lockfile)
         run: bun install --frozen-lockfile
+
+      - name: Secret scan
+        run: bun scripts/security/secret-scan.ts
+
+      - name: Deployment gate (env coverage · schema validation · dependency audit)
+        run: bun scripts/deploy/deployment-gate.ts --ci
 
       - name: Lint
         run: bun run lint
@@ -71,6 +93,15 @@ jobs:
       - name: Production build
         run: bun run build
 
+      - name: Record build artifact size
+        if: always()
+        run: |
+          echo "### Build artifact (this commit)" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          du -sh .next/standalone 2>/dev/null >> "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "Standalone size is reported for trend visibility; no threshold is enforced (Phase 24 §27 — evidence-based gates only)."
+
       - name: Upload standalone artifact
         uses: actions/upload-artifact@v4
         with:
@@ -80,3 +111,33 @@ jobs:
         # Artifact upload is best-effort; it exists so a validated
         # production artifact can be inspected after a green run.
         continue-on-error: true
+
+      # Post-build smoke tests (spec §22): the standalone server is
+      # started against the throwaway CI PostgreSQL and the critical
+      # flows are asserted over real HTTP. A failure here fails CI.
+      - name: Start standalone server for smoke tests
+        run: |
+          bun .next/standalone/server.js &
+          echo $! > /tmp/qubit-smoke-server.pid
+
+      - name: Wait for server readiness
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/api/health > /dev/null; then
+              echo "standalone server ready (attempt $i)"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "standalone server did not become ready within 30s"
+          exit 1
+
+      - name: Smoke tests (critical flows)
+        run: bun scripts/deploy/smoke-test.ts http://localhost:3000 --strict-db
+
+      - name: Stop smoke server
+        if: always()
+        run: |
+          if [ -f /tmp/qubit-smoke-server.pid ]; then
+            kill "$(cat /tmp/qubit-smoke-server.pid)" 2>/dev/null || true
+          fi
