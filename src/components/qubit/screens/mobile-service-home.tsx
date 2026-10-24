@@ -138,7 +138,7 @@ export function MobileServiceHomeScreen() {
           </MobileSection>
 
           <SourceNote>{data.sourceNote}</SourceNote>
-          <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 291 · Mobile Service Home</p>
+          <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile Service Home</p>
         </>
       )}
     </MobileFrame>

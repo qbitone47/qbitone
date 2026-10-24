@@ -64,7 +64,7 @@ export function MailAttachmentChip({
     <button
       type="button"
       onClick={onOpen}
-      title={`${name} — preview and download arrive with the Documents module (Phase 14)`}
+      title={`${name} — preview and download arrive with the Documents module`}
       className="inline-flex max-w-[240px] items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-left transition-colors hover:border-slate-300 hover:bg-white"
     >
       <Paperclip className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
@@ -251,7 +251,7 @@ export function MailReadingPane({
   const attachmentNote = () =>
     toast({
       title: "Attachment preview",
-      description: "Attachment preview and download arrive with the Documents module (Phase 14). The file list stays authoritative here.",
+      description: "Attachment preview and download arrive with the Documents module. The file list stays authoritative here.",
     });
 
   return (

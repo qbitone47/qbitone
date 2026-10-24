@@ -74,7 +74,7 @@ function useSidebarSections(): [string, SidebarModule[]][] {
 
 // ------------------------------------------------------------
 // Sidebar replica — faithful to the shell sidebar (white panel,
-// Q mark brand, section labels, numbered children).
+// Q mark brand, section labels, ordered children).
 // ------------------------------------------------------------
 
 function SidebarReplica({
@@ -97,9 +97,9 @@ function SidebarReplica({
 
   const openModuleToast = (label: string) => {
     if (label === "Design System") {
-      toast({ title: "Opens Design System module", description: "Open right now — screens 13–30 live in the System section." });
+      toast({ title: "Opens Design System module", description: "Open right now — it lives in the System section." });
     } else {
-      toast({ title: `Opens ${label} module (future phase)`, description: "Module shells ship in a later phase of the roadmap." });
+      toast({ title: `Opens ${label} module`, description: "This module is served by the surfaces that already own its capabilities." });
     }
     onNavigate?.();
   };
@@ -186,14 +186,6 @@ function SidebarReplica({
                                       : "text-slate-500 hover:bg-slate-100/70 hover:text-slate-800",
                                   )}
                                 >
-                                  <span
-                                    className={cn(
-                                      "w-4 shrink-0 text-left text-[10px] font-medium tabular-nums",
-                                      active ? "text-blue-600" : "text-slate-400",
-                                    )}
-                                  >
-                                    {s.num}
-                                  </span>
                                   <span className="truncate">{s.shortTitle}</span>
                                 </button>
                               </li>
@@ -237,7 +229,7 @@ function SidebarReplica({
             <QubitMark className="h-7 w-7 rounded-lg text-[13px]" />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[12.5px] font-semibold leading-tight text-slate-900">Qubit One Pvt Ltd</span>
-              <span className="block truncate text-[10.5px] leading-tight text-slate-400">Phase 2 · Enterprise Design System</span>
+              <span className="block truncate text-[10.5px] leading-tight text-slate-400">Enterprise Design System</span>
             </span>
             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-hidden />
           </div>
@@ -265,7 +257,6 @@ function TreeLine({
   depth,
   icon: Icon,
   label,
-  num,
   expandable,
   expanded,
   onClick,
@@ -276,7 +267,6 @@ function TreeLine({
   depth: number;
   icon?: React.ElementType;
   label: string;
-  num?: string;
   expandable?: boolean;
   expanded?: boolean;
   onClick?: () => void;
@@ -319,8 +309,6 @@ function TreeLine({
       )}
       {Icon ? (
         <Icon className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
-      ) : num ? (
-        <span className="w-4 shrink-0 text-left text-[10px] font-medium tabular-nums text-slate-400">{num}</span>
       ) : (
         <span className="w-4 shrink-0" aria-hidden />
       )}
@@ -345,10 +333,10 @@ export function NavigationScreen() {
   const [page, setPage] = React.useState(1);
   const TOTAL_PAGES = 12;
 
-  const governanceChildren: { id: ScreenId; num: string; label: string }[] = [
-    { id: "approval-matrix", num: "09", label: "Approval Matrix" },
-    { id: "permission-matrix", num: "04", label: "Permission Matrix" },
-    { id: "data-ownership", num: "07", label: "Data Ownership" },
+  const governanceChildren: { id: ScreenId; label: string }[] = [
+    { id: "approval-matrix", label: "Approval Matrix" },
+    { id: "permission-matrix", label: "Permission Matrix" },
+    { id: "data-ownership", label: "Data Ownership" },
   ];
 
   return (
@@ -389,12 +377,12 @@ export function NavigationScreen() {
                   <DSVar>text-blue-600</DSVar>. Here that is <strong className="font-medium text-slate-700">Enterprise</strong>.
                 </StateRow>
                 <StateRow title="Parent expanded">
-                  The chevron rotates <DSVar>rotate-90</DSVar> and children render numbered <DSVar>01–12</DSVar> at{" "}
+                  The chevron rotates <DSVar>rotate-90</DSVar> and children render at{" "}
                   <DSVar>pl-9</DSVar> in 12.5px — order you can scan, depth you can feel.
                 </StateRow>
                 <StateRow title="Active child">
-                  The deepest active level wins: <DSVar>bg-blue-50 font-medium text-blue-700</DSVar> with its number in blue.
-                  Shown on 01 — click any child to make it live.
+                  The deepest active level wins: <DSVar>bg-blue-50 font-medium text-blue-700</DSVar> with its label highlighted in blue.
+                  Shown on Organization Structure — click any child to make it live.
                 </StateRow>
                 <StateRow title="Collapsed rail">
                   68px, icons only, section separators replace labels; native tooltips surface the names on hover and the
@@ -411,7 +399,7 @@ export function NavigationScreen() {
           purpose="Depth is capped at three levels; permissions decide what renders at all."
           actions={
             <Button variant="outline" size="sm" className="h-8" onClick={() => navigate("enterprise-navigation")}>
-              Master IA · Screen 12
+              Master IA · Enterprise Navigation
             </Button>
           }
         >
@@ -424,7 +412,7 @@ export function NavigationScreen() {
                 <TreeLine depth={0} icon={Building2} label="Enterprise" expandable expanded />
                 <TreeLine depth={1} icon={ShieldCheck} label="Governance" expandable expanded />
                 {governanceChildren.map((c) => (
-                  <TreeLine key={c.id} depth={2} num={c.num} label={c.label} onClick={() => navigate(c.id)} />
+                  <TreeLine key={c.id} depth={2} label={c.label} onClick={() => navigate(c.id)} />
                 ))}
                 <TreeLine depth={1} icon={Wallet} label="Compensation" expandable expanded />
                 <TreeLine
@@ -476,7 +464,7 @@ export function NavigationScreen() {
                     </BreadcrumbItem>
                     <BreadcrumbSeparator />
                     <BreadcrumbItem>
-                      <BreadcrumbPage className="font-medium text-slate-800">01. Organization Structure</BreadcrumbPage>
+                      <BreadcrumbPage className="font-medium text-slate-800">Organization Structure</BreadcrumbPage>
                     </BreadcrumbItem>
                   </BreadcrumbList>
                 </Breadcrumb>
@@ -501,7 +489,7 @@ export function NavigationScreen() {
                     </BreadcrumbItem>
                     <BreadcrumbSeparator className="hidden sm:block" />
                     <BreadcrumbItem>
-                      <BreadcrumbPage className="font-medium text-slate-800">01. Organization Structure</BreadcrumbPage>
+                      <BreadcrumbPage className="font-medium text-slate-800">Organization Structure</BreadcrumbPage>
                     </BreadcrumbItem>
                   </BreadcrumbList>
                 </Breadcrumb>
@@ -530,7 +518,7 @@ export function NavigationScreen() {
                 </TabsContent>
                 <TabsContent value="visibility">
                   <p className="px-1 py-1 text-[13px] text-slate-600">
-                    Which roles see this node — mirrors the IA governance in Screen 12.
+                    Which roles see this node — mirrors the IA governance in Enterprise Navigation.
                   </p>
                 </TabsContent>
                 <TabsContent value="preview">
@@ -549,7 +537,7 @@ export function NavigationScreen() {
           purpose="Full pagination bar for content-heavy pages; data tables use the compact pattern."
         >
           <DSStage align="center">
-            <DSExample label="Live — click through; tables (Screen 18) use the compact “Page x of y” pattern instead">
+            <DSExample label="Live — click through; tables use the compact “Page x of y” pattern instead">
               <div className="flex flex-col items-center gap-2">
                 <Pagination>
                   <PaginationContent>
@@ -710,14 +698,14 @@ export function NavigationScreen() {
             rows={[
               ["sidebar.width", "264px expanded · 68px collapsed", "One constant everywhere — content layouts never reflow on module switch"],
               ["sidebar.sections", "≤ 6", "Section labels beat scrolling; past six groups, split or rethink the IA"],
-              ["sidebar.children", "Numbered 01–12 · 12.5px · pl-9", "Multi-screen modules get order-bearing children, not nested groups"],
+              ["sidebar.children", "12.5px · pl-9", "Multi-screen modules get scannable children, not nested groups"],
               ["sidebar.overflow", "Internal scroll only", "The nav column scrolls itself; the page never scrolls sideways"],
             ]}
           />
           <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <DSGuidance kind="do" title="section labels + numbered children + one active state">
-              Three ingredients carry the whole system: uppercase section labels group at a glance, numbered children give
-              order without reading, and exactly one active state keeps “where am I” unambiguous at any depth.
+            <DSGuidance kind="do" title="section labels + ordered children + one active state">
+              Three ingredients carry the whole system: uppercase section labels group at a glance, ordered children give
+              scannable structure, and exactly one active state keeps “where am I” unambiguous at any depth.
             </DSGuidance>
             <DSGuidance kind="dont" title="overcrowded sidebar, nested >3 levels, invisible permissions">
               No module lists without groups, no trees deeper than Enterprise › Governance › Permission Matrix, and never

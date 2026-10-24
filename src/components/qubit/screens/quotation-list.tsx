@@ -233,7 +233,7 @@ export function QuotationListScreen() {
       <PageHeader
         crumbs={[{ label: "Sales" }, { label: "Quotation List" }]}
         title="Quotation List"
-        description="Every quotation from draft to accepted. Discount rules run on the server — approvals route through the enterprise Approval Matrix (screen 09), decisions appear in My Approvals (46)."
+        description="Every quotation from draft to accepted. Discount rules run on the server — approvals route through the enterprise Approval Matrix, decisions appear in My Approvals."
         actions={
           <Button size="sm" className="h-9 gap-1.5" onClick={() => nav.navigate("quotation-builder")}>
             <Plus className="h-3.5 w-3.5" aria-hidden /> New quotation

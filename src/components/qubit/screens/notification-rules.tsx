@@ -225,7 +225,7 @@ export function NotificationRulesScreen() {
               onClick={() =>
                 toast({
                   title: "Change history",
-                  description: "History arrives with Audit module (Phase 16).",
+                  description: "History lives in the enterprise Audit Log.",
                 })
               }
             >

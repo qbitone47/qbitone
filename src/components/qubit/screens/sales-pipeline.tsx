@@ -282,7 +282,7 @@ export function SalesPipelineScreen() {
           <div className="space-y-1 px-1">
             <p className="text-[11px] text-slate-400">
               Counting {totals.count} opportunities in your current scope — the company-wide aggregate lives in the Sales Command
-              Center (screen 61).
+              Center.
             </p>
             <ScopeNote scope={scope} what="opportunities" />
           </div>

@@ -476,7 +476,7 @@ export function CustomerMeetingsScreen() {
 
           <p className="mt-4 flex items-start gap-1.5 text-[11px] leading-relaxed text-slate-400">
             <BellRing className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
-            <span>Reminders ride the enterprise notification rules (screen 10) — no separate reminder engine.</span>
+            <span>Reminders ride the enterprise notification rules — no separate reminder engine.</span>
           </p>
         </div>
       )}

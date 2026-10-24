@@ -153,7 +153,7 @@ export function ExecutiveApprovalsScreen() {
           meta={
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               {data && <PeriodChip label={data.period.label} window={data.period.window} />}
-              <ArrowLink onClick={() => navigate("approval-matrix")} ariaLabel="Open Approval Matrix configuration (screen 09)">
+              <ArrowLink onClick={() => navigate("approval-matrix")} ariaLabel="Open Approval Matrix configuration">
                 Approval Matrix configuration
               </ArrowLink>
               <ArrowLink
@@ -225,7 +225,7 @@ export function ExecutiveApprovalsScreen() {
             onChanges={setChangesTarget}
           />
         ) : (
-          <SectionCard title="Decision history" description="Executive decisions recorded through this screen — mirrored in the enterprise Audit Log (screen 39).">
+          <SectionCard title="Decision history" description="Executive decisions recorded through this screen — mirrored in the enterprise Audit Log.">
             {decided.length === 0 ? (
               <EmptyState
                 icon={<History />}
@@ -631,7 +631,7 @@ function ApprovalDetail({ detail: a }: { detail: ExecApproval }) {
 
       <p className="flex items-start gap-1.5 text-[11px] leading-relaxed text-slate-400">
         <XCircle className="mt-px h-3 w-3 shrink-0" aria-hidden />
-        Recorded in the enterprise audit trail; routed via the Approval Matrix (screen 09). Decisions are validated server-side — authority, step-up and note rules — the UI cannot approve on your behalf.
+        Recorded in the enterprise audit trail; routed via the Approval Matrix. Decisions are validated server-side — authority, step-up and note rules — the UI cannot approve on your behalf.
       </p>
     </div>
   );

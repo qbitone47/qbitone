@@ -362,7 +362,7 @@ export function ModalDrawerScreen() {
                   onClick={() =>
                     toast({
                       title: "Full profile",
-                      description: "The complete profile opens in the People module (Phase 2).",
+                      description: "The complete profile opens in the People module.",
                     })
                   }
                 >

@@ -147,7 +147,7 @@ export function MobileVisitingCardScreen() {
           </MobileSection>
 
           <SourceNote>{data.sharePolicy} {data.sourceNote}</SourceNote>
-          <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 298 · Mobile Visiting Card</p>
+          <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile Visiting Card</p>
         </>
       )}
     </MobileFrame>

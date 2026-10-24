@@ -109,7 +109,7 @@ export function MobileNotificationsScreen() {
             )}
           </MobileSection>
           <SourceNote>{data.sourceNote}</SourceNote>
-          <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 295 · Mobile Notifications</p>
+          <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile Notifications</p>
         </>
       )}
     </MobileFrame>

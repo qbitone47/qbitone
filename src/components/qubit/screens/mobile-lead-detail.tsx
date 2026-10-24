@@ -194,7 +194,7 @@ export function MobileLeadDetailScreen() {
           </MobileSection>
 
           <SourceNote>{data.channelNote} {data.sourceNote}</SourceNote>
-          <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 287 · Mobile Lead Detail</p>
+          <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile Lead Detail</p>
         </>
       )}
     </MobileFrame>

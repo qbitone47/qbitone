@@ -97,7 +97,7 @@ export function P23LogsExplorerScreen() {
       <PageHeader
         crumbs={[{ label: "Observability" }]}
         title="Logs Explorer"
-        description="Two real streams in one view — the enterprise audit trail + Phase 25 application telemetry. Server-enforced scope, secrets never present."
+        description="Two real streams in one view — the enterprise audit trail + application telemetry. Server-enforced scope, secrets never present."
         actions={
           <button type="button" onClick={reload} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
             Refresh

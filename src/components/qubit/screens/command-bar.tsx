@@ -39,10 +39,10 @@ import { employees, type Employee } from "@/lib/qubit/data";
 
 const ENTERPRISE_SCREENS = screensByModule("enterprise");
 
-const RECENT_PAGES: { id: ScreenId; num: string; label: string }[] = [
-  { id: "role-matrix", num: "03", label: "Role Matrix" },
-  { id: "integration-map", num: "11", label: "Integration Map" },
-  { id: "permission-matrix", num: "04", label: "Permission Matrix" },
+const RECENT_PAGES: { id: ScreenId; label: string }[] = [
+  { id: "role-matrix", label: "Role Matrix" },
+  { id: "integration-map", label: "Integration Map" },
+  { id: "permission-matrix", label: "Permission Matrix" },
 ];
 
 const RECENT_SEARCHES = ["Arjun Mehta", "Approval matrix", "Integration health"];
@@ -284,7 +284,7 @@ export function CommandBarScreen() {
               </Button>
               <DSCaption className="max-w-lg text-center">
                 This instance binds <strong className="font-medium text-slate-600">no second document listener</strong> — the
-                shell owns ⌘ K globally. Type <span className="qubit-kbd">org</span> to watch cmdk filter down to 01.
+                shell owns ⌘ K globally. Type <span className="qubit-kbd">org</span> to watch cmdk filter down to
                 Organization Structure; type gibberish to meet the empty state. Every row runs something real.
               </DSCaption>
             </div>
@@ -298,12 +298,11 @@ export function CommandBarScreen() {
                 {RECENT_PAGES.map((p) => (
                   <CommandItem
                     key={p.id}
-                    value={`${p.num} ${p.label} recent page`}
+                    value={`${p.label} recent page`}
                     onSelect={() => run(() => navigate(p.id))}
                     className="gap-3"
                   >
                     <Clock className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
-                    <span className="w-4 text-[10px] font-semibold tabular-nums text-slate-400">{p.num}</span>
                     <span className="text-[13px] font-medium text-slate-800">{p.label}</span>
                   </CommandItem>
                 ))}
@@ -338,7 +337,6 @@ export function CommandBarScreen() {
                     onSelect={() => run(() => navigate(s.id))}
                     className="gap-3"
                   >
-                    <span className="w-6 text-[10px] font-semibold tabular-nums text-slate-400">{s.num}</span>
                     <span className="text-[13px] font-medium text-slate-800">{s.title}</span>
                   </CommandItem>
                 ))}

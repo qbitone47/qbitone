@@ -150,7 +150,7 @@ export function MobileProfileScreen() {
           </MobileSection>
 
           <SourceNote>{data.lockedFieldsNote} {data.sourceNote}</SourceNote>
-          <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 296 · Mobile Profile</p>
+          <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile Profile</p>
         </>
       )}
     </MobileFrame>

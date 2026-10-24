@@ -182,7 +182,7 @@ export function MobileMeetingsScreen() {
               )}
 
               <SourceNote>{detail.data.sourceNote}</SourceNote>
-              <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 289 · Mobile Meetings</p>
+              <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile Meetings</p>
             </>
           )}
         </>
@@ -227,7 +227,7 @@ export function MobileMeetingsScreen() {
                 </MobileSection>
               )}
               <SourceNote>{list.data.sourceNote}</SourceNote>
-              <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 289 · Mobile Meetings</p>
+              <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile Meetings</p>
             </>
           )}
         </>

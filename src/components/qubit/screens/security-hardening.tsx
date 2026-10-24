@@ -90,7 +90,7 @@ export function SecurityHardeningScreen() {
           </SectionCard>
 
           <div className="grid gap-5 sm:grid-cols-2">
-            <SectionCard title="Security alerts" description="From the existing Security Alerts workflow (screen 40).">
+            <SectionCard title="Security alerts" description="From the existing Security Alerts workflow.">
               <div className="grid grid-cols-2 gap-3">
                 <MetricTile label="Open alerts" value={data.alerts.open} tone={data.alerts.open ? "amber" : "green"} />
                 <MetricTile label="Total tracked" value={data.alerts.total} />

@@ -131,7 +131,7 @@ export function P23ErrorIntelligenceScreen() {
       <PageHeader
         crumbs={[{ label: "Observability" }]}
         title="Error Intelligence"
-        description="Failure and blocked events grouped from the enterprise audit trail — a deeper correlation view over the same event stream as P22-08. Management workflow stays in the Incident Center."
+        description="Failure and blocked events grouped from the enterprise audit trail — a deeper correlation view over the same event stream as Error Monitoring. Management workflow stays in the Incident Center."
       />
 
       {loading && <OpsSkeleton />}
@@ -156,15 +156,15 @@ export function P23ErrorIntelligenceScreen() {
           <SectionCard title="Basis & cross-links" description={data.basis}>
             <ul className="space-y-2" aria-label="Cross-links to related screens">
               <li className="flex flex-wrap items-baseline gap-2 text-[12px] text-slate-600">
-                <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-600">P23-17</span>
+                <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-600">Deployment Impact Analysis</span>
                 <span>{data.links.deployments}</span>
               </li>
               <li className="flex flex-wrap items-baseline gap-2 text-[12px] text-slate-600">
-                <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-600">P23-03</span>
+                <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-600">Logs Explorer</span>
                 <span>{data.links.logs}</span>
               </li>
               <li className="flex flex-wrap items-baseline gap-2 text-[12px] text-slate-600">
-                <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-600">P22-23</span>
+                <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-600">Production Incident Center</span>
                 <span>{data.links.incidents}</span>
               </li>
             </ul>

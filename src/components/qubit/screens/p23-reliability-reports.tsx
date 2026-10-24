@@ -62,7 +62,7 @@ export function P23ReliabilityReportsScreen() {
       <PageHeader
         crumbs={[{ label: "Observability" }]}
         title="Reliability Reports"
-        description="A generated reliability document whose every figure traces to a live probe, the audit trail, a governance registry or the Phase 25 telemetry store."
+        description="A generated reliability document whose every figure traces to a live probe, the audit trail, a governance registry or the telemetry store."
         actions={
           <>
             <button type="button" onClick={reload} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
@@ -164,7 +164,7 @@ export function P23ReliabilityReportsScreen() {
 
           <SectionCard
             title="Telemetry summary (24h)"
-            description="Phase 25 telemetry figures over the last 24 hours — every number is measured from the real telemetry store; gaps are labeled."
+            description="Telemetry figures over the last 24 hours — every number is measured from the real telemetry store; gaps are labeled."
           >
             <FactRow
               label="Request success %"

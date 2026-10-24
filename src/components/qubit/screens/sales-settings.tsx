@@ -458,7 +458,7 @@ export function SalesSettingsScreen() {
 
           <SalesAsOf
             asOfLabel={SALES_PERIOD.asOfLabel}
-            note="Configuration history lives in the audit trail (screen 39) — filter by “Sales settings updated”."
+            note="Configuration history lives in the audit trail — filter by “Sales settings updated”."
           />
         </div>
       )}

@@ -97,13 +97,13 @@ export function ResponsiveQaScreen() {
               ))}
             </ul>
             {data.registry.phase18Missing.length > 0 && (
-              <PlatformNote tone="warn" title="Phase 18 screens missing">
+              <PlatformNote tone="warn" title="Expected screens missing">
                 {data.registry.phase18Missing.join(", ")}
               </PlatformNote>
             )}
           </SectionCard>
 
-          <SectionCard title="Breakpoint matrix" description="The viewport contract QA validates against (spec §22).">
+          <SectionCard title="Breakpoint matrix" description="The viewport contract QA validates against.">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
               {data.breakpoints.map((b) => (
                 <PlatformCard key={b.id} className="p-3 text-center">

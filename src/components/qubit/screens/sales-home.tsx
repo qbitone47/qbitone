@@ -416,7 +416,7 @@ export function SalesHomeScreen() {
             </div>
           )}
 
-          <SalesAsOf asOfLabel={data.period.asOfLabel} note="Counts reflect your authorized scope; company-wide aggregates live in the Sales Command Center (screen 61)." />
+          <SalesAsOf asOfLabel={data.period.asOfLabel} note="Counts reflect your authorized scope; company-wide aggregates live in the Sales Command Center." />
         </div>
       )}
 

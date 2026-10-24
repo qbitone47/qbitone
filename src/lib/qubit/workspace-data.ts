@@ -632,7 +632,7 @@ export const MAIL: MailMessage[] = [
   {
     id: "m-103", folder: "inbox", fromId: "arjun", to: ["sagar"], subject: "Qubit AI access-policy proposal — ready for your review",
     preview: "Tightened AI data scopes for the Service module: agents get AI summaries only for tickets they own. Audit trail coverage is complete. Task and proposal attached.",
-    body: "Hi Sagar,\n\nThe Qubit AI access-policy proposal is ready for your review (task-134 in your workspace).\n\nKey changes:\n- Service agents receive AI summaries only for tickets they own — no cross-team leakage.\n- Sensitive AI actions (role data, financial summaries) require human approval, same as Phase 3 boundaries.\n- Every AI query writes an audit event; denials are recorded with reason codes.\n\nSecurity review is scheduled for Tuesday 10:00. Would like your approval before the December rollout gate.\n\nArjun",
+    body: "Hi Sagar,\n\nThe Qubit AI access-policy proposal is ready for your review (task-134 in your workspace).\n\nKey changes:\n- Service agents receive AI summaries only for tickets they own — no cross-team leakage.\n- Sensitive AI actions (role data, financial summaries) require human approval, same as the security-module boundaries.\n- Every AI query writes an audit event; denials are recorded with reason codes.\n\nSecurity review is scheduled for Tuesday 10:00. Would like your approval before the December rollout gate.\n\nArjun",
     ts: at(-1, 17, 45), read: false, labels: ["IT"], attachments: [{ name: "AI-access-policy-proposal.pdf", sizeKb: 640, type: "PDF" }],
   },
   {

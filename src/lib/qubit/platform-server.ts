@@ -504,8 +504,8 @@ function a11yPayload() {
         : c.id === "motion"
           ? "Enterprise motion is restrained; transitions are subtle and duration-bounded."
           : c.id === "contrast"
-            ? "Design tokens ship AA-verified slate/navy palette; verified in Phase 2."
-            : "Enforced through the shared primitives and reviewed per phase.",
+            ? "Design tokens ship an AA-verified slate/navy palette."
+            : "Enforced through the shared primitives and reviewed per release.",
     })),
     findings: s.findings.filter((f) => f.area === "a11y"),
     stats: {
@@ -535,7 +535,7 @@ async function securityPayload() {
     domains: SECURITY_DOMAINS.map((d) => ({ id: d.id, label: d.label, checks: d.checks })),
     posture: {
       authentication: {
-        mfa: { status: "Enforced", detail: "MFA challenge/verify is part of the authentication flow (Phase 3) with step-up for sensitive approvals." },
+        mfa: { status: "Enforced", detail: "MFA challenge/verify is part of the authentication flow with step-up for sensitive approvals." },
         sso: { status: "Configured", detail: `${SSO_PROVIDERS.length} enterprise identity providers configured.` },
         sessions: { status: "Active", detail: `${sessions.length} session(s) tracked; revocation available server-side.` },
         passkeys: { status: "Supported", detail: "Passkey registration flow exists; adoption optional." },
@@ -707,7 +707,7 @@ function releasePayload() {
   return {
     current: {
       version: "qubit-one 18.0.0",
-      channel: "Phase 18 — Enterprise Hardening + Mobile",
+      channel: "Enterprise Hardening + Mobile",
       screens: SCREENS.length,
       builtWith: "Next.js 16 · React · TypeScript · Prisma (SQLite) · Tailwind",
       note: "Version and build identity are read from the running application — not declared by hand.",
@@ -720,20 +720,20 @@ function releasePayload() {
     ],
     lifecycle: ["Draft", "Validation", "Approved", "Deploying", "Verification", "Released"],
     history: [
-      { version: "Phase 18.0", date: "13 Nov 2026", scope: "Enterprise Hardening + Mobile — screens 285–308 (24 screens), real backup/restore engine, live telemetry, QA/a11y governance", status: "Released", owner: "Platform team", rollback: rollbackReady ? "Ready" : "Backup pending" },
-      { version: "Phase 17.0", date: "12 Nov 2026", scope: "Analytics / Audit — screens 267–284 (18 screens) over the governed semantic layer", status: "Released", owner: "Platform team", rollback: "Superseded" },
-      { version: "Phase 7.0", date: "10 Nov 2026", scope: "Sales AI — screens 103–110 grounded in the Sales OS", status: "Released", owner: "Sales platform team", rollback: "Superseded" },
-      { version: "Phase 6.0", date: "08 Nov 2026", scope: "Sales Operating System — screens 73–102", status: "Released", owner: "Sales platform team", rollback: "Superseded" },
-      { version: "Phase 5.0", date: "06 Nov 2026", scope: "CEO Command Center — screens 59–72", status: "Released", owner: "Executive platform team", rollback: "Superseded" },
-      { version: "Phase 4.0", date: "04 Nov 2026", scope: "Core Employee Workspace — screens 41–58", status: "Released", owner: "Workspace team", rollback: "Superseded" },
-      { version: "Phase 3.0", date: "03 Nov 2026", scope: "Authentication & Security — screens 31–40, the ONE audit trail", status: "Released", owner: "Security team", rollback: "Superseded" },
-      { version: "Phase 2.0", date: "02 Nov 2026", scope: "Enterprise Design System — screens 13–30", status: "Released", owner: "Design systems team", rollback: "Superseded" },
-      { version: "Phase 1.0", date: "01 Nov 2026", scope: "Enterprise Architecture — screens 01–12", status: "Released", owner: "Platform team", rollback: "Superseded" },
+      { version: "Enterprise Hardening + Mobile", date: "13 Nov 2026", scope: "Real backup/restore engine, live telemetry, QA/a11y governance", status: "Released", owner: "Platform team", rollback: rollbackReady ? "Ready" : "Backup pending" },
+      { version: "Analytics / Audit", date: "12 Nov 2026", scope: "Analytics and audit surfaces over the governed semantic layer", status: "Released", owner: "Platform team", rollback: "Superseded" },
+      { version: "Sales AI", date: "10 Nov 2026", scope: "Grounded in the Sales OS", status: "Released", owner: "Sales platform team", rollback: "Superseded" },
+      { version: "Sales Operating System", date: "08 Nov 2026", scope: "The complete sales workflow", status: "Released", owner: "Sales platform team", rollback: "Superseded" },
+      { version: "CEO Command Center", date: "06 Nov 2026", scope: "Executive command surfaces", status: "Released", owner: "Executive platform team", rollback: "Superseded" },
+      { version: "Core Employee Workspace", date: "04 Nov 2026", scope: "The employee home and personal workspace", status: "Released", owner: "Workspace team", rollback: "Superseded" },
+      { version: "Authentication & Security", date: "03 Nov 2026", scope: "Authentication flows and the ONE audit trail", status: "Released", owner: "Security team", rollback: "Superseded" },
+      { version: "Enterprise Design System", date: "02 Nov 2026", scope: "The shared design-system reference", status: "Released", owner: "Design systems team", rollback: "Superseded" },
+      { version: "Enterprise Architecture", date: "01 Nov 2026", scope: "Organization, roles, workflows and governance", status: "Released", owner: "Platform team", rollback: "Superseded" },
     ],
     safety: {
-      migrations: "Prisma schema changes are versioned and reviewable; this phase added no destructive migration.",
+      migrations: "Prisma schema changes are versioned and reviewable; this release added no destructive migration.",
       deployGate: "Production deployment actions are unavailable in this environment — the honest state rather than a disabled-looking fake button.",
-      rollbackReadiness: rollbackReady ? "Ready" : "Pending — run a backup + restore test (305)",
+      rollbackReadiness: rollbackReady ? "Ready" : "Pending — run a backup + restore test",
       ciNote: "Release automation (CI/CD, smoke tests, canary) is architecture-ready but not wired in this sandbox — stated, not simulated.",
     },
     sourceNote: "Release history records the actual product releases of this codebase. Environments reflect reality.",

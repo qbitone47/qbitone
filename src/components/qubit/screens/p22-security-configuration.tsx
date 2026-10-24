@@ -109,7 +109,7 @@ export function P22SecurityConfigurationScreen() {
             <NotConfiguredCard title="Multi-factor authentication (MFA)" note={data.mfa.note} recommendation="Integrate a real IdP (with TOTP/WebAuthn) before MFA can be honestly claimed." />
             <NotConfiguredCard title="Single sign-on (SSO)" note={data.sso.note} recommendation="Adopt an external identity provider (SAML/OIDC) when the organization requires federated login." />
             <NotConfiguredCard title="Password policy" note={data.passwordPolicy.note} recommendation="A real IdP will own password policy — define it there, not in demo bootstrap code." />
-            <NotConfiguredCard title="IP & network policy enforcement" note={data.ipNetworkPolicy.note} recommendation="Wire enforcement behind the existing Phase 3 governance UI before relying on it." />
+            <NotConfiguredCard title="IP & network policy enforcement" note={data.ipNetworkPolicy.note} recommendation="Wire enforcement behind the existing IP & Network Policy governance UI before relying on it." />
             <NotConfiguredCard title="Security alerting" note={data.alerts.note} recommendation="Connect an alerting pipeline (email/Slack webhook with server-only credentials) fed by the audit trail." />
           </div>
 

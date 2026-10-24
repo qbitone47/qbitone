@@ -251,7 +251,7 @@ export function ExecutiveReportsScreen() {
                       onOpen={() =>
                         toast({
                           title: r.title,
-                          description: "The report viewer opens in the Documents module (Phase 14).",
+                          description: "The report viewer opens in the Documents module.",
                         })
                       }
                       onGenerate={() => void generate(r)}

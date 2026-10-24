@@ -176,8 +176,8 @@ export function SalesAiHomeScreen() {
                   onClick={() => nav.navigate(qa.screen as never)}
                   className="group flex items-start gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3.5 text-left transition-colors hover:border-blue-200 hover:bg-blue-50/40"
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[11px] font-semibold tabular-nums text-slate-500 transition-colors group-hover:bg-blue-100 group-hover:text-blue-700" aria-hidden>
-                    {qa.num}
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition-colors group-hover:bg-blue-100 group-hover:text-blue-700" aria-hidden>
+                    <Sparkles className="h-4 w-4" />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-[13px] font-semibold text-slate-800">{qa.label}</span>

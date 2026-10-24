@@ -321,7 +321,7 @@ async function environmentPayload() {
     apiStatus: apiP.health === "healthy" ? "Healthy" : apiP.health === "degraded" ? "Degraded" : "Unavailable",
     apiRttMs: apiP.latencyMs,
     authStatus: "Session plane active — HMAC-signed httpOnly cookies, 8h absolute TTL, server-side role resolution.",
-    integrationsSummary: "See Integration Health (P22-12) — derived from runtime configuration only.",
+    integrationsSummary: "See Integration Health (Integration Health) — derived from runtime configuration only.",
     errorRate: null as number | null,
     errorRateNote: "Not configured — no error aggregator (e.g. Sentry) is installed; no error-rate number is invented.",
     responseLatencyMs: apiP.latencyMs,
@@ -613,7 +613,7 @@ async function securityPayloadOps() {
   const recentDenials = queryAudit({ pageSize: 200 }, "administrator", SESSION_USER_ID).events.filter((e) => (e as { result?: string }).result === "blocked").length;
   return {
     authentication: { configured: true, note: "Session plane: HMAC-SHA256 signed tokens (WebCrypto), httpOnly + SameSite=Strict cookies, server-side role resolution from the signed session — client roles are never trusted." },
-    mfa: { configured: false, note: "Not configured for production (the Phase 3/21 MFA screens are demo-scope; no real IdP is integrated)." },
+    mfa: { configured: false, note: "Not configured for production (the MFA screens are demo-scope; no real IdP is integrated)." },
     sso: { configured: false, note: "Not configured — no external identity provider is integrated." },
     sessionPolicy: { configured: true, ttlHours: 8, rotationNote: "8h absolute TTL (real constant). Server-side validation on every request; fail-closed." },
     passwordPolicy: { configured: false, note: "Not applicable — the demo identity bootstrap has no password form; a real IdP will own password policy." },
@@ -623,7 +623,7 @@ async function securityPayloadOps() {
     auditLogging: { configured: true, note: "Centralized writeAudit across modules; Operations mutations are audited to the same trail.", recentDenials },
     securityHeaders: { configured: Object.keys(headers).length > 0, headers, note: Object.keys(headers).length ? "Read from a live response of this deployment." : "Could not read headers from this runtime in this request (self-probe restriction)." },
     encryption: { configured: true, note: "Transport: TLS (platform-terminated). At rest: Supabase-managed storage encryption. Application-layer field encryption: not configured." },
-    ipNetworkPolicy: { configured: false, note: "Not configured — see the existing IP & Network Policy screen (Phase 3) for the governance UI; no enforcement backend exists yet." },
+    ipNetworkPolicy: { configured: false, note: "Not configured — see the existing IP & Network Policy screen for the governance UI; no enforcement backend exists yet." },
     alerts: { configured: false, note: "No security alerting pipeline is configured beyond the in-app audit trail." },
     sourceNote: "Every 'configured' claim maps to a real mechanism in this codebase; everything else is labeled honestly.",
   };

@@ -196,7 +196,7 @@ export function P23ObservabilitySettingsScreen() {
       <PageHeader
         crumbs={[{ label: "Observability" }]}
         title="Observability Settings"
-        description="The declarative policy registry for retention, sampling, alerting defaults and redaction, plus the enforced Phase 25 telemetry pipeline — real current values, audited changes."
+        description="The declarative policy registry for retention, sampling, alerting defaults and redaction, plus the enforced telemetry pipeline — real current values, audited changes."
       />
 
       {loading && <OpsSkeleton />}
@@ -252,14 +252,14 @@ export function P23ObservabilitySettingsScreen() {
           </SectionCard>
 
           <SectionCard
-            title="Telemetry pipeline (Phase 25)"
+            title="Telemetry pipeline"
             description="Enforced configuration of the real telemetry pipeline. Every change below is validated server-side and audited — the feedback line shows the server's returned message."
           >
             <FactRow
               label="Server pipeline (request metering)"
               value={data.telemetry.requestEnabled ? "Enabled" : "Disabled"}
               health={data.telemetry.requestEnabled ? "healthy" : "degraded"}
-              note="withMeter records every API request (status, duration, request id) into the Phase 25 telemetry store."
+              note="withMeter records every API request (status, duration, request id) into the telemetry store."
             />
             <FactRow
               label="Client pipeline (vitals + JS errors)"

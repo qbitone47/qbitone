@@ -270,7 +270,7 @@ export function ResponsiveGridScreen() {
             head={["Token", "Value", "Why"]}
             rows={[
               ["content.max", "1440px", "Workspace content width; centered in the viewport"],
-              ["sidebar.width", "264px · 68px", "Expanded · collapsed rail (Screen 21)"],
+              ["sidebar.width", "264px · 68px", "Expanded · collapsed rail"],
               ["layout.gutter", "16 / 24 / 32px", "Horizontal padding at base / md / lg"],
               ["layout.columns", "12", "Grid columns for content areas"],
               ["layout.sectionGap", <>24px — <DSVar>space-y-6</DSVar></>, "Vertical rhythm between sections"],
@@ -446,12 +446,12 @@ export function ResponsiveGridScreen() {
               className="mt-6"
               head={["Desktop pattern", "Mobile translation", "Rule"]}
               rows={[
-                ["Sidebar", "Navigation sheet", "Same tree in a w-72 left sheet below 768px (Screen 21)"],
+                ["Sidebar", "Navigation sheet", "Same tree in a w-72 left sheet below 768px"],
                 ["Table", "Structured cards", "DataTable renders record cards instead of horizontal scroll"],
                 ["Modal", "Full-screen sheet", "Centered dialogs become edge-to-edge sheets on mobile"],
                 ["Drawer", "Full-height panel", "The right drawer keeps its height and gains full width"],
                 ["Multi-column", "Single column", "Stack in priority order — primary content first"],
-                ["Command bar", "Search icon", "The pill collapses into the topbar; the dialog stays full-width (Screen 22)"],
+                ["Command bar", "Search icon", "The pill collapses into the topbar; the dialog stays full-width"],
               ]}
             />
           </DSStage>

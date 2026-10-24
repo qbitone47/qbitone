@@ -707,7 +707,7 @@ function AlertDetail({ alert, onInvestigate }: { alert: ExecAlert; onInvestigate
         <h3 id="alert-linked" className="text-xs font-semibold uppercase tracking-wide text-slate-400">Linked view</h3>
         <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200/80 px-3.5 py-2.5">
           <p className="text-[13px] text-slate-700">
-            {drill.title} <span className="text-[11px] text-slate-400">· screen {drill.num}</span>
+            {drill.title}
           </p>
           <Button size="sm" variant="outline" className="h-7 gap-1 px-2.5 text-xs" onClick={onInvestigate}>
             <LineChart className="h-3 w-3" aria-hidden /> Investigate in KPI Drilldown

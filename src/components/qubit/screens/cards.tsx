@@ -343,7 +343,7 @@ export function CardsScreen() {
             </DSGuidance>
             <DSGuidance kind="dont" title="use cards for dense comparable data">
               <ul className="list-inside space-y-1.5">
-                <li>More than ~10 rows of comparable records — column scanning beats card stacking. That&apos;s a table (Screen 18).</li>
+                <li>More than ~10 rows of comparable records — column scanning beats card stacking. That&apos;s a table.</li>
                 <li>Grids of identical, action-less tiles — that&apos;s a table wearing a costume.</li>
                 <li>Long-form reading — cards are summaries, never documents.</li>
               </ul>
@@ -449,7 +449,7 @@ export function CardsScreen() {
                 {
                   label: "Avoid when",
                   value: (
-                    <>Users must compare many records on shared columns (table — Screen 18), or the content is a time trend (chart — Screen 20).</>
+                    <>Users must compare many records on shared columns (a table), or the content is a time trend (a chart).</>
                   ),
                 },
                 {

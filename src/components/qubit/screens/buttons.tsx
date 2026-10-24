@@ -118,13 +118,13 @@ export function ButtonsScreen() {
                 </Button>
               </DSExample>
 
-              <DSExample label={<SpecLabel name="Destructive · Delete department" usage="Irreversible only — always confirmed (Screen 23)." />}>
+              <DSExample label={<SpecLabel name="Destructive · Delete department" usage="Irreversible only — always confirmed." />}>
                 <Button
                   variant="destructive"
                   onClick={() =>
                     toast({
                       title: "Confirmation required",
-                      description: "Delete opens a confirm dialog first — Screen 23 · Modal & Drawer.",
+                      description: "Delete opens a confirm dialog first — the Modal & Drawer pattern.",
                     })
                   }
                 >
@@ -177,7 +177,7 @@ export function ButtonsScreen() {
               },
               {
                 label: "Destructive",
-                value: "Irreversible actions only — always paired with a confirmation dialog (Screen 23 · Modal & Drawer).",
+                value: "Irreversible actions only — always paired with a confirmation dialog (Modal & Drawer pattern).",
               },
               {
                 label: "Text / Link",
@@ -328,7 +328,7 @@ export function ButtonsScreen() {
                       </Button>
                     </td>
                     <td className="px-3 py-3.5 text-center" colSpan={2}>
-                      <span className="text-[11px] text-slate-300">n/a — destructive ends at confirmation (Screen 23)</span>
+                      <span className="text-[11px] text-slate-300">n/a — destructive ends at confirmation</span>
                     </td>
                   </tr>
                 </tbody>
@@ -484,7 +484,7 @@ export function ButtonsScreen() {
               },
               {
                 label: "Destructive",
-                value: "Reserved for irreversible actions and always opened through a confirmation dialog (Screen 23 · Modal & Drawer). Never rendered as ghost or link.",
+                value: "Reserved for irreversible actions and always opened through a confirmation dialog (Modal & Drawer pattern). Never rendered as ghost or link.",
               },
               {
                 label: "Focus",

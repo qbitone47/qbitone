@@ -908,7 +908,7 @@ export const EXEC_APPROVALS: ExecApproval[] = [
     stage: "Final approval (Security cleared)",
     risk: { level: "High", detail: "Grants write access to production financial data. Time-boxed and audited, but the blast radius includes the general ledger." },
     stepUpRequired: true,
-    detail: "Time-boxed elevated access (72 h) for the FY27 ledger migration on 21 Nov. Security review passed (Phase 3 controls); executive sign-off is the final gate. All access is session-audited.",
+    detail: "Time-boxed elevated access (72 h) for the FY27 ledger migration on 21 Nov. Security review passed (security controls); executive sign-off is the final gate. All access is session-audited.",
     rule: "Privileged access → Security + Chief Executive Officer",
     sla: "1 working day · waiting 2 days",
     history: [
@@ -1342,7 +1342,7 @@ export const KPIS: Kpi[] = [
     unit: "pct",
     definition: "Rolling 12-month exits as a share of average headcount, company-wide.",
     calc: "Exits (rolling 12 m) ÷ average headcount × 100",
-    source: "HR core · employee lifecycle (screen 06)",
+    source: "HR core · employee lifecycle",
     period: "Rolling 12 months",
     kind: "Actual",
     value: 12.4,

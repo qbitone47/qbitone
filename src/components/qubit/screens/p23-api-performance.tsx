@@ -101,7 +101,7 @@ export function P23ApiPerformanceScreen() {
       <PageHeader
         crumbs={[{ label: "Observability" }]}
         title="API Performance"
-        description="The real API endpoint manifest, server-observed request telemetry from the Phase 25 metering layer, and on-demand latency probes. Protected endpoints answering 401 without a session are healthy — that is auth being enforced."
+        description="The real API endpoint manifest, server-observed request telemetry from the metering layer, and on-demand latency probes. Protected endpoints answering 401 without a session are healthy — that is auth being enforced."
       />
 
       {loading && <OpsSkeleton />}

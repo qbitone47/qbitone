@@ -91,7 +91,7 @@ export function MobileIdCardScreen() {
           </MobileSection>
 
           <SourceNote>{data.verification.note} {data.sourceNote}</SourceNote>
-          <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 297 · Mobile ID Card</p>
+          <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile ID Card</p>
         </>
       )}
     </MobileFrame>

@@ -76,18 +76,18 @@ export function P25RetentionScreen() {
       <PageHeader
         crumbs={[{ label: "Observability" }]}
         title="Data Retention"
-        description="Enforced retention for the Phase 25 telemetry store — real counts, audited enforcement, and honest facts about what the platform providers do (and do not) retain."
+        description="Enforced retention for the telemetry store — real counts, audited enforcement, and honest facts about what the platform providers do (and do not) retain."
       />
 
       {loading && <OpsSkeleton />}
       {error && !loading && <OpsError message={error} onRetry={reload} forbidden={forbidden} />}
       {data && !loading && (
         <div className="space-y-5">
-          <SectionCard title="Telemetry store" description="Live persistence state of the Phase 25 pipeline.">
+          <SectionCard title="Telemetry store" description="Live persistence state of the telemetry pipeline.">
             <FactRow label="Persistence" value={data.persistence.state} health={data.persistence.state === "ok" ? "healthy" : data.persistence.state === "degraded" ? "degraded" : "unavailable"} note={data.persistence.note} />
             <FactRow label="Events in buffer" value={data.persistence.bufferLen} note="In-process events awaiting a successful flush (also the fallback store when the database is unreachable)." />
             <FactRow label="Sampling" value={`${data.config.samplingRatePct}%`} note="Applies to request/client-vital/client-route/client-request kinds — errors and logs are never sampled out." />
-            <FactRow label="Pipelines" value={`${data.config.requestEnabled ? "server" : "server off"} · ${data.config.clientEnabled ? "client" : "client off"}`} health={data.config.requestEnabled && data.config.clientEnabled ? "healthy" : "degraded"} note="Toggle in Observability Settings (P23-24)." />
+            <FactRow label="Pipelines" value={`${data.config.requestEnabled ? "server" : "server off"} · ${data.config.clientEnabled ? "client" : "client off"}`} health={data.config.requestEnabled && data.config.clientEnabled ? "healthy" : "degraded"} note="Toggle in Observability Settings (Observability Settings)." />
           </SectionCard>
 
           <SectionCard title="Retention policy" description={data.policy.enforcement}>

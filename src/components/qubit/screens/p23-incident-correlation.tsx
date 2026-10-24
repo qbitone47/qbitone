@@ -128,7 +128,7 @@ export function P23IncidentCorrelationScreen() {
           </SectionCard>
 
           <div className="grid gap-5 lg:grid-cols-2">
-            <SectionCard title={`Incidents (${data.incidents.length})`} description="From the Phase 22 incident registry within the window.">
+            <SectionCard title={`Incidents (${data.incidents.length})`} description="From the incident registry within the window.">
               {data.incidents.length === 0 ? (
                 <EmptyGroup label="incidents" />
               ) : (
@@ -190,7 +190,7 @@ export function P23IncidentCorrelationScreen() {
               )}
             </SectionCard>
 
-            <SectionCard title={`Errors (${data.errors.length})`} description="Failure/Blocked audit events + Phase 25 telemetry errors (server + client) merged, most recent first.">
+            <SectionCard title={`Errors (${data.errors.length})`} description="Failure/Blocked audit events + telemetry errors (server + client) merged, most recent first.">
               {data.errors.length === 0 ? (
                 <EmptyGroup label="errors" />
               ) : (

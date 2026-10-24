@@ -51,7 +51,7 @@ export function AccessibilityReviewScreen() {
   const resolve = async (id: string, status: "Resolved" | "Open") => {
     setBusy(true);
     try {
-      await platformPost("a11y.finding.update", { id, status, resolution: status === "Resolved" ? "Verified fixed during Phase 18 review." : undefined }, role);
+      await platformPost("a11y.finding.update", { id, status, resolution: status === "Resolved" ? "Verified fixed during review." : undefined }, role);
       toast({ title: `Finding marked ${status.toLowerCase()}` });
       reload();
     } catch (e) {
@@ -131,7 +131,7 @@ export function AccessibilityReviewScreen() {
             </SectionCard>
           )}
 
-          <SectionCard title="WCAG contract" description="The ten checks every Phase 18 screen is held to (spec §24 / §39).">
+          <SectionCard title="WCAG contract" description="The ten checks every screen is held to.">
             <ul className="grid gap-2 sm:grid-cols-2">
               {data.checks.map((c) => (
                 <li key={c.id} className="flex items-start gap-2.5 rounded-lg border border-slate-200 p-3">

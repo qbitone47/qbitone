@@ -157,7 +157,7 @@ export function P23OperationalAiInsightsScreen() {
 
           <SectionCard
             title="AI generation"
-            description="Grounded strictly on real aggregated context sent to the Phase 15 engine. Output is parsed into the labeled schema or refused."
+            description="Grounded strictly on real aggregated context sent to the AI engine. Output is parsed into the labeled schema or refused."
           >
             {data.aiAvailable ? (
               <>

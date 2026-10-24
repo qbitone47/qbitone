@@ -535,7 +535,7 @@ export function ChartsScreen() {
               {
                 label: "Avoid when",
                 value: (
-                  <>Row-level precision or export matters (table — Screen 18), or no question exists the chart answers.</>
+                  <>Row-level precision or export matters (a table), or no question exists the chart answers.</>
                 ),
               },
               {

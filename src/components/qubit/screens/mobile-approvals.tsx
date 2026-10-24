@@ -185,7 +185,7 @@ export function MobileApprovalsScreen() {
               </MobileSection>
 
               <SourceNote>{detail.data.sourceNote}</SourceNote>
-              <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 294 · Mobile Approvals</p>
+              <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile Approvals</p>
             </>
           )}
         </>
@@ -237,7 +237,7 @@ export function MobileApprovalsScreen() {
                 </SourceNote>
               )}
               <SourceNote>{list.data.sourceNote}</SourceNote>
-              <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 294 · Mobile Approvals</p>
+              <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile Approvals</p>
             </>
           )}
         </>

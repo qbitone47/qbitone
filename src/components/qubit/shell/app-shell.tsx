@@ -8,7 +8,7 @@ import { AUTH_SCREENS, SCREENS, type ScreenId } from "@/lib/qubit/screens";
 import { PageHeader } from "../page-header";
 import { EmptyState, SectionCard } from "../primitives";
 import { useQubitNav } from "../nav-context";
-import { SidebarContent, SIDEBAR_MODULES, MODULE_PHASE } from "./sidebar";
+import { SidebarContent, SIDEBAR_MODULES, MODULE_LABEL } from "./sidebar";
 import { TopBar } from "./topbar";
 import { CommandPalette } from "./command-palette";
 import { ModulePlaceholder } from "./module-placeholder";
@@ -68,12 +68,12 @@ export function AppShell() {
 
   const meta = SCREENS.find((s) => s.id === screen)!;
   const ScreenComp = SCREEN_COMPONENTS[screen];
-  const phaseLabel = MODULE_PHASE[meta.module] ?? "Qubit One Enterprise OS";
+  const phaseLabel = MODULE_LABEL[meta.module] ?? "Qubit One Enterprise OS";
   const previewModuleName = previewModule
     ? SIDEBAR_MODULES.find((m) => m.id === previewModule)?.label ?? ""
     : "";
 
-  // Authentication screens (31–33) render standalone — the real
+  // Authentication screens render standalone — the real
   // sign-in experience has no workspace chrome around it.
   if (AUTH_SCREENS.includes(screen)) {
     if (!ScreenComp) return <ScreenLoadError screen={screen} title={meta.title} />;

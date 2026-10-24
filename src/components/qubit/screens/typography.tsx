@@ -259,7 +259,7 @@ export function TypographyScreen() {
                         toast({
                           title: "Specimen — Add Department",
                           description:
-                            "Button text (13/500) on radius.md — the same action pattern as screen 01.",
+                            "Button text (13/500) on radius.md — the same action pattern as the Buttons reference.",
                         })
                       }
                     >

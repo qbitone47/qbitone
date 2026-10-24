@@ -726,7 +726,7 @@ export function OpportunityDetailScreen() {
         </Field>
 
         {target === "Lost" && (
-          <Field label="Loss reason" required hint="Feeds the win/loss report (screen 100).">
+          <Field label="Loss reason" required hint="Feeds the win/loss report.">
             <Select
               value={lossReason}
               onValueChange={(v) => {

@@ -68,29 +68,30 @@ export const SIDEBAR_MODULES: SidebarModule[] = [
   { id: "settings", label: "Settings", icon: Settings2, section: "System" },
 ];
 
-export const MODULE_PHASE: Record<string, string> = {
-  executive: "Phase 5 — CEO Command Center",
-  workspace: "Phase 4 — Core Employee Workspace",
-  people: "Phase 4 — People & Organization",
-  mail: "Phase 4 — Company Mail",
-  sales: "Phase 6 — Sales Operating System",
-  "sales-ai": "Phase 7 — Sales AI",
-  finance: "Phase 7 — Finance",
-  hr: "Phase 7 — HR & People",
-  inventory: "Phase 8 — Inventory",
-  marketing: "Phase 9 — Marketing",
-  service: "Phase 10 — Service",
-  meetings: "Phase 11 — Meetings & Collaboration",
-  ai: "Phase 12 — Qubit AI Platform",
-  analytics: "Phase 17 — Analytics & Audit",
-  mobile: "Phase 18 — Mobile Experience",
-  platform: "Phase 18 — Enterprise Hardening",
-  operations: "Phase 22 — Production Hardening",
-  observability: "Phase 23 — Observability & SRE",
-  documents: "Phase 14 — Documents & Knowledge",
-  "design-system": "Phase 2 — Enterprise Design System",
-  security: "Phase 3 — Authentication & Security",
-  settings: "Phase 15 — Administration & Settings",
+/** Human-facing module labels (display only — no internal phase/inventory numbering). */
+export const MODULE_LABEL: Record<string, string> = {
+  executive: "CEO Command Center",
+  workspace: "Core Employee Workspace",
+  people: "People & Organization",
+  mail: "Company Mail",
+  sales: "Sales Operating System",
+  "sales-ai": "Sales AI",
+  finance: "Finance",
+  hr: "HR & People",
+  inventory: "Inventory",
+  marketing: "Marketing",
+  service: "Service",
+  meetings: "Meetings & Collaboration",
+  ai: "Qubit AI Platform",
+  analytics: "Analytics & Audit",
+  mobile: "Mobile Experience",
+  platform: "Enterprise Hardening",
+  operations: "Production Hardening",
+  observability: "Observability & SRE",
+  documents: "Documents & Knowledge",
+  "design-system": "Enterprise Design System",
+  security: "Authentication & Security",
+  settings: "Administration & Settings",
 };
 
 function QubitMark({ className }: { className?: string }) {
@@ -241,14 +242,6 @@ export function SidebarContent({
                                     : "text-slate-500 hover:bg-slate-100/70 hover:text-slate-800",
                                 )}
                               >
-                                <span
-                                  className={cn(
-                                    "w-4 shrink-0 text-left text-[10px] font-medium tabular-nums",
-                                    screen === s.id ? "text-blue-600" : "text-slate-400",
-                                  )}
-                                >
-                                  {s.num}
-                                </span>
                                 <span className="truncate">{s.shortTitle}</span>
                               </button>
                             </li>
@@ -296,13 +289,13 @@ export function SidebarContent({
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[12.5px] font-semibold leading-tight text-slate-900">Qubit One Pvt Ltd</span>
               <span className="block truncate text-[10.5px] leading-tight text-slate-400">
-                Phase 18 · Mobile & Hardening — Final
+                Enterprise Business Operating System
               </span>
             </span>
             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-hidden />
           </div>
         ) : (
-          <div className="flex justify-center py-0.5" title="Qubit One Pvt Ltd — Phase 18 · Mobile & Hardening — Final">
+          <div className="flex justify-center py-0.5" title="Qubit One Pvt Ltd — Enterprise Business Operating System">
             <QubitMark className="h-7 w-7 rounded-lg text-[13px]" />
           </div>
         )}

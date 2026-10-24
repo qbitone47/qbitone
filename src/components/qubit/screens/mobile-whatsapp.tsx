@@ -195,7 +195,7 @@ export function MobileWhatsappScreen() {
               </MobileSection>
 
               <SourceNote>{detail.data.integrationsNote}</SourceNote>
-              <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 288 · Mobile WhatsApp</p>
+              <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile WhatsApp</p>
             </>
           )}
         </>
@@ -231,7 +231,7 @@ export function MobileWhatsappScreen() {
                 )}
               </MobileSection>
               <SourceNote>{list.data.sourceNote}</SourceNote>
-              <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 288 · Mobile WhatsApp</p>
+              <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile WhatsApp</p>
             </>
           )}
         </>

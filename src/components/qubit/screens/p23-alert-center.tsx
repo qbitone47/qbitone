@@ -84,7 +84,7 @@ export function P23AlertCenterScreen() {
       <PageHeader
         crumbs={[{ label: "Observability" }]}
         title="Alert Center"
-        description="Every alert here was created by a real rule evaluation against live measurements (P23-12). Nothing is seeded or demonstrated — an empty registry means nothing has fired."
+        description="Every alert here was created by a real rule evaluation against live measurements (Alert Rules). Nothing is seeded or demonstrated — an empty registry means nothing has fired."
       />
 
       {loading && <OpsSkeleton />}
@@ -102,7 +102,7 @@ export function P23AlertCenterScreen() {
           >
             {data.alerts.length === 0 ? (
               <p className="py-8 text-center text-[12.5px] text-slate-500">
-                No alerts have fired — rules evaluate on demand. Create rules in P23-12 and use &ldquo;Evaluate now&rdquo; against live probes; an empty list means nothing has breached, not that alerts are hidden.
+                No alerts have fired — rules evaluate on demand. Create rules in Alert Rules and use &ldquo;Evaluate now&rdquo; against live probes; an empty list means nothing has breached, not that alerts are hidden.
               </p>
             ) : (
               <ul className="space-y-2.5">

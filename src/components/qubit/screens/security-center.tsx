@@ -445,7 +445,7 @@ export function SecurityCenterScreen() {
         className="mt-4"
         actions={
           <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[10.5px] font-medium text-slate-500">
-            Phase 12 — Qubit AI Platform
+            Qubit AI Platform
           </span>
         }
       >

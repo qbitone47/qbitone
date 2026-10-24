@@ -71,7 +71,7 @@ export function MonitoringScreen() {
             </div>
           </SectionCard>
 
-          <SectionCard title="Integration feed" description="Latest events from the enterprise integration map (screen 11) — the same source of truth, surfaced for operations.">
+          <SectionCard title="Integration feed" description="Latest events from the enterprise integration map — the same source of truth, surfaced for operations.">
             <ul className="space-y-2.5">
               {data.integrationFeed.map((i) => (
                 <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 p-3">

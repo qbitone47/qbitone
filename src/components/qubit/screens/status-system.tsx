@@ -258,7 +258,7 @@ export function StatusSystemScreen() {
               </div>
               <p className="mt-3">
                 Six statuses, five quiet tones — every color maps to a governed meaning (emerald success, amber pending, red error, blue
-                in-progress, violet configuration; Screen 15 · Color System).
+                in-progress, violet configuration; the Color System reference).
               </p>
             </DSGuidance>
             <DSGuidance kind="dont" title="bright oversized pills, invented status colors, undefined statuses">

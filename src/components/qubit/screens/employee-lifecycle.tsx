@@ -419,7 +419,7 @@ export function EmployeeLifecycleScreen() {
                 onClick={() =>
                   toast({
                     title: "HR module",
-                    description: "Arrives in Phase 7 — lifecycle deep-links into the HR module are scheduled there.",
+                    description: "Lifecycle deep-links into the HR module are served there.",
                   })
                 }
               >

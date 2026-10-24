@@ -299,7 +299,7 @@ export function SalesTargetsScreen() {
           {/* honest history note — the audit trail is the history */}
           <SectionCard title="Target history" description="Where past quota values live.">
             <p className="text-[13px] leading-relaxed text-slate-600">
-              Quota history is retained with each change in the audit trail (screen 39 — filter by “Sales target updated”). No separate
+              Quota history is retained with each change in the audit trail (filter by “Sales target updated”). No separate
               history table is kept.
             </p>
           </SectionCard>
@@ -340,7 +340,7 @@ export function SalesTargetsScreen() {
         submitting={submitting}
         submitLabel="Save quota"
       >
-        <Field label="Quota (₹ Cr)" required hint="Non-negative number, e.g. 2.8. Previous values stay recoverable from the audit trail (screen 39).">
+        <Field label="Quota (₹ Cr)" required hint="Non-negative number, e.g. 2.8. Previous values stay recoverable from the audit trail.">
           <Input
             type="number"
             inputMode="decimal"

@@ -239,7 +239,7 @@ export function DSScreenNav({ id, className }: { id: ScreenId; className?: strin
             {dir === "prev" ? "Previous" : "Next"}
           </span>
           <span className="block truncate text-[13px] font-medium text-slate-700 group-hover/nav:text-blue-700">
-            {meta.num}. {meta.title}
+            {meta.title}
           </span>
         </span>
       </button>

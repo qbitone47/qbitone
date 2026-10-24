@@ -137,7 +137,7 @@ export function TopBar({
             </button>
             <ChevronRight className="hidden h-3.5 w-3.5 text-slate-300 min-[480px]:block" aria-hidden />
             <span aria-current="page" className="truncate px-1 py-0.5 font-medium text-slate-800">
-              {meta.num}. {meta.title}
+              {meta.title}
             </span>
           </li>
         </ol>
@@ -226,7 +226,7 @@ export function TopBar({
                 key={item.label}
                 type="button"
                 onClick={() =>
-                  toast({ title: item.label, description: "Opens in the Documents module (Phase 14)." })
+                  toast({ title: item.label, description: "Opens in the Documents module." })
                 }
                 className="flex w-full items-start gap-2.5 rounded-md px-2 py-2 text-left hover:bg-slate-50"
               >

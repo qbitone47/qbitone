@@ -703,12 +703,12 @@ export type SalesAiActionResult =
   | { ok: false; status: number; code: string; message: string };
 
 const QUICK_ACTIONS: AiQuickAction[] = [
-  { label: "Prioritize my leads", description: "Explainable ranking of the leads you own", screen: "ai-lead-prioritization", num: "104" },
-  { label: "Review my pipeline", description: "Stalled deals, aging and forecast risks", screen: "ai-pipeline-review", num: "108" },
-  { label: "Prepare today's brief", description: "What matters today, personalized by role", screen: "ai-daily-brief", num: "109" },
-  { label: "Summarize a customer", description: "Evidence-based Customer 360 summary", screen: "ai-customer-summary", num: "106" },
-  { label: "Draft a follow-up", description: "AI-assisted writing, always reviewed by you", screen: "ai-followup-writer", num: "105" },
-  { label: "Ask Sales AI", description: "Grounded answers from authorized sales data", screen: "ai-sales-qa", num: "110" },
+  { label: "Prioritize my leads", description: "Explainable ranking of the leads you own", screen: "ai-lead-prioritization" },
+  { label: "Review my pipeline", description: "Stalled deals, aging and forecast risks", screen: "ai-pipeline-review" },
+  { label: "Prepare today's brief", description: "What matters today, personalized by role", screen: "ai-daily-brief" },
+  { label: "Summarize a customer", description: "Evidence-based Customer 360 summary", screen: "ai-customer-summary" },
+  { label: "Draft a follow-up", description: "AI-assisted writing, always reviewed by you", screen: "ai-followup-writer" },
+  { label: "Ask Sales AI", description: "Grounded answers from authorized sales data", screen: "ai-sales-qa" },
 ];
 
 export function salesAiGet(role: WorkspaceRole, section: SalesAiSection, params: URLSearchParams): { ok: true; data: Record<string, unknown> } | { ok: false; status: number; code: string; message: string } {

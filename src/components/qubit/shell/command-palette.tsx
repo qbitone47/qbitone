@@ -57,7 +57,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <RecordsSection onSelect={(screen, params) => run(() => navigate(screen, params))} />
-        <CommandGroup heading="Sales — Phase 6 screens">
+        <CommandGroup heading="Sales">
           {screensByModule("sales").map((s) => (
             <CommandItem
               key={s.id}
@@ -65,13 +65,12 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
               onSelect={() => run(() => navigate(s.id))}
               className="gap-3"
             >
-              <span className="w-6 text-[10px] font-semibold tabular-nums text-slate-400">{s.num}</span>
               <span className="text-[13px] font-medium text-slate-800">{s.title}</span>
             </CommandItem>
           ))}
         </CommandGroup>
         <CommandSeparator />
-        <CommandGroup heading="CEO Command Center — Phase 5 screens">
+        <CommandGroup heading="CEO Command Center">
           {screensByModule("executive").map((s) => (
             <CommandItem
               key={s.id}
@@ -79,13 +78,12 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
               onSelect={() => run(() => navigate(s.id))}
               className="gap-3"
             >
-              <span className="w-6 text-[10px] font-semibold tabular-nums text-slate-400">{s.num}</span>
               <span className="text-[13px] font-medium text-slate-800">{s.title}</span>
             </CommandItem>
           ))}
         </CommandGroup>
         <CommandSeparator />
-        <CommandGroup heading="Enterprise — Phase 1 screens">
+        <CommandGroup heading="Enterprise">
           {screensByModule("enterprise").map((s) => (
             <CommandItem
               key={s.id}
@@ -93,13 +91,12 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
               onSelect={() => run(() => navigate(s.id))}
               className="gap-3"
             >
-              <span className="w-6 text-[10px] font-semibold tabular-nums text-slate-400">{s.num}</span>
               <span className="text-[13px] font-medium text-slate-800">{s.title}</span>
             </CommandItem>
           ))}
         </CommandGroup>
         <CommandSeparator />
-        <CommandGroup heading="Design System — Phase 2 screens">
+        <CommandGroup heading="Design System">
           {screensByModule("design-system").map((s) => (
             <CommandItem
               key={s.id}
@@ -107,13 +104,12 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
               onSelect={() => run(() => navigate(s.id))}
               className="gap-3"
             >
-              <span className="w-6 text-[10px] font-semibold tabular-nums text-slate-400">{s.num}</span>
               <span className="text-[13px] font-medium text-slate-800">{s.title}</span>
             </CommandItem>
           ))}
         </CommandGroup>
         <CommandSeparator />
-        <CommandGroup heading="Employee Workspace — Phase 4 screens">
+        <CommandGroup heading="Employee Workspace">
           {screensByModule("workspace").map((s) => (
             <CommandItem
               key={s.id}
@@ -121,13 +117,12 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
               onSelect={() => run(() => navigate(s.id))}
               className="gap-3"
             >
-              <span className="w-6 text-[10px] font-semibold tabular-nums text-slate-400">{s.num}</span>
               <span className="text-[13px] font-medium text-slate-800">{s.title}</span>
             </CommandItem>
           ))}
         </CommandGroup>
         <CommandSeparator />
-        <CommandGroup heading="People & Mail — Phase 4 screens">
+        <CommandGroup heading="People & Mail">
           {[...screensByModule("people"), ...screensByModule("mail")].map((s) => (
             <CommandItem
               key={s.id}
@@ -135,13 +130,12 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
               onSelect={() => run(() => navigate(s.id))}
               className="gap-3"
             >
-              <span className="w-6 text-[10px] font-semibold tabular-nums text-slate-400">{s.num}</span>
               <span className="text-[13px] font-medium text-slate-800">{s.title}</span>
             </CommandItem>
           ))}
         </CommandGroup>
         <CommandSeparator />
-        <CommandGroup heading="Security — Phase 3 screens">
+        <CommandGroup heading="Security">
           {screensByModule("security").map((s) => (
             <CommandItem
               key={s.id}
@@ -149,7 +143,6 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
               onSelect={() => run(() => navigate(s.id))}
               className="gap-3"
             >
-              <span className="w-6 text-[10px] font-semibold tabular-nums text-slate-400">{s.num}</span>
               <span className="text-[13px] font-medium text-slate-800">{s.title}</span>
             </CommandItem>
           ))}

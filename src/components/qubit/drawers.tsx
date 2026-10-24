@@ -115,7 +115,7 @@ export function EmployeeDrawer({
             onClick={() =>
               toast({
                 title: "Full profile",
-                description: "The complete employee profile opens in the People module (Phase 2).",
+                description: "The complete employee profile opens in the People module.",
               })
             }
           >

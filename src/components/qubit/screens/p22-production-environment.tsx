@@ -90,14 +90,14 @@ export function P22ProductionEnvironmentScreen() {
                 <FactRow label="Error rate" value="Not configured" health="not-configured" note={data.errorRateNote} />
                 <FactRow label="Uptime" value={data.uptimePct != null ? `${data.uptimePct}%` : "Not configured"} health="not-configured" note={data.uptimeNote} />
                 <FactRow label="Process uptime" value={`${data.uptime.processUptimeMin} min`} note={data.uptime.note} />
-                <FactRow label="Active incidents" value={data.activeIncidents} health={data.activeIncidents ? "degraded" : "healthy"} note="From the Production Incident Center (P22-23)." />
+                <FactRow label="Active incidents" value={data.activeIncidents} health={data.activeIncidents ? "degraded" : "healthy"} note="From the Production Incident Center (Production Incident Center)." />
               </div>
             </SectionCard>
           </div>
 
           <SectionCard title="External integrations" description={data.integrationsSummary}>
             <p className="text-[12.5px] leading-relaxed text-slate-600">
-              Integration states are derived from live probes and credential presence on <span className="font-semibold text-slate-800">Integration Health (P22-12)</span>. Core data plane: Supabase PostgreSQL. Management-plane integrations (Vercel REST, GitHub Actions) require their server-only tokens.
+              Integration states are derived from live probes and credential presence on <span className="font-semibold text-slate-800">Integration Health (Integration Health)</span>. Core data plane: Supabase PostgreSQL. Management-plane integrations (Vercel REST, GitHub Actions) require their server-only tokens.
             </p>
           </SectionCard>
 

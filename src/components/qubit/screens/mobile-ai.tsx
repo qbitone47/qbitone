@@ -167,7 +167,7 @@ export function MobileAiScreen() {
           </MobileSection>
 
           <SourceNote>{data.sourceNote}</SourceNote>
-          <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 300 · Mobile AI</p>
+          <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile AI</p>
         </>
       )}
     </MobileFrame>

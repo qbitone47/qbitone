@@ -195,7 +195,7 @@ export function MobileSalesHomeScreen() {
           </MobileSection>
 
           <SourceNote>{data.sourceNote}</SourceNote>
-          <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 286 · Mobile Sales Home</p>
+          <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile Sales Home</p>
         </>
       )}
       {busy && <p className="px-3 pb-2 text-[11px] text-slate-400" role="status">Recording field stage…</p>}

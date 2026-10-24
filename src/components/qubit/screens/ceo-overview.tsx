@@ -175,7 +175,7 @@ function OverviewBody() {
           {/* ——— AI executive insight preview ——— */}
           <SectionCard
             title="AI executive insights"
-            description="Evidence-based interpretation of authorized company data — read-only here, opened in full on Screen 70."
+            description="Evidence-based interpretation of authorized company data — read-only here, opened in full in CEO AI Insights."
             actions={<ArrowLink onClick={() => navigate("ceo-ai-insights")}>Open CEO AI Insights</ArrowLink>}
           >
             {payload.insights.length === 0 ? (

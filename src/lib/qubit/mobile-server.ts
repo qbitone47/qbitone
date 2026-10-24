@@ -735,7 +735,7 @@ function approvalsPayload(role: WorkspaceRole, approvalId?: string) {
       stepUpNote: a.stepUpRequired
         ? "This request is flagged sensitive — the server requires reauthentication before the decision is accepted (the same step-up contract as desktop)."
         : null,
-      sourceNote: "The centralized Approval Matrix queue (Screen 09 routing) — mobile decisions go through the SAME decideApproval enforcement.",
+      sourceNote: "The centralized Approval Matrix queue — mobile decisions go through the SAME decideApproval enforcement.",
     });
   }
   return ok({
@@ -805,7 +805,7 @@ function profilePayload(role: WorkspaceRole) {
     editableFields: ["phone"],
     lockedFieldsNote: "Employee ID, title, department, manager and status are company-controlled — the server rejects edits to them even if a crafted request includes them (the same updateProfile contract as desktop).",
     security: {
-      sessions: "Managed in Device & Sessions (screen 35) — the same session store, opened from here.",
+      sessions: "Managed in Device & Sessions — the same session store, opened from here.",
       passkeysAvailable: true,
       mfaAvailable: true,
     },
@@ -841,7 +841,7 @@ function idCardPayload() {
       note: "The QR encodes a signed verification reference (hash of registry fields) — it verifies against the employee registry without exposing any additional personal data (spec §18).",
     },
     minimizeNote: "The card carries the minimum required identity fields. Home address, personal contacts and HR-sensitive data are never rendered (spec §18).",
-    sourceNote: "The same registry record behind the desktop Digital ID Card (screen 53).",
+    sourceNote: "The same registry record behind the desktop Digital ID Card.",
   };
 }
 
@@ -875,7 +875,7 @@ function visitingCardPayload() {
     vcard,
     shareCount: store().cardShares.length,
     sharePolicy: "Sharing respects company policy: the share action records an audited event. The card carries only work contact fields (spec §19).",
-    sourceNote: "Built on the Phase 4 visiting-card identity — the same record as screens 54/95.",
+    sourceNote: "Built on the shared visiting-card identity — the same record as the desktop surfaces.",
   };
 }
 

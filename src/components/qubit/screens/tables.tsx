@@ -868,7 +868,7 @@ export function TablesScreen() {
               {
                 label: "Avoid when",
                 value: (
-                  <>Content is narrative or mixed-media (use cards — Screen 19) or the story is a trend over time (use a chart — Screen 20).</>
+                  <>Content is narrative or mixed-media (use cards) or the story is a trend over time (use a chart).</>
                 ),
               },
               {

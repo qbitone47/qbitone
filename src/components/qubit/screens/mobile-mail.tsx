@@ -169,7 +169,7 @@ export function MobileMailScreen() {
               </MobileSection>
 
               <SourceNote>{detail.data.sourceNote}</SourceNote>
-              <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 299 · Mobile Mail</p>
+              <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile Mail</p>
             </>
           )}
         </>
@@ -250,7 +250,7 @@ export function MobileMailScreen() {
               </MobileSection>
 
               <SourceNote>{list.data.sourceNote}</SourceNote>
-              <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 299 · Mobile Mail</p>
+              <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile Mail</p>
             </>
           )}
         </>

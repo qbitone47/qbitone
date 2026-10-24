@@ -351,7 +351,7 @@ export function IntegrationMapScreen() {
                   Configure
                 </Button>
               )}
-              <Button size="sm" variant="outline" className="h-8" onClick={() => toast({ title: "Integration logs", description: "Full logs are available in Audit (Phase 16)." })}>
+              <Button size="sm" variant="outline" className="h-8" onClick={() => toast({ title: "Integration logs", description: "Full logs are available in the enterprise Audit Log." })}>
                 View logs
               </Button>
               {canManage && (

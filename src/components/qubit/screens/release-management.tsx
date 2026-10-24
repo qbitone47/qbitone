@@ -46,9 +46,8 @@ export function ReleaseManagementScreen() {
       {error && !loading && <PlatformError message={error} onRetry={reload} />}
       {data && !loading && (
         <div className="space-y-5">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <MetricTile label="Version" value={data.current.version.split(" ")[1] ?? data.current.version} note={data.current.channel} />
-            <MetricTile label="Screens shipped" value={data.current.screens} note="registered in the live registry" />
             <MetricTile label="Environments configured" value={data.environments.filter((e) => e.status === "Current").length} unit={`/${data.environments.length}`} />
             <MetricTile label="Rollback readiness" value={<StatusWord status={data.safety.rollbackReadiness.startsWith("Ready") ? "PASS" : "Degraded"} />} note={data.safety.rollbackReadiness} />
           </div>
@@ -86,7 +85,7 @@ export function ReleaseManagementScreen() {
             <PlatformNote>{data.safety.ciNote}</PlatformNote>
           </SectionCard>
 
-          <SectionCard title="Release history" description="The real releases of this codebase — scope and screen counts as shipped.">
+          <SectionCard title="Release history" description="The real releases of this codebase — scope as shipped.">
             <ul className="divide-y divide-slate-100">
               {data.history.map((r) => (
                 <li key={r.version} className="py-3">

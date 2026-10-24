@@ -423,7 +423,7 @@ export function OrderDetailScreen() {
                 size="sm"
                 className="h-9 gap-1.5"
                 onClick={() =>
-                  toast({ title: "View invoice", description: `Invoice ${order.invoiceId} opens in the Finance module (Phase 7).` })
+                  toast({ title: "View invoice", description: `Invoice ${order.invoiceId} opens in the Finance module.` })
                 }
               >
                 <ReceiptText className="h-3.5 w-3.5" aria-hidden /> View invoice
@@ -435,7 +435,7 @@ export function OrderDetailScreen() {
                 size="sm"
                 className="h-9 gap-1.5"
                 onClick={() =>
-                  toast({ title: "View dispatch", description: `Dispatch ${order.dispatchId} opens in the Inventory module (Phase 8).` })
+                  toast({ title: "View dispatch", description: `Dispatch ${order.dispatchId} opens in the Inventory module.` })
                 }
               >
                 <Truck className="h-3.5 w-3.5" aria-hidden /> View dispatch
@@ -637,7 +637,7 @@ export function OrderDetailScreen() {
 
         <SalesAsOf
           asOfLabel={SALES_PERIOD.asOfLabel}
-          note="Invoice references belong to Finance (Phase 7) and dispatch references to Inventory (Phase 8) — shown here, owned there."
+          note="Invoice references belong to Finance and dispatch references to Inventory — shown here, owned there."
         />
       </div>
 

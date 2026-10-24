@@ -36,7 +36,7 @@ export function P25AvailabilityScreen() {
       <PageHeader
         crumbs={[{ label: "Observability" }]}
         title="Availability & Uptime"
-        description="Availability computed from real request telemetry recorded by the Phase 25 metering layer — every figure is measured, gaps are labeled."
+        description="Availability computed from real request telemetry recorded by the request metering layer — every figure is measured, gaps are labeled."
         actions={
           <button type="button" onClick={reload} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
             Refresh

@@ -182,7 +182,7 @@ export function DigitalIdCardScreen() {
 
           <SectionCard title="Policy & lifecycle" description="Managed with the same discipline as every security asset.">
             <ul className="space-y-2 text-xs leading-relaxed text-slate-600">
-              <li className="flex gap-2"><Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden /> Downloading a card copy is restricted by role; policy (Screen 38) governs where credentials may be exported.</li>
+              <li className="flex gap-2"><Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden /> Downloading a card copy is restricted by role; the network policy governs where credentials may be exported.</li>
               <li className="flex gap-2"><TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" aria-hidden /> Lost or replaced device? Report the card — a new verification code is issued and the old one is revoked in the registry.</li>
               <li className="flex gap-2"><Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden /> Access levels update automatically when your department, role or location changes in the organization structure.</li>
             </ul>

@@ -86,7 +86,7 @@ export function P23ObservabilityHomeScreen() {
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2">
-            <SectionCard title="Live signals" description="Measured in this request — probes imported from the Phase 22 backend.">
+            <SectionCard title="Live signals" description="Measured in this request — probes imported from the operations backend.">
               <div>
                 <FactRow label="Database" value={data.signals.database.latencyMs != null ? `${data.signals.database.latencyMs} ms` : "—"} health={data.signals.database.health} note={data.signals.database.note} />
                 <FactRow label="API self-probe" value={data.signals.api.latencyMs != null ? `${data.signals.api.latencyMs} ms` : "—"} health={data.signals.api.health} note={data.signals.api.note} />
@@ -103,7 +103,7 @@ export function P23ObservabilityHomeScreen() {
                   note={data.signals.errorRate.note}
                 />
                 <FactRow label="Request volume · last hour" value={data.signals.requestVolume.value} note={data.signals.requestVolume.note} />
-                <FactRow label="Client JS errors · last hour" value={data.signals.clientErrorsLastHour} health={data.signals.clientErrorsLastHour > 0 ? "degraded" : "healthy"} note="Real window.onerror / unhandledrejection reports ingested from clients (Phase 25)." />
+                <FactRow label="Client JS errors · last hour" value={data.signals.clientErrorsLastHour} health={data.signals.clientErrorsLastHour > 0 ? "degraded" : "healthy"} note="Real window.onerror / unhandledrejection reports ingested from clients." />
                 <FactRow label="Telemetry pipeline" value={data.signals.telemetry.persistence} health={persistenceHealth[data.signals.telemetry.persistence] ?? "unknown"} note={data.signals.telemetry.note} />
                 <FactRow label="Audit events · last hour" value={data.signals.auditEventsLastHour} note="Derived from real audit timestamps." />
                 <FactRow label="Audit failures · last hour" value={data.signals.auditFailuresLastHour} health={data.signals.auditFailuresLastHour ? "degraded" : "healthy"} note="Real Failure records in the window." />
@@ -111,7 +111,7 @@ export function P23ObservabilityHomeScreen() {
               </div>
             </SectionCard>
 
-            <SectionCard title="Active incidents & alerts" description="From the Phase 22 registries — drillable to their source screens.">
+            <SectionCard title="Active incidents & alerts" description="From the operations registries — drillable to their source screens.">
               {data.activeIncidents.length === 0 && data.activeAlerts.length === 0 ? (
                 <p className="text-[12.5px] text-slate-500">No active incidents or triggered alerts on record.</p>
               ) : (

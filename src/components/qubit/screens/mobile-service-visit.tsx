@@ -285,7 +285,7 @@ export function MobileServiceVisitScreen() {
           )}
 
           <SourceNote>{data.sourceNote}</SourceNote>
-          <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 292 · Mobile Service Visit</p>
+          <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile Service Visit</p>
         </>
       )}
     </MobileFrame>

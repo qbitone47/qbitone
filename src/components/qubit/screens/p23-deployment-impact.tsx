@@ -63,7 +63,7 @@ export function P23DeploymentImpactScreen() {
       <PageHeader
         crumbs={[{ label: "Observability" }]}
         title="Deployment Impact Analysis"
-        description="Before/after windows of real audit-event counts and Phase 25 request telemetry (5xx + p95 latency) around each production deployment. Deltas that telemetry cannot support are labeled — never estimated."
+        description="Before/after windows of real audit-event counts and request telemetry (5xx + p95 latency) around each production deployment. Deltas that telemetry cannot support are labeled — never estimated."
         actions={
           <button type="button" onClick={reload} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
             Refresh

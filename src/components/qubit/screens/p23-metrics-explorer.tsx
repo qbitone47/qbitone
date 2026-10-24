@@ -75,7 +75,7 @@ export function P23MetricsExplorerScreen() {
       <PageHeader
         crumbs={[{ label: "Observability" }]}
         title="Metrics Explorer"
-        description="Point-in-time system metrics measured live by this runtime — probes, process stats, audit derivations and Phase 25 request/client telemetry. Metrics the runtime cannot see are labeled Not configured, never invented."
+        description="Point-in-time system metrics measured live by this runtime — probes, process stats, audit derivations and request/client telemetry. Metrics the runtime cannot see are labeled Not configured, never invented."
         actions={
           <button
             type="button"
@@ -118,7 +118,7 @@ export function P23MetricsExplorerScreen() {
             </p>
           </SectionCard>
 
-          <SectionCard title="Telemetry persistence" description="State of the Phase 25 telemetry store backing the request/client metrics above.">
+          <SectionCard title="Telemetry persistence" description="State of the telemetry store backing the request/client metrics above.">
             <FactRow
               label="Telemetry store persistence"
               value={data.persistence.state}

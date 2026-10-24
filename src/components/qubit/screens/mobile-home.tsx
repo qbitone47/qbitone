@@ -228,7 +228,7 @@ export function MobileHomeScreen() {
           </MobileSection>
 
           <SourceNote>{data.sourceNote}</SourceNote>
-          <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 285 · Mobile Home</p>
+          <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile Home</p>
         </>
       )}
     </MobileFrame>

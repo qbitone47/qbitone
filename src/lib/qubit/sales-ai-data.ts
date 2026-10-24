@@ -292,5 +292,4 @@ export interface AiQuickAction {
   label: string;
   description: string;
   screen: ScreenId;
-  num: string;
 }

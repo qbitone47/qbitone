@@ -150,7 +150,7 @@ export function MobileAttendanceScreen() {
           </MobileSection>
 
           <SourceNote>{data.leaveNote} {data.sourceNote}</SourceNote>
-          <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 293 · Mobile Attendance</p>
+          <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile Attendance</p>
         </>
       )}
     </MobileFrame>

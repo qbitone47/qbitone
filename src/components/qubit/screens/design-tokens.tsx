@@ -237,7 +237,7 @@ export function DesignTokensScreen() {
                 {
                   label: "Governance",
                   value:
-                    "A value not in these tables does not ship. Propose it in the Phase 2 review board; it lands as a token or not at all.",
+                    "A value not in these tables does not ship. Propose it in the design-system review board; it lands as a token or not at all.",
                 },
                 {
                   label: "Where defined",

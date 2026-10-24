@@ -58,7 +58,7 @@ export function P23CapacityUsageScreen() {
             <NotConfiguredCard
               title="Capacity forecast — not available"
               note={data.forecast.note}
-              recommendation="Configure a telemetry store with real retention (Observability Settings P23-24 declares the policy); once historical series exist, forecasts can be computed from them."
+              recommendation="Configure a telemetry store with real retention (Observability Settings Observability Settings declares the policy); once historical series exist, forecasts can be computed from them."
             />
           )}
 

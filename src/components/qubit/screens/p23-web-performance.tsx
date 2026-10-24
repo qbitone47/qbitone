@@ -93,7 +93,7 @@ export function P23WebPerformanceScreen() {
             <section className="qubit-card overflow-hidden">
               <header className="border-b border-slate-100 px-4 py-3.5 md:px-5">
                 <h2 className="text-[13.5px] font-semibold text-slate-800">Collected samples</h2>
-                <p className="mt-0.5 text-[11.5px] text-slate-500">In-session samples held by this process — the same vitals are POSTed to the persisted Phase 25 telemetry store (24h aggregation below).</p>
+                <p className="mt-0.5 text-[11.5px] text-slate-500">In-session samples held by this process — the same vitals are POSTed to the persisted telemetry store (24h aggregation below).</p>
               </header>
               <div className="px-4 py-3 md:px-5">
                 <OpsTable

@@ -171,7 +171,7 @@ export function MobileTasksScreen() {
               </MobileSection>
 
               <SourceNote>{detail.data.actionNote} {detail.data.attachmentNote}</SourceNote>
-              <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 290 · Mobile Tasks</p>
+              <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile Tasks</p>
             </>
           )}
         </>
@@ -208,7 +208,7 @@ export function MobileTasksScreen() {
                 </MobileSection>
               )}
               <SourceNote>{list.data.sourceNote}</SourceNote>
-              <p className="px-3 pb-2 text-[10px] text-slate-300">Screen 290 · Mobile Tasks</p>
+              <p className="px-3 pb-2 text-[10px] text-slate-300">Mobile Tasks</p>
             </>
           )}
         </>

@@ -440,7 +440,7 @@ export function DepartmentHierarchyScreen() {
                 </ul>
               )}
               <p className="mt-3 border-t pt-3 text-xs text-muted-foreground">
-                Showing mapped records — full directory in People module (Phase 2).
+                Showing mapped records — full directory in the People module.
               </p>
             </TabsContent>
           </Tabs>
