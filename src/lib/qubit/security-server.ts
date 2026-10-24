@@ -466,6 +466,38 @@ export function clearAuthFailures(email: string) {
 }
 
 // ---------- Authentication (password first factor) ----------
+/**
+ * Create an MFA challenge for a verified first factor. Extracted so the
+ * IAM credential login (/api/iam/login) and the legacy security-screen
+ * flow share exactly the same challenge mechanics (CSPRNG 6-digit code,
+ * 5-minute expiry, 3-attempt budget).
+ */
+export function createMfaChallenge(email: string, actorName?: string): { challengeId: string; code: string; maskedEmail: string } {
+  clearAuthFailures(email);
+  const s = store();
+  const challengeId = `chl-${s.seq + 1}`;
+  // Phase 21 (audit L5): TOTP codes come from a CSPRNG, not Math.random.
+  const rng = new Uint32Array(1);
+  crypto.getRandomValues(rng);
+  const code = String(100000 + (rng[0] % 900000));
+  s.challenges.set(challengeId, {
+    id: challengeId,
+    email,
+    code,
+    expiresAt: Date.now() + 5 * 60 * 1000,
+    attempts: 0,
+  });
+  writeAudit({
+    actor: actorName ?? resolveActorName(email),
+    action: "Sign in",
+    resource: "Qubit One workspace",
+    result: "Success",
+    severity: "Info",
+    context: "Password verified · MFA challenge issued",
+  });
+  return { challengeId, code, maskedEmail: maskEmail(email) };
+}
+
 export function authenticatePassword(email: string, password: string, simulate?: string, sourceKey?: string) {
   // Server-side validation — never trust the client form.
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -599,7 +631,8 @@ export function verifyMfa(challengeId: string, code: string, method: string, sim
     severity: "Info",
     context: method === "recovery-code" ? "Single-use recovery code consumed" : "Second factor verified",
   });
-  return { ok: true as const, maskedEmail: maskEmail(ch.email) };
+  // IAM session issuance resolves the individual identity from the email.
+  return { ok: true as const, maskedEmail: maskEmail(ch.email), email: ch.email };
 }
 
 // ---------- Sessions ----------

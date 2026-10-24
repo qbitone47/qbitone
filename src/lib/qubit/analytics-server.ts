@@ -79,15 +79,57 @@ import {
 export type AnalyticsScope = "company" | "department" | "own";
 
 /**
+ * Department-owned analytics sections (IAM §30): a department's analytics
+ * dashboard belongs to that department. CEO (administrator) keeps
+ * company-wide visibility; every other identity may only open their OWN
+ * department's section. Cross-department attempts are denied + audited.
+ */
+const DEPARTMENT_SECTION_OWNER: Record<string, string> = {
+  sales: "sales",
+  finance: "finance",
+  marketing: "marketing",
+  hr: "hr",
+  service: "service",
+  inventory: "inventory",
+};
+
+/**
  * Role-aware analytics access (spec §28): every role reaches the
  * analytics it is authorized for — the SCOPE differs, and the
  * server — not the UI — decides what each payload contains.
+ * IAM extension: department-owned sections additionally require the
+ * caller's IAM department to match (CEO exempt — company-wide role).
  */
 export function requireAnalyticsAccess(
   role: WorkspaceRole,
   screen: string,
+  department?: string,
 ): { ok: true; scope: AnalyticsScope } | { ok: false; status: number; code: string; message: string } {
   if (role === "administrator") return { ok: true, scope: "company" };
+
+  const sectionKey = screen.replace(/^Analytics · /, "");
+  const owner = DEPARTMENT_SECTION_OWNER[sectionKey];
+  if (owner && department && department !== owner) {
+    writeAudit({
+      actorId: SESSION_USER_ID,
+      action: "Analytics access denied",
+      resource: screen,
+      result: "Blocked",
+      severity: "Warning",
+      context: `Department boundary — "${department}" identity attempted "${owner}" analytics`,
+    });
+    return {
+      ok: false,
+      status: 403,
+      code: "analytics_access_required",
+      message: "This analytics workspace belongs to another department. The server enforces this boundary.",
+    };
+  }
+
+  // A department identity opening THEIR OWN section gets department scope
+  // (the department is the authorization for its own dashboard).
+  if (owner && department === owner) return { ok: true, scope: "department" };
+
   if (role === "dept-head") return { ok: true, scope: "department" };
   if (role === "sales-exec") return { ok: true, scope: "department" };
   if (role === "hr-manager") return { ok: true, scope: "department" };
@@ -104,7 +146,7 @@ export function requireAnalyticsAccess(
     ok: false,
     status: 403,
     code: "analytics_access_required",
-    message: "The Analytics module requires an authorized role. You are previewing a boundary without analytics authorization, and the server enforces this restriction.",
+    message: "The Analytics module requires an authorized role. The server enforces this restriction.",
   };
 }
 
@@ -706,8 +748,10 @@ function salesAnalyticsPayload(role: WorkspaceRole): Ok<Record<string, unknown>>
   };
 }
 
-function financePayload(role: WorkspaceRole): Ok<Record<string, unknown>> | Err {
-  if (role !== "administrator") {
+function financePayload(role: WorkspaceRole, department?: string): Ok<Record<string, unknown>> | Err {
+  // IAM: the owning department (already verified by the section gate) plus
+  // the administrator — defense-in-depth beneath requireAnalyticsAccess.
+  if (role !== "administrator" && department !== "finance") {
     return err(403, "finance_analytics_restricted", "Finance analytics contains sensitive financial data and is restricted to authorized finance/administrator boundaries. The server enforces this restriction.");
   }
   return {
@@ -728,9 +772,9 @@ function financePayload(role: WorkspaceRole): Ok<Record<string, unknown>> | Err 
   };
 }
 
-function marketingPayload(role: WorkspaceRole): Ok<Record<string, unknown>> | Err {
-  if (!["administrator", "dept-head", "sales-exec"].includes(role)) {
-    return err(403, "marketing_analytics_restricted", "Marketing analytics is available to authorized business boundaries. The server enforces this restriction.");
+function marketingPayload(role: WorkspaceRole, department?: string): Ok<Record<string, unknown>> | Err {
+  if (role !== "administrator" && department !== "marketing") {
+    return err(403, "marketing_analytics_restricted", "Marketing analytics is restricted to the marketing department and administrator boundaries. The server enforces this restriction.");
   }
   return {
     ok: true,
@@ -748,8 +792,8 @@ function marketingPayload(role: WorkspaceRole): Ok<Record<string, unknown>> | Er
   };
 }
 
-function hrPayload(role: WorkspaceRole): Ok<Record<string, unknown>> | Err {
-  if (!["administrator", "hr-manager"].includes(role)) {
+function hrPayload(role: WorkspaceRole, department?: string): Ok<Record<string, unknown>> | Err {
+  if (role !== "administrator" && department !== "hr") {
     return err(403, "hr_analytics_restricted", "HR analytics is restricted to authorized HR/administrator boundaries. Aggregated, privacy-safe counts only — no individual HR data is exposed through analytics.");
   }
   return {
@@ -766,9 +810,9 @@ function hrPayload(role: WorkspaceRole): Ok<Record<string, unknown>> | Err {
   };
 }
 
-function servicePayload(role: WorkspaceRole): Ok<Record<string, unknown>> | Err {
-  if (!["administrator", "dept-head"].includes(role)) {
-    return err(403, "service_analytics_restricted", "Service analytics is available to authorized business boundaries. The server enforces this restriction.");
+function servicePayload(role: WorkspaceRole, department?: string): Ok<Record<string, unknown>> | Err {
+  if (role !== "administrator" && department !== "service") {
+    return err(403, "service_analytics_restricted", "Service analytics is restricted to the service department and administrator boundaries. The server enforces this restriction.");
   }
   return {
     ok: true,
@@ -782,9 +826,9 @@ function servicePayload(role: WorkspaceRole): Ok<Record<string, unknown>> | Err 
   };
 }
 
-function inventoryPayload(role: WorkspaceRole): Ok<Record<string, unknown>> | Err {
-  if (!["administrator", "dept-head"].includes(role)) {
-    return err(403, "inventory_analytics_restricted", "Inventory analytics is available to authorized business boundaries. The server enforces this restriction.");
+function inventoryPayload(role: WorkspaceRole, department?: string): Ok<Record<string, unknown>> | Err {
+  if (role !== "administrator" && department !== "inventory") {
+    return err(403, "inventory_analytics_restricted", "Inventory analytics is restricted to the inventory department and administrator boundaries. The server enforces this restriction.");
   }
   return {
     ok: true,
@@ -1158,8 +1202,8 @@ function settingsPayload(role: WorkspaceRole): Ok<Record<string, unknown>> | Err
 }
 
 /** GET dispatcher — returns the section payload or an error result. */
-export function analyticsGet(role: WorkspaceRole, section: AnalyticsSection, params: URLSearchParams): Ok<Record<string, unknown>> | Err {
-  const gate = requireAnalyticsAccess(role, `Analytics · ${section}`);
+export function analyticsGet(role: WorkspaceRole, section: AnalyticsSection, params: URLSearchParams, department?: string): Ok<Record<string, unknown>> | Err {
+  const gate = requireAnalyticsAccess(role, `Analytics · ${section}`, department);
   if (!gate.ok) return gate;
   const { scope } = gate;
 
@@ -1173,15 +1217,15 @@ export function analyticsGet(role: WorkspaceRole, section: AnalyticsSection, par
     case "sales":
       return salesAnalyticsPayload(role);
     case "finance":
-      return financePayload(role);
+      return financePayload(role, department);
     case "marketing":
-      return marketingPayload(role);
+      return marketingPayload(role, department);
     case "hr":
-      return hrPayload(role);
+      return hrPayload(role, department);
     case "service":
-      return servicePayload(role);
+      return servicePayload(role, department);
     case "inventory":
-      return inventoryPayload(role);
+      return inventoryPayload(role, department);
     case "productivity":
       return { ok: true, data: productivityPayload(role, scope) };
     case "tasks":

@@ -39,7 +39,7 @@ import { screenMeta, type ScreenModule } from "@/lib/qubit/screens";
 import { shellNotifications } from "@/lib/qubit/data";
 import { Avatar } from "../primitives";
 import { useQubitNav } from "../nav-context";
-import { useRole, VIEW_AS_ROLES, type ViewAsRole } from "../role-context";
+import { useRole } from "../role-context";
 import { QubitMark } from "./sidebar";
 
 const MODULE_LABELS: Record<ScreenModule, string> = {
@@ -69,19 +69,21 @@ export function TopBar({
   onPreviewModuleCleared?: () => void;
 }) {
   const { screen, navigate, canBack, canForward, back, forward } = useQubitNav();
-  const { role, setRole, isAdmin } = useRole();
+  const { identity, entitlements, isAdmin, signOut } = useRole();
   const { toast } = useToast();
   const meta = screenMeta(screen);
   const [notifications, setNotifications] = React.useState(shellNotifications);
   const unread = notifications.filter((n) => n.unread).length;
 
-  const applyRole = (r: ViewAsRole) => {
-    setRole(r);
-    const info = VIEW_AS_ROLES.find((v) => v.id === r)!;
-    toast({
-      title: `Previewing as ${info.label}`,
-      description: `${info.hint}. Governance actions adapt to this role boundary.`,
-    });
+  const displayName = identity?.name ?? "Signed out";
+  const roleLabel = entitlements?.roleLabel ?? (isAdmin ? "Administrator" : "Employee");
+  const departmentLabel = entitlements?.departmentLabel ?? "";
+
+  const handleSignOut = async () => {
+    // Real sign-out: the session is revoked server-side, the cookie cleared,
+    // and a "Sign out" audit event written with the acting identity.
+    await signOut();
+    navigate("login");
   };
 
   return (
@@ -250,10 +252,10 @@ export function TopBar({
               className="flex items-center gap-1.5 rounded-full py-1 pl-1 pr-1.5 transition-colors hover:bg-slate-100"
               aria-label="User menu"
             >
-              <Avatar name="Sagar Singh" size="sm" />
+              <Avatar name={displayName} size="sm" />
               <span className="hidden text-left md:block">
-                <span className="block text-[13px] font-medium leading-tight text-slate-800">Sagar Singh</span>
-                <span className="block text-[11px] leading-tight text-muted-foreground">Administrator</span>
+                <span className="block text-[13px] font-medium leading-tight text-slate-800">{displayName}</span>
+                <span className="block text-[11px] leading-tight text-muted-foreground">{roleLabel}</span>
               </span>
               <ChevronDown className="hidden h-3.5 w-3.5 text-slate-400 md:block" aria-hidden />
             </button>
@@ -261,45 +263,23 @@ export function TopBar({
           <DropdownMenuContent align="end" className="w-64">
             <DropdownMenuLabel>
               <div className="flex items-center gap-2.5 py-1">
-                <Avatar name="Sagar Singh" size="md" />
+                <Avatar name={displayName} size="md" />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-slate-900">Sagar Singh</p>
-                  <p className="truncate text-xs text-muted-foreground">sagar.singh@qubitone.in</p>
+                  <p className="truncate text-sm font-medium text-slate-900">{displayName}</p>
+                  <p className="truncate text-xs text-muted-foreground">{identity?.email ?? ""}</p>
                 </div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <div className="px-2 py-1.5">
               <p className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-700">
-                <Check className="h-3 w-3" aria-hidden /> Signed in as Administrator
+                <Check className="h-3 w-3" aria-hidden /> Signed in as {roleLabel}
+                {departmentLabel ? <span className="font-normal text-slate-400">· {departmentLabel}</span> : null}
               </p>
+              {identity?.title ? (
+                <p className="mt-0.5 truncate text-[10.5px] text-slate-400">{identity.title}</p>
+              ) : null}
             </div>
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="gap-2">
-                <UserRound className="h-4 w-4 text-slate-400" />
-                <span>Preview as role</span>
-              </DropdownMenuSubTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuSubContent className="w-60">
-                  {VIEW_AS_ROLES.map((r) => (
-                    <DropdownMenuItem
-                      key={r.id}
-                      onClick={() => applyRole(r.id)}
-                      className="items-start gap-2"
-                      disabled={r.id === role}
-                    >
-                      <span className="mt-1 flex h-3.5 w-3.5 items-center justify-center">
-                        {r.id === role && <Check className="h-3.5 w-3.5 text-navy-700" />}
-                      </span>
-                      <span>
-                        <span className="block text-[13px] font-medium">{r.label}</span>
-                        <span className="block text-[11px] text-muted-foreground">{r.hint}</span>
-                      </span>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuPortal>
-            </DropdownMenuSub>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="gap-2"
@@ -315,7 +295,7 @@ export function TopBar({
             </DropdownMenuItem>
             <DropdownMenuItem
               className="gap-2 text-red-600 focus:text-red-700"
-              onClick={() => navigate("login")}
+              onClick={() => void handleSignOut()}
             >
               <LogOut className="h-4 w-4" /> Sign out
             </DropdownMenuItem>

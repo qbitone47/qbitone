@@ -53,7 +53,7 @@ const sizeLabel = (kb: number) => (kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` :
 
 export function MyDocumentsScreen() {
   const nav = useQubitNav();
-  const { role } = useRole();
+  const { role, identity } = useRole();
   const { toast } = useToast();
 
   const [docs, setDocs] = React.useState<WorkspaceDoc[] | null>(null);
@@ -188,7 +188,7 @@ export function MyDocumentsScreen() {
       },
     },
     { key: "category", header: "Category", sortValue: (d) => d.category, render: (d) => <span className="text-[13px] text-slate-600">{d.category}</span> },
-    { key: "owner", header: "Owner", hideBelow: "lg", render: (d) => <span className="text-[13px] text-slate-600">{d.ownerId === "sagar" ? "You" : getEmployee(d.ownerId)?.name ?? "—"}</span> },
+    { key: "owner", header: "Owner", hideBelow: "lg", render: (d) => <span className="text-[13px] text-slate-600">{d.ownerId === (identity?.userId ?? "sagar") ? "You" : getEmployee(d.ownerId)?.name ?? "—"}</span> },
     { key: "modified", header: "Modified", sortValue: (d) => d.modified, render: (d) => <span className="whitespace-nowrap text-[13px] text-slate-600">{relTime(d.modified)}</span> },
     { key: "sensitivity", header: "Sensitivity", render: (d) => <StatusBadge status={d.sensitivity} size="sm" /> },
     {
@@ -213,7 +213,7 @@ export function MyDocumentsScreen() {
               <DropdownMenuItem className="gap-2" onClick={() => doDownload(d)}>
                 <Download className="h-3.5 w-3.5 text-slate-400" aria-hidden /> Download
               </DropdownMenuItem>
-              {d.ownerId === "sagar" && (
+              {d.ownerId === (identity?.userId ?? "sagar") && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="gap-2" onClick={() => { setRenameTarget(d); setRenameValue(d.name); }}>

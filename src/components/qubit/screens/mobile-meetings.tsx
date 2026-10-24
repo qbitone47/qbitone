@@ -49,7 +49,7 @@ interface DetailPayload {
 export function MobileMeetingsScreen() {
   const nav = useQubitNav();
   const { params } = nav;
-  const { role } = useRole();
+  const { role, identity } = useRole();
   const meetingId = params.meetingId ?? "";
   const [tab, setTab] = React.useState("Today");
   const list = useMobileSection<ListPayload>("meetings");
@@ -159,7 +159,7 @@ export function MobileMeetingsScreen() {
                       className="mt-1.5 w-full rounded-lg border border-slate-300 p-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-600"
                       placeholder="What needs to happen next?" />
                     <button type="button" disabled={busy || actionText.trim().length < 4}
-                      onClick={() => act(() => mobilePost("meeting.actionitem", { id: detail.data!.meeting.id, title: actionText, ownerId: "sagar" }, role), "Action item recorded")}
+                      onClick={() => act(() => mobilePost("meeting.actionitem", { id: detail.data!.meeting.id, title: actionText, ownerId: identity?.userId ?? undefined }, role), "Action item recorded")}
                       className="mt-2 min-h-[44px] w-full rounded-lg bg-blue-600 text-[13px] font-semibold text-white disabled:opacity-40">
                       Record action item
                     </button>

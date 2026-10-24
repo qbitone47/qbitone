@@ -14,10 +14,10 @@ import { withMeter } from "@/lib/qubit/telemetry-server";
 // Phase 21: the acting role is derived from the signed session cookie
 // (server-verified) — a client-declared role header is never trusted.
 // Fail-closed: requests without a valid session receive 401.
-async function identityFrom(req: NextRequest): Promise<{ ok: true; role: WorkspaceRole } | { ok: false; response: NextResponse }> {
+async function identityFrom(req: NextRequest): Promise<{ ok: true; role: WorkspaceRole; userId: string } | { ok: false; response: NextResponse }> {
   const auth = await requireIdentity(req);
   return auth.ok
-    ? { ok: true, role: auth.identity.role as WorkspaceRole }
+    ? { ok: true, role: auth.identity.role as WorkspaceRole, userId: auth.identity.userId }
     : { ok: false, response: auth.response };
 }
 
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       unreadOnly: sp.get("unread") === "1",
       label: sp.get("label") ?? undefined,
       limit: sp.get("limit") ? Number(sp.get("limit")) : undefined,
-    });
+    }, actor.userId);
     return NextResponse.json(result);
   });
 }
@@ -72,21 +72,21 @@ export async function POST(req: NextRequest) {
           subject: body.subject ?? "",
           body: body.body ?? "",
           attachments: body.attachments,
-        });
+        }, actor.userId);
         return result.ok ? NextResponse.json(result) : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
       }
       case "draft": {
-        const result = saveDraft(actor.role, body as never);
+        const result = saveDraft(actor.role, body as never, actor.userId);
         return NextResponse.json(result);
       }
       case "retry": {
         if (!body.id) return NextResponse.json({ code: "bad_request", message: "Message id required." }, { status: 400 });
-        const result = retryMail(actor.role, body.id);
+        const result = retryMail(actor.role, body.id, actor.userId);
         return result.ok ? NextResponse.json(result) : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
       }
       case "mark": {
         if (!body.id) return NextResponse.json({ code: "bad_request", message: "Message id required." }, { status: 400 });
-        const result = markMail(actor.role, body.id, { read: body.read, starred: body.starred, archive: body.archive });
+        const result = markMail(actor.role, body.id, { read: body.read, starred: body.starred, archive: body.archive }, actor.userId);
         return result.ok ? NextResponse.json(result) : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
       }
       default:

@@ -8,10 +8,10 @@ import { withMeter } from "@/lib/qubit/telemetry-server";
 // Phase 21: the acting role is derived from the signed session cookie
 // (server-verified) — a client-declared role header is never trusted.
 // Fail-closed: requests without a valid session receive 401.
-async function identityFrom(req: NextRequest): Promise<{ ok: true; role: WorkspaceRole } | { ok: false; response: NextResponse }> {
+async function identityFrom(req: NextRequest): Promise<{ ok: true; role: WorkspaceRole; userId: string } | { ok: false; response: NextResponse }> {
   const auth = await requireIdentity(req);
   return auth.ok
-    ? { ok: true, role: auth.identity.role as WorkspaceRole }
+    ? { ok: true, role: auth.identity.role as WorkspaceRole, userId: auth.identity.userId }
     : { ok: false, response: auth.response };
 }
 
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     if (!sectionAllowed(section)) {
       return NextResponse.json({ code: "bad_section", message: "Unknown sales section." }, { status: 400 });
     }
-    const result = salesGet(actor.role, section, req.nextUrl.searchParams);
+    const result = salesGet(actor.role, section, req.nextUrl.searchParams, actor.userId);
     if (!result.ok) {
       return NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
     }
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ code: "bad_request", message: "Provide the action type." }, { status: 400 });
     }
     const input = (body.input ?? {}) as Record<string, unknown>;
-    const result = salesPost(actor.role, { type, input } as unknown as Action);
+    const result = salesPost(actor.role, { type, input } as unknown as Action, actor.userId);
     if (!result.ok) {
       return NextResponse.json(
         { code: result.code, message: result.message, matches: "matches" in result ? result.matches : undefined },

@@ -7,10 +7,10 @@ import { withMeter } from "@/lib/qubit/telemetry-server";
 // Phase 21: the acting role is derived from the signed session cookie
 // (server-verified) — a client-declared role header is never trusted.
 // Fail-closed: requests without a valid session receive 401.
-async function identityFrom(req: NextRequest): Promise<{ ok: true; role: WorkspaceRole } | { ok: false; response: NextResponse }> {
+async function identityFrom(req: NextRequest): Promise<{ ok: true; role: WorkspaceRole; userId: string } | { ok: false; response: NextResponse }> {
   const auth = await requireIdentity(req);
   return auth.ok
-    ? { ok: true, role: auth.identity.role as WorkspaceRole }
+    ? { ok: true, role: auth.identity.role as WorkspaceRole, userId: auth.identity.userId }
     : { ok: false, response: auth.response };
 }
 
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   return withMeter(req, "GET /api/workspace/approvals", async () => {
     const actor = await identityFrom(req);
     if (!actor.ok) return actor.response;
-    return NextResponse.json(listApprovals(actor.role));
+    return NextResponse.json(listApprovals(actor.role, actor.userId));
   });
 }
 
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     if (!body.id || !decision || !["Approved", "Rejected", "Changes requested"].includes(decision)) {
       return NextResponse.json({ code: "bad_request", message: "Provide a request id and a valid decision." }, { status: 400 });
     }
-    const result = decideApproval(actor.role, { id: body.id, decision, note: body.note, stepUpPassword: body.stepUpPassword });
+    const result = decideApproval(actor.role, { id: body.id, decision, note: body.note, stepUpPassword: body.stepUpPassword }, actor.userId);
     return result.ok ? NextResponse.json(result) : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
   });
 }

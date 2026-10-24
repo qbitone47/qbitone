@@ -17,10 +17,10 @@ import { withMeter } from "@/lib/qubit/telemetry-server";
 // Phase 21: the acting role is derived from the signed session cookie
 // (server-verified) — a client-declared role header is never trusted.
 // Fail-closed: requests without a valid session receive 401.
-async function identityFrom(req: NextRequest): Promise<{ ok: true; role: WorkspaceRole } | { ok: false; response: NextResponse }> {
+async function identityFrom(req: NextRequest): Promise<{ ok: true; role: WorkspaceRole; userId: string } | { ok: false; response: NextResponse }> {
   const auth = await requireIdentity(req);
   return auth.ok
-    ? { ok: true, role: auth.identity.role as WorkspaceRole }
+    ? { ok: true, role: auth.identity.role as WorkspaceRole, userId: auth.identity.userId }
     : { ok: false, response: auth.response };
 }
 
@@ -33,12 +33,12 @@ export async function GET(req: NextRequest) {
     if (!actor.ok) return actor.response;
     const id = req.nextUrl.searchParams.get("id");
     if (id) {
-      const result = getMeeting(actor.role, id);
+      const result = getMeeting(actor.role, id, actor.userId);
       return result.ok
         ? NextResponse.json(result)
         : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
     }
-    return NextResponse.json(listMeetings(actor.role));
+    return NextResponse.json(listMeetings(actor.role, actor.userId));
   });
 }
 
@@ -94,21 +94,21 @@ export async function POST(req: NextRequest) {
           location: body.location,
           platform: body.platform,
           participantIds: Array.isArray(body.participantIds) ? body.participantIds : [],
-        });
+        }, actor.userId);
         return result.ok
           ? NextResponse.json(result)
           : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
       }
       case "cancel": {
         if (!body.id) return NextResponse.json({ code: "bad_request", message: "Provide a meeting id." }, { status: 400 });
-        const result = cancelMeeting(actor.role, { id: body.id, reason: body.reason ?? "" });
+        const result = cancelMeeting(actor.role, { id: body.id, reason: body.reason ?? "" }, actor.userId);
         return result.ok
           ? NextResponse.json(result)
           : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
       }
       case "notes": {
         if (!body.id) return NextResponse.json({ code: "bad_request", message: "Provide a meeting id." }, { status: 400 });
-        const result = saveMeetingNotes(actor.role, { id: body.id, text: body.text ?? "" });
+        const result = saveMeetingNotes(actor.role, { id: body.id, text: body.text ?? "" }, actor.userId);
         return result.ok
           ? NextResponse.json(result)
           : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
           ownerId: body.ownerId,
           due: body.due ?? null,
           asTask: body.asTask === true,
-        });
+        }, actor.userId);
         return result.ok
           ? NextResponse.json(result)
           : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
         if (typeof body.index !== "number" || !Number.isInteger(body.index) || body.index < 0) {
           return NextResponse.json({ code: "bad_request", message: "Provide the action item index." }, { status: 400 });
         }
-        const result = promoteMeetingAction(actor.role, { id: body.id, index: body.index });
+        const result = promoteMeetingAction(actor.role, { id: body.id, index: body.index }, actor.userId);
         return result.ok
           ? NextResponse.json(result)
           : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
           start: body.start ?? Number.NaN,
           end: body.end ?? Number.NaN,
           location: body.location,
-        });
+        }, actor.userId);
         return result.ok
           ? NextResponse.json(result)
           : NextResponse.json({ code: result.code, message: result.message }, { status: result.status });

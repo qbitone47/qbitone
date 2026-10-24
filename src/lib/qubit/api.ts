@@ -26,54 +26,44 @@ export class ApiError extends Error {
 }
 
 // ---------- Session plane (client gate) ----------
-let issuedRole: string | null = null;
-let issuing: Promise<void> | null = null;
+// IAM: sessions are issued ONLY through the credential login flow
+// (/api/iam/login → MFA). There is no credential-free bootstrap: the
+// client merely CHECKS whether a valid session exists. When a call comes
+// back 401 session_required the registered unauthorized handler fires
+// (the shell drops to the anonymous state and routes to the sign-in
+// screen) — the client never mints or repairs sessions itself.
+let unauthorizedHandler: (() => void) | null = null;
 
-/**
- * Ensure a valid session cookie exists for the given role. Idempotent;
- * re-issues only when the requested role differs from the last issued
- * one (the role switcher is the single place that changes identity).
- * Non-browser callers and the very first call in a fresh tab bootstrap
- * the default administrator preview, matching the product's initial
- * role context.
- */
-export async function ensureSession(role: string = "administrator"): Promise<void> {
-  if (issuedRole === role) {
-    if (issuing) await issuing;
-    return;
-  }
-  if (!issuing || issuedRole === null) {
-    issuing = (async () => {
-      const res = await fetch("/api/auth/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role }),
-        cache: "no-store",
-      });
-      if (!res.ok) {
-        // Leave issuedRole untouched so the next call can retry.
-        issuing = null;
-        throw new ApiError(res.status, "session_issue_failed", "Could not establish a session.");
-      }
-      issuedRole = role;
-    })();
-  }
-  try {
-    await issuing;
-  } finally {
-    // Keep the in-flight promise until it settles; reset on failure so
-    // the next call re-attempts issuance.
-    if (issuing) {
-      const settled = issuing;
-      issuing = null;
-      void settled.catch(() => undefined);
-    }
-  }
+export function setUnauthorizedHandler(fn: () => void): void {
+  unauthorizedHandler = fn;
 }
 
-/** Force re-issuance on the next call (used after a 401 session_required). */
-function invalidateSession() {
-  issuedRole = null;
+let sessionCheck: Promise<boolean> | null = null;
+
+/**
+ * Check that a valid session cookie exists. Idempotent — the server, not
+ * this helper, decides what is valid. (Optional arg retained for legacy
+ * call-site compatibility; role is derived from the session server-side.)
+ */
+export async function ensureSession(_legacyRole?: string): Promise<boolean> {
+  if (!sessionCheck) {
+    sessionCheck = (async () => {
+      try {
+        const res = await fetch("/api/auth/session", { cache: "no-store" });
+        return res.ok;
+      } catch {
+        return false;
+      }
+    })();
+  }
+  const ok = await sessionCheck;
+  if (!ok) unauthorizedHandler?.();
+  return ok;
+}
+
+/** Force a fresh session check on the next call (after logout/401). */
+export function invalidateSession() {
+  sessionCheck = null;
 }
 
 function headers(role?: string): HeadersInit {
@@ -83,14 +73,14 @@ function headers(role?: string): HeadersInit {
 }
 
 function isSessionRequired(status: number, code?: string): boolean {
-  return status === 401 && (code === "session_required" || code === "session_issue_failed");
+  return status === 401 && (code === "session_required" || code === "login_required");
 }
 
 async function request<T>(path: string, init: RequestInit, basePath: string, role?: string, isRetry = false): Promise<T> {
   try {
-    await ensureSession(role ?? (issuedRole ?? undefined) ?? undefined);
+    await ensureSession();
   } catch {
-    /* fall through — the API call will surface a structured 401 that triggers the heal path */
+    /* fall through — the API call will surface a structured 401 that triggers the handler */
   }
   const res = await fetch(`${basePath}${path}`, { ...init, cache: "no-store" });
   if (!res.ok) {
@@ -105,16 +95,12 @@ async function request<T>(path: string, init: RequestInit, basePath: string, rol
     } catch {
       /* non-JSON failure — keep generic message */
     }
-    // Auto-heal: the cookie expired or was revoked server-side — re-issue
-    // once and retry once, so an idle tab recovers transparently (§4).
-    if (!isRetry && isSessionRequired(res.status, code)) {
+    // Session expired or revoked server-side — drop to the anonymous state
+    // (the shell routes to sign-in). The client never re-issues sessions.
+    if (isSessionRequired(res.status, code)) {
       invalidateSession();
-      try {
-        await ensureSession(role ?? issuedRole ?? "administrator");
-      } catch {
-        /* rethrow as the original error below */
-      }
-      return request<T>(path, init, basePath, role, true);
+      unauthorizedHandler?.();
+      throw new ApiError(res.status, code, "Your session has ended. Sign in to continue.");
     }
     throw new ApiError(res.status, code, message, conflicts);
   }
@@ -166,11 +152,11 @@ export function apiPatch<T>(path: string, body: unknown, role?: string): Promise
  * of components that compose their own request — authorization remains
  * a server-side decision from the session cookie.
  */
-export async function authedFetch(input: string, init?: RequestInit, role?: string): Promise<Response> {
+export async function authedFetch(input: string, init?: RequestInit, _legacyRole?: string): Promise<Response> {
   try {
-    await ensureSession(role ?? issuedRole ?? undefined);
+    await ensureSession(_legacyRole);
   } catch {
-    /* the caller inspects the response — a 401 heals on the next attempt */
+    /* the caller inspects the response — a 401 triggers the handler */
   }
   return fetch(input, { ...init, cache: "no-store" });
 }

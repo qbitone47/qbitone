@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     if (!salesAiSectionAllowed(section)) {
       return NextResponse.json({ code: "bad_section", message: "Unknown Sales AI section." }, { status: 400 });
     }
-    const result = salesAiGet(actor.role, section, req.nextUrl.searchParams);
+    const result = salesAiGet(actor.role, section, req.nextUrl.searchParams, actor.userId);
     if (!result.ok) {
       return NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
     }
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ code: "bad_request", message: "Provide the action type." }, { status: 400 });
     }
     const input = (body.input ?? {}) as Record<string, unknown>;
-    const result = await salesAiPost(actor.role, type, input);
+    const result = await salesAiPost(actor.role, type, input, actor.userId);
     if (!result.ok) {
       return NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
     }

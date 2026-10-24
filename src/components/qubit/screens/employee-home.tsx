@@ -32,6 +32,9 @@ import {
   WORKSPACE_NOW,
   WORKSPACE_NOW_LABEL,
   type ApprovalRequest,
+  type Meeting,
+  type Task,
+  type WorkspaceNotification,
 } from "@/lib/qubit/workspace-data";
 import { useQubitNav } from "../nav-context";
 import { useRole } from "../role-context";
@@ -49,7 +52,28 @@ import { apiGet, apiPost, ApiError } from "@/lib/qubit/api";
 
 export function EmployeeHomeScreen() {
   const nav = useQubitNav();
-  const { role } = useRole();
+  const { role, identity, entitlements } = useRole();
+
+  // IAM: the personal feed comes from the identity-scoped server APIs —
+  // each signed-in employee sees THEIR OWN tasks, meetings and
+  // notifications (the workspace server scopes every read to the session).
+  const [myFeed, setMyFeed] = React.useState<{ tasks: Task[]; meetings: Meeting[]; notifications: WorkspaceNotification[] } | null>(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [tasks, meetings, notifications] = await Promise.all([
+          apiGet<{ tasks: Task[] }>("/tasks", undefined, role, "/api/workspace"),
+          apiGet<{ meetings: Meeting[] }>("/meetings", undefined, role, "/api/workspace"),
+          apiGet<{ notifications: WorkspaceNotification[] }>("/notifications", undefined, role, "/api/workspace"),
+        ]);
+        if (!cancelled) setMyFeed({ tasks: tasks.tasks ?? [], meetings: meetings.meetings ?? [], notifications: notifications.notifications ?? [] });
+      } catch {
+        if (!cancelled) setMyFeed({ tasks: [], meetings: [], notifications: [] });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [role]);
 
   // Server-backed: the approval queue is the one thing that must
   // always come from the enforcement layer, never from a fixture.
@@ -78,13 +102,14 @@ export function EmployeeHomeScreen() {
     loadApprovals();
   }, [loadApprovals]);
 
-  const myTasks = TASKS.filter((t) => t.assigneeId === "sagar");
+  const myTasks = myFeed?.tasks ?? [];
   const overdue = myTasks.filter((t) => t.due && t.due < WORKSPACE_NOW && t.status !== "Completed" && t.status !== "Cancelled");
   const openTasks = myTasks.filter((t) => t.status !== "Completed" && t.status !== "Cancelled");
-  const todaysMeetings = MEETINGS.filter(
+  const allMyMeetings = myFeed?.meetings ?? [];
+  const todaysMeetings = allMyMeetings.filter(
     (m) => new Date(m.start).toDateString() === new Date(WORKSPACE_NOW).toDateString(),
   ).sort((a, b) => a.start - b.start);
-  const unread = NOTIFICATIONS.filter((n) => n.unread);
+  const unread = (myFeed?.notifications ?? []).filter((n) => n.unread);
   const pending = approvals ?? [];
 
   const greeting = WORKSPACE_NOW < Date.parse("2026-11-13T12:00:00+05:30") ? "Good morning" : "Good afternoon";
@@ -102,8 +127,8 @@ export function EmployeeHomeScreen() {
     <div>
       <PageHeader
         crumbs={[{ label: "Workspace" }, { label: "My day" }]}
-        title={`${greeting}, Sagar`}
-        description={`${WORKSPACE_NOW_LABEL} · 09:42 IST. Here is what needs you today — prioritized across tasks, meetings, approvals and messages.`}
+        title={`${greeting}, ${identity?.name?.split(" ")[0] ?? "there"}`}
+        description={`${WORKSPACE_NOW_LABEL} · 09:42 IST${entitlements ? ` · ${entitlements.departmentLabel} · ${entitlements.roleLabel}` : ""}. Here is what needs you today — prioritized across tasks, meetings, approvals and messages.`}
         actions={
           <Button
             variant={aiSummary ? "secondary" : "outline"}
@@ -282,7 +307,7 @@ export function EmployeeHomeScreen() {
             actions={<ArrowLink onClick={() => nav.navigate("my-meetings")}>All</ArrowLink>}
           >
             <ul className="space-y-2.5">
-              {[...todaysMeetings.filter((m) => m.status !== "Completed"), ...MEETINGS.filter((m) => m.start > WORKSPACE_NOW)]
+              {[...todaysMeetings.filter((m) => m.status !== "Completed"), ...allMyMeetings.filter((m) => m.start > WORKSPACE_NOW)]
                 .slice(0, 3)
                 .map((m, i) => (
                   <li key={`${m.id}-${i}`}>
@@ -320,7 +345,7 @@ export function EmployeeHomeScreen() {
             actions={<ArrowLink onClick={() => nav.navigate("my-notifications")}>Open center</ArrowLink>}
           >
             <ul className="divide-y">
-              {NOTIFICATIONS.filter((n) => n.unread)
+              {(myFeed?.notifications ?? []).filter((n) => n.unread)
                 .slice(0, 3)
                 .map((n) => (
                   <li key={n.id} className="flex gap-2.5 py-2.5 first:pt-0 last:pb-0">

@@ -27,7 +27,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, RATE_PROFILES, requireIdentity, tooManyRequests } from "@/lib/qubit/auth-server";
 import {
-  SESSION_USER_ID,
   listApprovals,
   listMail,
   listMeetings,
@@ -184,6 +183,7 @@ export async function GET(req: NextRequest) {
     if (!gate.allowed) return tooManyRequests(gate.retryAfterSec);
     const started = Date.now();
     const role = actor.role;
+    const userId = actor.userId;
     const q = (req.nextUrl.searchParams.get("q") ?? "").trim().toLowerCase();
     if (q.length < 2) {
       return NextResponse.json({ code: "bad_query", message: "Provide a search query of at least 2 characters." }, { status: 400 });
@@ -209,11 +209,11 @@ export async function GET(req: NextRequest) {
     }));
     if (employeeGroup) groups.push(employeeGroup);
 
-    // tasks — listTasks() already scopes to the session user; the owner check is kept
-    // per §17 ("assignee or owner is SESSION_USER_ID") as an explicit authorization guard.
+    // tasks — listTasks(userId) already scopes to the acting identity; the owner
+    // check is kept per §17 ("assignee or owner is the actor") as an explicit guard.
     const taskGroup = safeGroup("task", "Tasks", omitted, "Task source unavailable", () => ({
       items: matchCap(
-        listTasks().filter((t) => t.assigneeId === SESSION_USER_ID || t.ownerId === SESSION_USER_ID),
+        listTasks(userId).filter((t) => t.assigneeId === userId || t.ownerId === userId),
         q,
         (t) => `${t.title} ${t.detail}`,
         (t) => ({
@@ -230,7 +230,7 @@ export async function GET(req: NextRequest) {
     // meetings — listMeetings(role) is participation-scoped server-side (organizer or
     // invited participant); its scope note is surfaced verbatim on the group.
     const meetingGroup = safeGroup("meeting", "Meetings", omitted, "Meeting source unavailable", () => {
-      const scoped = listMeetings(role);
+      const scoped = listMeetings(role, userId);
       const items = matchCap(scoped.meetings, q, (m) => `${m.title} ${m.agenda ?? ""} ${m.location}`, (m) => ({
         id: m.id,
         title: m.title,
@@ -247,7 +247,7 @@ export async function GET(req: NextRequest) {
     // session user's own store, never an authorization bypass. mail-inbox (screen 55)
     // reads no nav.params, so mail rows navigate without params (no fake deep-link).
     const mailGroup = safeGroup("mail", "Mail", omitted, "Mail source unavailable", () => ({
-      items: listMail(role, { q, folder: "all", limit: CAP }).items.slice(0, CAP).map((m) => ({
+      items: listMail(role, { q, folder: "all", limit: CAP }, userId).items.slice(0, CAP).map((m) => ({
         id: m.id,
         title: m.subject || "(no subject)",
         subtitle: `${mailFrom(m)} · ${m.folder}`,
@@ -259,7 +259,7 @@ export async function GET(req: NextRequest) {
     // approvals — queue + (where the boundary exposes it) decision history.
     // For employee/sales-exec the boundary returns only their own submitted requests.
     const approvalGroup = safeGroup("approval", "Approvals", omitted, "Approval source unavailable", () => {
-      const approvals = listApprovals(role);
+      const approvals = listApprovals(role, userId);
       const history = "history" in approvals && approvals.history ? approvals.history : [];
       return {
         items: matchCap(

@@ -70,7 +70,14 @@ import {
   type ChecklistItemDef,
 } from "./mobile-data";
 
-const ACTOR_NAME = "Sagar Singh";
+// ---------- IAM acting-identity context ----------
+// The verified session userId is set at mobileGet/mobilePost entry. Every
+// ACTOR_ID/ACTOR_NAME read happens in the synchronous segment BEFORE any
+// await (payload composition, store mutations), so per-request values
+// cannot interleave: the only awaits are inside the AI completion call,
+// which reads no actor state after it resolves.
+let ACTOR_ID = SESSION_USER_ID;
+let ACTOR_NAME = getEmployee(ACTOR_ID)?.name ?? "Sagar Singh";
 
 // ---------- shared helpers ----------
 
@@ -163,7 +170,9 @@ export function sectionFor(s: string | null): MobileSection | null {
     : null;
 }
 
-export async function mobileGet(role: WorkspaceRole, section: MobileSection, params: URLSearchParams): Promise<Result<Record<string, unknown>>> {
+export async function mobileGet(role: WorkspaceRole, section: MobileSection, params: URLSearchParams, userId: string = SESSION_USER_ID): Promise<Result<Record<string, unknown>>> {
+  ACTOR_ID = userId;
+  ACTOR_NAME = getEmployee(ACTOR_ID)?.name ?? "Sagar Singh";
   switch (section) {
     case "home":
       return ok(homePayload(role));
@@ -204,27 +213,27 @@ export async function mobileGet(role: WorkspaceRole, section: MobileSection, par
 // ---------- home (285) ----------
 
 function homePayload(role: WorkspaceRole) {
-  const me = getEmployee(SESSION_USER_ID)!;
+  const me = getEmployee(ACTOR_ID)!;
   const hour = ist(WORKSPACE_NOW).getUTCHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  const tasks = listTasks();
+  const tasks = listTasks(ACTOR_ID);
   const open = tasks.filter((t) => t.status !== "Completed" && t.status !== "Cancelled");
   const overdue = open.filter((t) => t.due !== null && t.due < WORKSPACE_NOW);
   const dueToday = open.filter((t) => t.due !== null && dayKey(t.due) === WORKSPACE_DAY);
 
   const todayMeetings = MEETINGS.filter(
-    (m) => dayKey(m.start) === WORKSPACE_DAY && m.status !== "Cancelled" && m.participantIds.includes(SESSION_USER_ID),
+    (m) => dayKey(m.start) === WORKSPACE_DAY && m.status !== "Cancelled" && m.participantIds.includes(ACTOR_ID),
   ).sort((a, b) => a.start - b.start);
   const nextMeeting = todayMeetings.find((m) => m.end >= WORKSPACE_NOW) ?? null;
 
-  const approvalQueue = listApprovals(role);
+  const approvalQueue = listApprovals(role, ACTOR_ID);
   const pendingApprovals = (approvalQueue.queue ?? []).filter((a) => a.status === "Pending");
 
-  const notifications = NOTIFICATIONS.map((n) => ({ ...n, unread: store().notifRead.has(n.id) ? false : n.unread }));
+  const notifications = NOTIFICATIONS.map((n) => ({ ...n, unread: store().notifRead.has(`${ACTOR_ID}:${n.id}`) ? false : n.unread }));
   const unreadNotifications = notifications.filter((n) => n.unread);
 
-  const unreadMail = listMail(role, { folder: "inbox", unreadOnly: true, limit: 5 });
+  const unreadMail = listMail(role, { folder: "inbox", unreadOnly: true, limit: 5 }, ACTOR_ID);
 
   const attendance = todayAttendance();
 
@@ -345,7 +354,7 @@ function salesHomePayload(role: WorkspaceRole): Result<Record<string, unknown>> 
       id: v.id, plannedAt: v.plannedAt, purpose: v.purpose, location: v.location, status: v.status,
       account: v.account?.name ?? null,
     })),
-    targets: targetRows.filter((r) => r.kind === "employee" && r.refId === SESSION_USER_ID).slice(0, 2),
+    targets: targetRows.filter((r) => r.kind === "employee" && r.refId === ACTOR_ID).slice(0, 2),
     quickActions: QUICK_ACTIONS.filter((a) => ["create-lead", "add-followup", "whatsapp", "create-visit"].includes(a.id) && a.roles.includes(role)),
     sourceNote: "Every figure is read through the Sales Operating System gate — company / team / own scope re-applies server-side.",
   });
@@ -382,7 +391,7 @@ function whatsappPayload(role: WorkspaceRole, convId?: string): Result<Record<st
     const res = salesGet(role, "whatsapp-conversation", new URLSearchParams({ id: convId }));
     if (!res.ok) return { ok: false, status: res.status, code: res.code, message: res.message };
     const conversation = (res.data as Record<string, unknown>).conversation as Record<string, unknown>;
-    if (store().waRead.has(convId)) conversation.unread = 0;
+    if (store().waRead.has(`${ACTOR_ID}:${convId}`)) conversation.unread = 0;
     return ok({ conversation, integrationsNote: "WhatsApp Business API is the configured transport (int-whatsapp). Replies, consent checks, retention and audit ride the existing integration." });
   }
   const res = salesGet(role, "whatsapp", new URLSearchParams());
@@ -397,7 +406,7 @@ function whatsappPayload(role: WorkspaceRole, convId?: string): Result<Record<st
         contactName: c.contactName,
         waNumber: c.waNumber,
         status: c.status,
-        unread: store().waRead.has(String(c.id)) ? 0 : c.unread,
+        unread: store().waRead.has(`${ACTOR_ID}:${String(c.id)}`) ? 0 : c.unread,
         lastMessageAt: c.lastMessageAt,
         lastMessage: last ? { body: last.body, direction: last.direction } : null,
         leadId: c.leadId ?? null,
@@ -436,7 +445,7 @@ function meetingsPayload(role: WorkspaceRole, meetingId?: string) {
   // creations (createMeeting) and cancellations appear here identically —
   // the raw MEETINGS fixture is no longer read on this path.
   if (meetingId) {
-    const res = getMeeting(role, meetingId);
+    const res = getMeeting(role, meetingId, ACTOR_ID);
     if (!res.ok) return fail(res.status, res.code, res.message);
     const m = res.meeting;
     const s = store();
@@ -466,7 +475,7 @@ function meetingsPayload(role: WorkspaceRole, meetingId?: string) {
       sourceNote: "The ONE enterprise Meetings module — notes and action items recorded from mobile are appended to the same meeting record store.",
     });
   }
-  const mine = listMeetings(role).meetings; // participation-scoped by the workspace server
+  const mine = listMeetings(role, ACTOR_ID).meetings; // participation-scoped by the workspace server
   const today = mine.filter(
     (m) => dayKey(m.start) === WORKSPACE_DAY && m.status !== "Cancelled",
   ).sort((a, b) => a.start - b.start);
@@ -497,13 +506,13 @@ function taskBrief(t: Task) {
     due: t.due,
     dueLabel: t.due ? fmtDateTime(t.due) : null,
     source: t.source,
-    assigner: nameOf(t.ownerId === SESSION_USER_ID ? null : t.ownerId),
+    assigner: nameOf(t.ownerId === ACTOR_ID ? null : t.ownerId),
   };
 }
 
 function tasksPayload(taskId?: string) {
   if (taskId) {
-    const t = listTasks().find((x) => x.id === taskId);
+    const t = listTasks(ACTOR_ID).find((x) => x.id === taskId);
     if (!t) return fail(404, "not_found", "Task not found in your queue.");
     const transitions: Record<string, string[]> = {
       "Not Started": ["In Progress", "Cancelled"],
@@ -521,7 +530,7 @@ function tasksPayload(taskId?: string) {
       attachmentNote: "Attachments ride the enterprise document vault (My Documents) — mobile upload is not configured yet, and Qubit One will not pretend otherwise.",
     });
   }
-  const tasks = listTasks();
+  const tasks = listTasks(ACTOR_ID);
   const open = tasks.filter((t) => t.status !== "Completed" && t.status !== "Cancelled");
   const overdue = open.filter((t) => t.due !== null && t.due < WORKSPACE_NOW).sort((a, b) => (a.due ?? 0) - (b.due ?? 0));
   const today = open.filter((t) => t.due !== null && dayKey(t.due) === WORKSPACE_DAY && t.due >= WORKSPACE_NOW);
@@ -653,7 +662,7 @@ function visitPayload(role: WorkspaceRole, visitId: string): Result<Record<strin
 function todayAttendance() {
   const s = store();
   const today = dayKey(Date.now());
-  const rec = s.attendance.find((a) => a.employeeId === SESSION_USER_ID && a.day === today);
+  const rec = s.attendance.find((a) => a.employeeId === ACTOR_ID && a.day === today);
   if (!rec) return { state: "Not checked in", record: null, verification: ATTENDANCE_VERIFICATION };
   const workedMin = rec.checkoutAt ? Math.round((rec.checkoutAt - rec.checkinAt) / 60000) : undefined;
   return {
@@ -672,12 +681,12 @@ const ATTENDANCE_VERIFICATION = {
 function attendancePayload() {
   const s = store();
   const today = dayKey(Date.now());
-  const mine = s.attendance.filter((a) => a.employeeId === SESSION_USER_ID).sort((a, b) => b.checkinAt - a.checkinAt);
+  const mine = s.attendance.filter((a) => a.employeeId === ACTOR_ID).sort((a, b) => b.checkinAt - a.checkinAt);
   const todayRec = mine.find((a) => a.day === today) ?? null;
   const myLeave = EVENTS.filter(
-    (e) => e.type === "Leave" && e.organizerId === SESSION_USER_ID && e.start <= Date.now() && e.end >= Date.now(),
+    (e) => e.type === "Leave" && e.organizerId === ACTOR_ID && e.start <= Date.now() && e.end >= Date.now(),
   );
-  const teamLeave = EVENTS.filter((e) => e.type === "Leave" && e.end >= Date.now() && e.start <= Date.now() + 7 * 86_400_000 && e.organizerId !== SESSION_USER_ID).slice(0, 4);
+  const teamLeave = EVENTS.filter((e) => e.type === "Leave" && e.end >= Date.now() && e.start <= Date.now() + 7 * 86_400_000 && e.organizerId !== ACTOR_ID).slice(0, 4);
   return {
     today: todayRec
       ? { ...todayRec, workedMin: todayRec.checkoutAt ? Math.round((todayRec.checkoutAt - todayRec.checkinAt) / 60000) : null, state: todayRec.checkoutAt ? "Checked out" : "Working" }
@@ -716,7 +725,7 @@ function approvalBrief(a: ApprovalRequest) {
 }
 
 function approvalsPayload(role: WorkspaceRole, approvalId?: string) {
-  const res = listApprovals(role);
+  const res = listApprovals(role, ACTOR_ID);
   const all = [...(res.queue ?? []), ...(res.history ?? [])] as ApprovalRequest[];
   if (approvalId) {
     const a = all.find((x) => x.id === approvalId);
@@ -769,8 +778,8 @@ function notificationsPayload(role: WorkspaceRole, category?: string) {
   // seed + live meeting invites/cancellations). The mobile read-state
   // overlay (store().notifRead) applies on top exactly as before, so the
   // payload shape is unchanged.
-  const all = listNotifications(role).notifications;
-  let items = all.map((n) => ({ ...n, unread: s.notifRead.has(n.id) ? false : n.unread }));
+  const all = listNotifications(role, ACTOR_ID).notifications;
+  let items = all.map((n) => ({ ...n, unread: s.notifRead.has(`${ACTOR_ID}:${n.id}`) ? false : n.unread }));
   const categories = [...new Set(all.map((n) => n.category))];
   const unreadOnly = (category ?? "").trim().toLowerCase() === "unread";
   if (category && !unreadOnly && category.toLowerCase() !== "all") items = items.filter((n) => n.category.toLowerCase() === category.toLowerCase());
@@ -778,7 +787,7 @@ function notificationsPayload(role: WorkspaceRole, category?: string) {
   return ok({
     items: items.map(notificationBrief),
     categories: ["All", "Unread", ...categories],
-    unreadCount: all.filter((n) => (s.notifRead.has(n.id) ? false : n.unread)).length,
+    unreadCount: all.filter((n) => (s.notifRead.has(`${ACTOR_ID}:${n.id}`) ? false : n.unread)).length,
     sourceNote: "The centralized notification engine — read-state is tracked server-side so mobile and desktop stay in step.",
   });
 }
@@ -786,7 +795,7 @@ function notificationsPayload(role: WorkspaceRole, category?: string) {
 // ---------- profile (296) ----------
 
 function profilePayload(role: WorkspaceRole) {
-  const me = getEmployee(SESSION_USER_ID)!;
+  const me = getEmployee(ACTOR_ID)!;
   const manager = me.managerId ? getEmployee(me.managerId) : null;
   return {
     profile: {
@@ -818,7 +827,7 @@ function profilePayload(role: WorkspaceRole) {
 // ---------- id card (297) ----------
 
 function idCardPayload() {
-  const me = getEmployee(SESSION_USER_ID)!;
+  const me = getEmployee(ACTOR_ID)!;
   const verificationPayload = createHash("sha256")
     .update([me.employeeId, me.name, me.title, me.department, me.status].join("|"))
     .digest("hex")
@@ -848,7 +857,7 @@ function idCardPayload() {
 // ---------- visiting card (298) ----------
 
 function visitingCardPayload() {
-  const me = getEmployee(SESSION_USER_ID)!;
+  const me = getEmployee(ACTOR_ID)!;
   const vcard = [
     "BEGIN:VCARD",
     "VERSION:3.0",
@@ -883,10 +892,10 @@ function visitingCardPayload() {
 
 function mailPayload(role: WorkspaceRole, folder: string, mailId?: string, q?: string) {
   if (mailId) {
-    const res = listMail(role, { folder: "all", limit: 200 });
+    const res = listMail(role, { folder: "all", limit: 200 }, ACTOR_ID);
     const m = res.items.find((x) => x.id === mailId);
     if (!m) return fail(404, "not_found", "Message not found in your mailbox.");
-    markMail(role, mailId, { read: true });
+    markMail(role, mailId, { read: true }, ACTOR_ID);
     return ok({
       message: {
         id: m.id, folder: m.folder, subject: m.subject, body: m.body, preview: m.preview, ts: m.ts,
@@ -898,12 +907,12 @@ function mailPayload(role: WorkspaceRole, folder: string, mailId?: string, q?: s
       sourceNote: "Your enterprise mailbox — opening a message marks it read through the same mail system.",
     });
   }
-  const res = listMail(role, { folder, q, limit: 40 });
+  const res = listMail(role, { folder, q, limit: 40 }, ACTOR_ID);
   const counts = {
-    inbox: listMail(role, { folder: "inbox" }).total,
-    inboxUnread: listMail(role, { folder: "inbox", unreadOnly: true }).total,
-    sent: listMail(role, { folder: "sent" }).total,
-    drafts: listMail(role, { folder: "drafts" }).total,
+    inbox: listMail(role, { folder: "inbox" }, ACTOR_ID).total,
+    inboxUnread: listMail(role, { folder: "inbox", unreadOnly: true }, ACTOR_ID).total,
+    sent: listMail(role, { folder: "sent" }, ACTOR_ID).total,
+    drafts: listMail(role, { folder: "drafts" }, ACTOR_ID).total,
   };
   return ok({
     folder,
@@ -922,7 +931,7 @@ function mailPayload(role: WorkspaceRole, folder: string, mailId?: string, q?: s
 
 function aiPayload(role: WorkspaceRole) {
   const s = store();
-  const chat = s.aiChats[s.aiChats.length - 1] ?? null;
+  const chat = s.aiChats.find((c) => c.id === ACTOR_ID) ?? null;
   return {
     prompts: [
       { id: "summarize-day", label: "Summarize my day" },
@@ -951,7 +960,7 @@ async function aiBasis(role: WorkspaceRole, question: string): Promise<{ basis: 
   const q = question.toLowerCase();
 
   // Tasks (always authorized — own queue)
-  const tasks = listTasks();
+  const tasks = listTasks(ACTOR_ID);
   const open = tasks.filter((t) => t.status !== "Completed" && t.status !== "Cancelled");
   const overdue = open.filter((t) => t.due !== null && t.due < WORKSPACE_NOW);
   const dueToday = open.filter((t) => t.due !== null && dayKey(t.due) === WORKSPACE_DAY);
@@ -961,20 +970,20 @@ async function aiBasis(role: WorkspaceRole, question: string): Promise<{ basis: 
 
   // Meetings today (own participation)
   const todayMeetings = MEETINGS.filter(
-    (m) => dayKey(m.start) === WORKSPACE_DAY && m.status !== "Cancelled" && m.participantIds.includes(SESSION_USER_ID),
+    (m) => dayKey(m.start) === WORKSPACE_DAY && m.status !== "Cancelled" && m.participantIds.includes(ACTOR_ID),
   );
   if (todayMeetings.length) {
     facts.push(`Meetings today (${todayMeetings.length}): ${todayMeetings.map((m) => `${m.title} at ${fmtTime(m.start)} (${m.location})`).join("; ")}.`);
   }
 
   // Approvals (role-scoped via listApprovals)
-  const approvals = listApprovals(role);
+  const approvals = listApprovals(role, ACTOR_ID);
   const pending = (approvals.queue ?? []).filter((a) => a.status === "Pending");
   if (pending.length) facts.push(`Pending approvals routed to you (${pending.length}): ${pending.slice(0, 3).map((a) => a.title).join("; ")}.`);
   else facts.push("No approvals are currently routed to you.");
 
   // Notifications unread
-  const unread = NOTIFICATIONS.filter((n) => (store().notifRead.has(n.id) ? false : n.unread));
+  const unread = NOTIFICATIONS.filter((n) => (store().notifRead.has(`${ACTOR_ID}:${n.id}`) ? false : n.unread));
   if (unread.length) facts.push(`Unread notifications (${unread.length}): ${unread.slice(0, 3).map((n) => n.title).join("; ")}.`);
 
   // Sales-scoped facts only when the caller holds sales authorization
@@ -1045,21 +1054,23 @@ const num = (o: Record<string, unknown>, k: string): number | undefined =>
 const bool = (o: Record<string, unknown>, k: string): boolean | undefined =>
   typeof o[k] === "boolean" ? (o[k] as boolean) : undefined;
 
-export async function mobilePost(role: WorkspaceRole, action: MobileAction): Promise<{ ok: true; message: string; [k: string]: unknown } | { ok: false; status: number; code: string; message: string }> {
+export async function mobilePost(role: WorkspaceRole, action: MobileAction, userId: string = SESSION_USER_ID): Promise<{ ok: true; message: string; [k: string]: unknown } | { ok: false; status: number; code: string; message: string }> {
+  ACTOR_ID = userId;
+  ACTOR_NAME = getEmployee(ACTOR_ID)?.name ?? "Sagar Singh";
   const s = store();
   switch (action.type) {
     case "task.status": {
       const id = str(action.input, "id");
       const status = str(action.input, "status");
       if (!id || !status) return { ok: false, status: 422, code: "invalid_input", message: "Task id and status are required." };
-      const res = updateTask(role, { id, status: status as Task["status"] });
+      const res = updateTask(role, { id, status: status as Task["status"] }, ACTOR_ID);
       if (!res.ok) return { ok: false, status: res.status, code: res.code, message: res.message };
       return { ok: true, message: `Task moved to ${status}.`, task: res.task };
     }
     case "task.create": {
       const title = str(action.input, "title");
       if (!title) return { ok: false, status: 422, code: "invalid_title", message: "A task title is required." };
-      const res = createTask(role, { title, detail: str(action.input, "detail"), priority: str(action.input, "priority") as Task["priority"] | undefined, due: num(action.input, "due") ?? null });
+      const res = createTask(role, { title, detail: str(action.input, "detail"), priority: str(action.input, "priority") as Task["priority"] | undefined, due: num(action.input, "due") ?? null }, ACTOR_ID);
       if (!res.ok) return { ok: false, status: res.status, code: res.code, message: res.message };
       return { ok: true, message: "Task created in your workspace queue.", task: res.task };
     }
@@ -1067,12 +1078,12 @@ export async function mobilePost(role: WorkspaceRole, action: MobileAction): Pro
       const id = str(action.input, "id");
       const text = str(action.input, "text");
       if (!id || !text || text.length < 2) return { ok: false, status: 422, code: "invalid_comment", message: "A comment of at least 2 characters is required." };
-      const task = listTasks().find((t) => t.id === id);
+      const task = listTasks(ACTOR_ID).find((t) => t.id === id);
       if (!task) return { ok: false, status: 404, code: "not_found", message: "Task not found in your queue." };
       const comments = s.taskComments.get(id) ?? [];
       comments.push({ at: Date.now(), by: ACTOR_NAME, text });
       s.taskComments.set(id, comments);
-      writeAudit({ actorId: SESSION_USER_ID, action: "Mobile task comment", resource: task.title, result: "Success", source: "Mobile", context: "Comment appended to the workspace task record" });
+      writeAudit({ actorId: ACTOR_ID, action: "Mobile task comment", resource: task.title, result: "Success", source: "Mobile", context: "Comment appended to the workspace task record" });
       return { ok: true, message: "Comment added to the task.", comments };
     }
     case "approval.decide": {
@@ -1081,7 +1092,7 @@ export async function mobilePost(role: WorkspaceRole, action: MobileAction): Pro
       if (!id || !decision || !["Approved", "Rejected", "Changes requested"].includes(decision)) {
         return { ok: false, status: 422, code: "invalid_decision", message: "A valid decision is required." };
       }
-      const res = decideApproval(role, { id, decision, note: str(action.input, "note"), stepUpPassword: str(action.input, "stepUpPassword") });
+      const res = decideApproval(role, { id, decision, note: str(action.input, "note"), stepUpPassword: str(action.input, "stepUpPassword") }, ACTOR_ID);
       if (!res.ok) return { ok: false, status: res.status, code: res.code, message: res.message };
       return { ok: true, message: `Request ${decision.toLowerCase()}. The decision is recorded in the enterprise audit trail.`, approval: res.approval };
     }
@@ -1094,7 +1105,7 @@ export async function mobilePost(role: WorkspaceRole, action: MobileAction): Pro
       const id = str(action.input, "id");
       const text = str(action.input, "text");
       if (!id || !text || text.length < 2) return { ok: false, status: 422, code: "invalid_note", message: "A note of at least 2 characters is required." };
-      const res = saveMeetingNotes(role, { id, text });
+      const res = saveMeetingNotes(role, { id, text }, ACTOR_ID);
       if (!res.ok) return { ok: false, status: res.status, code: res.code, message: res.message };
       return { ok: true, message: res.message };
     }
@@ -1104,9 +1115,9 @@ export async function mobilePost(role: WorkspaceRole, action: MobileAction): Pro
       const id = str(action.input, "id");
       const title = str(action.input, "title");
       if (!id || !title || title.length < 4) return { ok: false, status: 422, code: "invalid_title", message: "Describe the action item (4+ characters)." };
-      const ownerId = str(action.input, "ownerId") ?? SESSION_USER_ID;
+      const ownerId = str(action.input, "ownerId") ?? ACTOR_ID;
       if (!employees.some((e) => e.id === ownerId)) return { ok: false, status: 422, code: "invalid_owner", message: "Choose a valid owner." };
-      const res = addMeetingAction(role, { id, title, ownerId, due: num(action.input, "due") ?? null });
+      const res = addMeetingAction(role, { id, title, ownerId, due: num(action.input, "due") ?? null }, ACTOR_ID);
       if (!res.ok) return { ok: false, status: res.status, code: res.code, message: res.message };
       return { ok: true, message: res.message };
     }
@@ -1117,33 +1128,33 @@ export async function mobilePost(role: WorkspaceRole, action: MobileAction): Pro
       if (m.status !== "Scheduled" && m.status !== "In Progress") {
         return { ok: false, status: 409, code: "invalid_state", message: `This meeting is ${m.status.toLowerCase()} — nothing to join.` };
       }
-      writeAudit({ actorId: SESSION_USER_ID, action: "Mobile meeting join", resource: m.title, result: "Success", source: "Mobile", context: `Handoff to ${m.platform} recorded` });
+      writeAudit({ actorId: ACTOR_ID, action: "Mobile meeting join", resource: m.title, result: "Success", source: "Mobile", context: `Handoff to ${m.platform} recorded` });
       return { ok: true, message: `Handoff to ${m.platform} recorded — the meeting platform handles the call itself.`, platform: m.platform };
     }
     case "attendance.checkin": {
       const today = dayKey(Date.now());
-      if (s.attendance.some((a) => a.employeeId === SESSION_USER_ID && a.day === today && !a.checkoutAt)) {
+      if (s.attendance.some((a) => a.employeeId === ACTOR_ID && a.day === today && !a.checkoutAt)) {
         return { ok: false, status: 409, code: "already_checked_in", message: "You are already checked in today." };
       }
       const rec: AttendanceRecord = {
         id: `att-${Date.now()}`,
-        employeeId: SESSION_USER_ID,
+        employeeId: ACTOR_ID,
         day: today,
         checkinAt: Date.now(),
         method: "Mobile · web session",
       };
       s.attendance.push(rec);
-      writeAudit({ actorId: SESSION_USER_ID, action: "Mobile attendance check-in", resource: `Attendance ${today}`, result: "Success", source: "Mobile", context: "Plain timestamp — device/location verification not configured" });
+      writeAudit({ actorId: ACTOR_ID, action: "Mobile attendance check-in", resource: `Attendance ${today}`, result: "Success", source: "Mobile", context: "Plain timestamp — device/location verification not configured" });
       return { ok: true, message: `Checked in at ${fmtTime(rec.checkinAt)} (IST).`, record: rec, verification: ATTENDANCE_VERIFICATION };
     }
     case "attendance.checkout": {
       const today = dayKey(Date.now());
-      const rec = s.attendance.find((a) => a.employeeId === SESSION_USER_ID && a.day === today);
+      const rec = s.attendance.find((a) => a.employeeId === ACTOR_ID && a.day === today);
       if (!rec) return { ok: false, status: 404, code: "not_checked_in", message: "No check-in found for today." };
       if (rec.checkoutAt) return { ok: false, status: 409, code: "already_checked_out", message: "You are already checked out today." };
       rec.checkoutAt = Date.now();
       rec.workedMin = Math.round((rec.checkoutAt - rec.checkinAt) / 60000);
-      writeAudit({ actorId: SESSION_USER_ID, action: "Mobile attendance check-out", resource: `Attendance ${today}`, result: "Success", source: "Mobile", context: `Worked ${rec.workedMin} min` });
+      writeAudit({ actorId: ACTOR_ID, action: "Mobile attendance check-out", resource: `Attendance ${today}`, result: "Success", source: "Mobile", context: `Worked ${rec.workedMin} min` });
       return { ok: true, message: `Checked out at ${fmtTime(rec.checkoutAt)} — ${rec.workedMin} min recorded.`, record: rec };
     }
     case "visit.stage": {
@@ -1183,7 +1194,7 @@ export async function mobilePost(role: WorkspaceRole, action: MobileAction): Pro
       }
       // Overlay-only field stages (En Route, Arrived, Paused, resumed In Progress)
       s.visitStage.set(id, next);
-      writeAudit({ actorId: SESSION_USER_ID, action: "Mobile visit stage", resource: String(v.purpose ?? id), result: "Success", source: "Mobile", context: `Field stage: ${current} → ${next}` });
+      writeAudit({ actorId: ACTOR_ID, action: "Mobile visit stage", resource: String(v.purpose ?? id), result: "Success", source: "Mobile", context: `Field stage: ${current} → ${next}` });
       return { ok: true, message: `Visit stage moved to ${next}.`, stage: next };
     }
     case "visit.checklist": {
@@ -1198,7 +1209,7 @@ export async function mobilePost(role: WorkspaceRole, action: MobileAction): Pro
       const item = items.find((c) => c.id === itemId);
       if (!item || typeof done !== "boolean") return { ok: false, status: 422, code: "invalid_item", message: "A valid checklist item and state are required." };
       item.done = done;
-      writeAudit({ actorId: SESSION_USER_ID, action: "Mobile visit checklist", resource: `${purpose} · ${item.label}`, result: "Success", source: "Mobile", context: done ? "Marked complete" : "Reopened" });
+      writeAudit({ actorId: ACTOR_ID, action: "Mobile visit checklist", resource: `${purpose} · ${item.label}`, result: "Success", source: "Mobile", context: done ? "Marked complete" : "Reopened" });
       return { ok: true, message: `Checklist item ${done ? "completed" : "reopened"}.`, items };
     }
     case "visit.note": {
@@ -1210,7 +1221,7 @@ export async function mobilePost(role: WorkspaceRole, action: MobileAction): Pro
       const notes = s.visitNotes.get(id) ?? [];
       notes.push({ at: Date.now(), by: ACTOR_NAME, text });
       s.visitNotes.set(id, notes);
-      writeAudit({ actorId: SESSION_USER_ID, action: "Mobile visit note", resource: id, result: "Success", source: "Mobile", context: "Field note recorded against the visit" });
+      writeAudit({ actorId: ACTOR_ID, action: "Mobile visit note", resource: id, result: "Success", source: "Mobile", context: "Field note recorded against the visit" });
       return { ok: true, message: "Field note recorded.", notes };
     }
     case "visit.part": {
@@ -1223,7 +1234,7 @@ export async function mobilePost(role: WorkspaceRole, action: MobileAction): Pro
       const parts = s.visitParts.get(id) ?? [];
       parts.push({ name, qty, at: Date.now() });
       s.visitParts.set(id, parts);
-      writeAudit({ actorId: SESSION_USER_ID, action: "Mobile visit part recorded", resource: `${name} ×${qty}`, result: "Success", source: "Mobile", context: "Recorded against the visit — parts inventory remains the Inventory system's source of truth" });
+      writeAudit({ actorId: ACTOR_ID, action: "Mobile visit part recorded", resource: `${name} ×${qty}`, result: "Success", source: "Mobile", context: "Recorded against the visit — parts inventory remains the Inventory system's source of truth" });
       return { ok: true, message: "Part usage recorded against the visit.", parts };
     }
     case "lead.note": {
@@ -1247,7 +1258,7 @@ export async function mobilePost(role: WorkspaceRole, action: MobileAction): Pro
       const body = str(action.input, "body");
       const r = salesPost(role, { type: "whatsapp.reply", input: { id, body } });
       if (!r.ok) return { ok: false, status: r.status, code: r.code, message: r.message };
-      s.waRead.set(id ?? "", true);
+      s.waRead.set(`${ACTOR_ID}:${id ?? ""}`, true);
       return { ok: true, message: r.message, conversationId: r.conversationId };
     }
     case "whatsapp.note": {
@@ -1268,26 +1279,26 @@ export async function mobilePost(role: WorkspaceRole, action: MobileAction): Pro
     case "whatsapp.read": {
       const id = str(action.input, "id");
       if (!id) return { ok: false, status: 422, code: "invalid_input", message: "A conversation id is required." };
-      s.waRead.set(id, true);
+      s.waRead.set(`${ACTOR_ID}:${id}`, true);
       return { ok: true, message: "Conversation marked read." };
     }
     case "notification.read": {
       const id = str(action.input, "id");
       if (!id) return { ok: false, status: 422, code: "invalid_input", message: "A notification id is required." };
-      s.notifRead.set(id, true);
+      s.notifRead.set(`${ACTOR_ID}:${id}`, true);
       return { ok: true, message: "Marked as read." };
     }
     case "notification.readall": {
       // Phase 20 — mark ALL notifications read, including live meeting
       // notifications sourced from the workspace store (the fixture-only
       // loop would leave new invites unread).
-      for (const n of listNotifications(role).notifications) s.notifRead.set(n.id, true);
+      for (const n of listNotifications(role, ACTOR_ID).notifications) s.notifRead.set(`${ACTOR_ID}:${n.id}`, true);
       return { ok: true, message: "All notifications marked read." };
     }
     case "mail.mark": {
       const id = str(action.input, "id");
       if (!id) return { ok: false, status: 422, code: "invalid_input", message: "A message id is required." };
-      const res = markMail(role, id, { read: bool(action.input, "read") ?? true, starred: bool(action.input, "starred") });
+      const res = markMail(role, id, { read: bool(action.input, "read") ?? true, starred: bool(action.input, "starred") }, ACTOR_ID);
       if (!res.ok) return { ok: false, status: res.status, code: res.code, message: res.message };
       return { ok: true, message: "Mailbox updated." };
     }
@@ -1317,14 +1328,14 @@ export async function mobilePost(role: WorkspaceRole, action: MobileAction): Pro
       const patch: Record<string, unknown> = {};
       if (action.input.phone !== undefined) patch.phone = action.input.phone;
       if (action.input.about !== undefined) patch.about = action.input.about;
-      const res = updateProfile(role, patch);
+      const res = updateProfile(role, patch, ACTOR_ID);
       if (!res.ok) return { ok: false, status: res.status, code: res.code, message: res.message };
       return { ok: true, message: "Profile updated — self-service fields only.", updated: res.updated };
     }
     case "card.share": {
       const channel = str(action.input, "channel") ?? "link";
       s.cardShares.push({ at: Date.now(), channel });
-      writeAudit({ actorId: SESSION_USER_ID, action: "Mobile visiting card shared", resource: `via ${channel}`, result: "Success", source: "Mobile", context: "Work contact card share (policy-respecting)" });
+      writeAudit({ actorId: ACTOR_ID, action: "Mobile visiting card shared", resource: `via ${channel}`, result: "Success", source: "Mobile", context: "Work contact card share (policy-respecting)" });
       return { ok: true, message: `Card share via ${channel} recorded.`, shareCount: s.cardShares.length };
     }
     case "ai.ask": {
@@ -1332,9 +1343,9 @@ export async function mobilePost(role: WorkspaceRole, action: MobileAction): Pro
       if (!question || question.length < 3) return { ok: false, status: 422, code: "invalid_question", message: "Ask a question (3+ characters)." };
       if (question.length > 500) return { ok: false, status: 422, code: "invalid_question", message: "Keep the question under 500 characters." };
       const { basis, facts } = await aiBasis(role, question);
-      let chat = s.aiChats[s.aiChats.length - 1];
+      let chat = s.aiChats.find((c) => c.id === ACTOR_ID);
       if (!chat) {
-        chat = { id: `ai-${Date.now()}`, at: Date.now(), messages: [] };
+        chat = { id: ACTOR_ID, at: Date.now(), messages: [] };
         s.aiChats.push(chat);
       }
       chat.messages.push({ role: "user", content: question });
@@ -1368,7 +1379,7 @@ export async function mobilePost(role: WorkspaceRole, action: MobileAction): Pro
       chat.messages.push({ role: "assistant", content: answer, basis: `mode:${mode}; facts:${facts.length}` });
       if (chat.messages.length > 40) chat.messages.splice(0, chat.messages.length - 40);
       writeAudit({
-        actorId: SESSION_USER_ID,
+        actorId: ACTOR_ID,
         action: "Mobile AI answer generated",
         resource: question.slice(0, 80),
         result: "Success",
@@ -1379,7 +1390,8 @@ export async function mobilePost(role: WorkspaceRole, action: MobileAction): Pro
       return { ok: true, message: mode === "ai" ? "Answer generated from your authorized context." : "AI runtime unavailable — deterministic grounded summary provided.", conversation: chat.messages, mode };
     }
     case "ai.clear": {
-      s.aiChats = [];
+      // IAM: clear ONLY the acting identity's conversation.
+      s.aiChats = s.aiChats.filter((c) => c.id !== ACTOR_ID);
       return { ok: true, message: "Conversation cleared." };
     }
   }

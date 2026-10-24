@@ -594,6 +594,10 @@ export interface MailAttachment {
 export interface MailMessage {
   id: string;
   folder: MailFolder;
+  /** IAM: mailbox owner — every message belongs to exactly ONE employee's
+   *  mailbox. Server reads/mutations are scoped to the acting identity's
+   *  own mailbox (private mail stays private, §19/§30). */
+  ownerId?: string;
   threadOf?: string;
   fromId: string | null; // null = external sender
   fromExternal?: { name: string; email: string };

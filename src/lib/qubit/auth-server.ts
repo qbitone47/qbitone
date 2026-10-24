@@ -1,17 +1,19 @@
 // ============================================================
-// Qubit One — Session identity plane (SERVER ONLY, Phase 21)
+// Qubit One — Session identity plane (SERVER ONLY)
 // ============================================================
 // Security does not depend on the frontend. API routes NEVER
 // trust a client-declared role: the acting identity is derived
-// from a signed, expiring, revocable session token issued by
-// POST /api/auth/session and carried in an httpOnly cookie
-// (Authorization: Bearer is accepted for service/probe clients).
+// from a signed, expiring, revocable session token issued after a
+// verified credential login (POST /api/iam/login → MFA → session)
+// and carried in an httpOnly cookie (Authorization: Bearer is
+// accepted for service/probe clients).
 //
-// Demo boundary (documented, not hidden): this deployment runs
-// the product's role-preview model — the demo identity "sagar"
-// may assume the five product roles through the authenticated
-// session endpoint. Role membership is validated SERVER-SIDE
-// against this directory on every issue and every resolve.
+// IAM model: every identity in the directory is an individual
+// employee with EXACTLY ONE allowed session role (see iam.ts).
+// Direct session issuance without credentials is disabled — the
+// old role-preview bootstrap was removed when individual identity
+// landed. Role membership is validated SERVER-SIDE against this
+// directory on every issue and every resolve.
 //
 // Import ONLY from route handlers / server modules — never from
 // client components. Uses WebCrypto so the same code can run in
@@ -19,9 +21,13 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { IAM_DIRECTORY, type IamDepartment, type IamRole, type SessionRole } from "./iam";
+import { getSigningSecret } from "./secret-server";
+
+export { getSigningSecret };
 
 // ---------- Role model (mirrors the product's role registry) ----------
-export type QubitRole = "administrator" | "dept-head" | "sales-exec" | "hr-manager" | "employee";
+export type QubitRole = SessionRole;
 
 export const QUBIT_ROLES: QubitRole[] = [
   "administrator",
@@ -31,15 +37,6 @@ export const QUBIT_ROLES: QubitRole[] = [
   "employee",
 ];
 
-/** Server-side identity directory: which roles each principal may hold. */
-const IDENTITY_DIRECTORY: Record<string, { name: string; email: string; roles: QubitRole[] }> = {
-  sagar: {
-    name: "Sagar Singh",
-    email: "sagar@qubitone.in",
-    roles: QUBIT_ROLES,
-  },
-};
-
 export const SESSION_USER_ID = "sagar";
 
 export interface QubitIdentity {
@@ -47,10 +44,18 @@ export interface QubitIdentity {
   name: string;
   email: string;
   role: QubitRole;
+  /** IAM department (executive/sales/finance/hr/inventory/marketing/service). */
+  department: IamDepartment;
+  /** Individual IAM role (ceo, sales-executive, finance-executive, …). */
+  iamRole: IamRole;
+  /** Designation, e.g. "Sales Executive (Demo)". */
+  title: string;
   sessionId: string;
 }
 
 // ---------- Token cryptography (WebCrypto, no hardcoded secrets) ----------
+// The signing secret itself lives in secret-server.ts (single source of
+// truth shared with the IAM credential plane).
 const TOKEN_VERSION = "v1";
 export const SESSION_COOKIE = "qubit_session";
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8h absolute timeout (§4)
@@ -86,45 +91,8 @@ async function importHmacKey(secret: string): Promise<CryptoKey> {
  * provides one; otherwise generated once with a CSPRNG and persisted
  * to db/.auth-secret (gitignored, outside source control, readable
  * only by the server process). Never committed, never shipped to the
- * browser (§18 Secrets Management).
+ * browser (§18 Secrets Management). Implementation: secret-server.ts.
  */
-async function getSigningSecret(): Promise<string> {
-  const g = globalThis as unknown as { __qubitAuthSecret?: string };
-  if (g.__qubitAuthSecret) return g.__qubitAuthSecret;
-
-  let secret: string | undefined;
-  if (process.env.QUBIT_AUTH_SECRET && process.env.QUBIT_AUTH_SECRET.length >= 32) {
-    secret = process.env.QUBIT_AUTH_SECRET;
-  } else {
-    try {
-      const fs = await import("node:fs");
-      const path = await import("node:path");
-      const file = path.join(process.cwd(), "db", ".auth-secret");
-      if (fs.existsSync(file)) {
-        const stored = fs.readFileSync(file, "utf8").trim();
-        if (stored.length >= 32) secret = stored;
-      }
-      if (!secret) {
-        const raw = new Uint8Array(32);
-        crypto.getRandomValues(raw);
-        secret = Array.from(raw)
-          .map((b) => b.toString(16).padStart(2, "0"))
-          .join("");
-        fs.mkdirSync(path.dirname(file), { recursive: true });
-        fs.writeFileSync(file, secret, { mode: 0o600 });
-      }
-    } catch {
-      // Filesystem unavailable — fall back to a per-process CSPRNG secret.
-      const raw = new Uint8Array(32);
-      crypto.getRandomValues(raw);
-      secret = Array.from(raw)
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-    }
-  }
-  g.__qubitAuthSecret = secret;
-  return secret;
-}
 
 // ---------- Session registry (revocation-aware, process-local) ----------
 interface SessionRecord {
@@ -165,7 +133,7 @@ export async function issueSession(
   role: QubitRole,
   source = "Web",
 ): Promise<IssuedSession | { error: "unknown_identity" | "role_not_allowed" }> {
-  const dir = IDENTITY_DIRECTORY[userId];
+  const dir = IAM_DIRECTORY[userId];
   if (!dir) return { error: "unknown_identity" };
   if (!dir.roles.includes(role)) return { error: "role_not_allowed" };
 
@@ -185,7 +153,7 @@ export async function issueSession(
 
   return {
     token: `${TOKEN_VERSION}.${payload}.${b64urlEncode(new Uint8Array(sig))}`,
-    identity: { userId, name: dir.name, email: dir.email, role, sessionId },
+    identity: { userId, name: dir.name, email: dir.email, role, department: dir.department, iamRole: dir.iamRole, title: dir.title, sessionId },
     expiresAt,
   };
 }
@@ -224,13 +192,13 @@ export async function verifySessionToken(token: string | undefined | null): Prom
   if (!rec || rec.revoked) return null; // revocation is enforced, not cosmetic
   if (rec.expiresAt < Date.now()) return null;
 
-  const dir = IDENTITY_DIRECTORY[parsed.uid];
+  const dir = IAM_DIRECTORY[parsed.uid];
   if (!dir) return null;
   const role = parsed.r as QubitRole;
   if (!dir.roles.includes(role) || rec.role !== role) return null; // server directory is authoritative
 
   rec.lastSeen = Date.now();
-  return { userId: parsed.uid, name: dir.name, email: dir.email, role, sessionId: parsed.sid };
+  return { userId: parsed.uid, name: dir.name, email: dir.email, role, department: dir.department, iamRole: dir.iamRole, title: dir.title, sessionId: parsed.sid };
 }
 
 /** Extract the presented token from cookie or Authorization header. */

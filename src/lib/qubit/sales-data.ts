@@ -472,6 +472,9 @@ export const SALES_OPPORTUNITIES: SalesOpportunity[] = [
   { id: "opp-bluewave", name: "Strategic partnership pilot", accountId: "acc-bluewave", contactId: "ct-renae", ownerId: "sagar", stage: "Discovery", probability: 20, valueCr: 0.15, expectedClose: "31 Jan 2027", source: "Executive network", products: ["Managed Cloud Hosting"], nextAction: "Share pilot structure with Rena", nextFollowUpAt: today0(6) + 11 * H, createdAt: daysAgo(14), lastStageChangeAt: daysAgo(14) },
   { id: "opp-galaxy", name: "Inventory & dispatch suite", accountId: "acc-galaxy", ownerId: "arvind", contactId: "ct-galaxy", stage: "Qualification", probability: 20, valueCr: 0.26, expectedClose: "15 Jan 2027", source: "Website", products: ["Qubit ERP License"], nextAction: "Qualify budget with promoter office", nextFollowUpAt: today0(2) + 12 * H, createdAt: daysAgo(9), lastStageChangeAt: daysAgo(5) },
   { id: "opp-trident", name: "CRM platform evaluation", accountId: "acc-trident", ownerId: "pankaj", contactId: "ct-trident", stage: "New", probability: 10, valueCr: 0.38, expectedClose: "28 Feb 2027", source: "Trade Show", products: ["Qubit ERP License", "Field Mobility App"], nextAction: "First discovery call scheduling", nextFollowUpAt: today0(1) + 13 * H, createdAt: daysAgo(4), lastStageChangeAt: daysAgo(4) },
+
+  // IAM demo identity record — demo.sales' own opportunity.
+  { id: "opp-kepler", name: "Dispatch automation — 40 units", accountId: "acc-spire", ownerId: "demo.sales", contactId: "ct-gopal", stage: "Proposal", probability: 60, valueCr: 0.24, expectedClose: "18 Dec 2026", source: "Referral", products: ["Qubit ERP License", "Managed Cloud Hosting"], nextAction: "Kepler pricing follow-up call", nextFollowUpAt: today0() + 15 * H, createdAt: daysAgo(9), lastStageChangeAt: daysAgo(2) },
 ];
 
 // ============================================================
@@ -493,6 +496,12 @@ export const SALES_LEADS: SalesLead[] = [
   { id: "lead-112", name: "Atlas Components", company: "Atlas Components Ltd", contactPerson: "Joydeep Sen", phone: "+91 98310 59001", email: "joydeep@atlascomp.example", source: "Referral", industry: "Auto Components", location: "Pithampur", ownerId: "vikrams", status: "Qualified", priority: "Warm", score: 74, estimatedValueCr: 0.09, expectedClose: "20 Dec 2026", nextFollowUpAt: today0(3) + 14 * H, createdAt: daysAgo(18), lastActivityAt: daysAgo(5), tags: ["amc", "renewal"] },
   { id: "lead-113", name: "Nova Learning", company: "Nova Learning Systems", contactPerson: "Aditi Rao", phone: "+91 99400 60001", email: "aditi@novalearning.example", source: "Marketing Campaign", industry: "EdTech", location: "Bengaluru", ownerId: "meera", status: "New", priority: "Cold", score: 42, estimatedValueCr: 0.05, nextFollowUpAt: today0(5) + 10 * H, createdAt: daysAgo(1), lastActivityAt: daysAgo(1), tags: ["campaign-q3"] },
   { id: "lead-114", name: "Trident Motors — CRM", company: "Trident Motors", contactPerson: "Shruti Raman", phone: "+91 98400 42001", email: "shruti.raman@tridentmotors.example", source: "Trade Show", industry: "Automotive", location: "Chennai", ownerId: "pankaj", status: "Converted", priority: "Hot", score: 81, estimatedValueCr: 0.38, createdAt: daysAgo(5), lastActivityAt: daysAgo(2), tags: ["converted"], convertedTo: { contactId: "ct-trident", accountId: "acc-trident", opportunityId: "opp-trident", at: daysAgo(3) } },
+
+  // IAM demo identity records — demo.sales owns a small personal book of
+  // business so the own-scope boundary shows a genuinely personal pipeline.
+  { id: "lead-dem-1", name: "Kepler Industries", company: "Kepler Industries Ltd", contactPerson: "Manoj Bhatt", phone: "+91 98211 71001", email: "manoj@keplerind.example", source: "Referral", industry: "Manufacturing", location: "Pune", ownerId: "demo.sales", status: "Working", priority: "Hot", score: 86, estimatedValueCr: 0.24, expectedClose: "18 Dec 2026", nextFollowUpAt: today0() + 15 * H, createdAt: daysAgo(9), lastActivityAt: daysAgo(1), tags: ["demo-book", "pricing-revision"], notes: "Revised 40-unit pricing shared — decision expected this week." },
+  { id: "lead-dem-2", name: "Nova Retail", company: "Nova Retail Chain", contactPerson: "Preethi Menon", phone: "+91 98211 71002", email: "preethi@novaretail.example", source: "Website", industry: "Retail", location: "Kochi", ownerId: "demo.sales", status: "Qualified", priority: "Warm", score: 68, estimatedValueCr: 0.12, expectedClose: "12 Jan 2027", nextFollowUpAt: today0(1) + 11 * H, createdAt: daysAgo(4), lastActivityAt: daysAgo(1), tags: ["demo-book", "demo-scheduled"], notes: "Retail workspace walkthrough confirmed with presales." },
+  { id: "lead-dem-3", name: "Sundara Foods", company: "Sundara Foods Pvt Ltd", contactPerson: "Vikas Anand", phone: "+91 98211 71003", email: "vikas@sundarafoods.example", source: "WhatsApp Campaign", industry: "FMCG", location: "Indore", ownerId: "demo.sales", status: "New", priority: "Cold", score: 35, estimatedValueCr: 0.05, nextFollowUpAt: today0(3) + 10 * H, createdAt: daysAgo(2), lastActivityAt: daysAgo(2), tags: ["demo-book"] },
 ];
 
 // ============================================================
@@ -514,6 +523,11 @@ export const SALES_FOLLOWUPS: SalesFollowUp[] = [
   { id: "fu-12", type: "Send Quote", subject: "Halcyon revised managed-services quote", ownerId: "rohitv", accountId: "acc-halcyon", opportunityId: "opp-halcyon", dueAt: today0(1) + 16 * H, state: "Upcoming", priority: "High", lastInteractionAt: daysAgo(5) },
   { id: "fu-13", type: "Call", subject: "Atlas AMC renewal terms", ownerId: "vikrams", leadId: "lead-112", dueAt: today0(-1) + 12 * H, state: "Completed", priority: "Medium", outcome: "Renewal terms agreed in principle — quote this week.", completedAt: today0(-1) + 13 * H, lastInteractionAt: daysAgo(1) },
   { id: "fu-14", type: "Email", subject: "Vayu Renewables compliance scope", ownerId: "sagar", leadId: "lead-104", dueAt: today0(-2) + 11 * H, state: "Completed", priority: "Medium", outcome: "Scope confirmed; pricing requested.", completedAt: today0(-2) + 15 * H, lastInteractionAt: daysAgo(3) },
+
+  // IAM demo identity records — demo.sales' personal follow-up queue.
+  { id: "fu-dem-1", type: "Call", subject: "Kepler Industries — pricing follow-up", ownerId: "demo.sales", leadId: "lead-dem-1", opportunityId: "opp-kepler", dueAt: today0() + 15 * H, state: "Due Today", priority: "High", lastInteractionAt: daysAgo(1) },
+  { id: "fu-dem-2", type: "Meeting", subject: "Nova Retail demo prep sync", ownerId: "demo.sales", leadId: "lead-dem-2", dueAt: today0(1) + 11 * H, state: "Upcoming", priority: "Medium" },
+  { id: "fu-dem-3", type: "WhatsApp", subject: "Sundara Foods — first touch", ownerId: "demo.sales", leadId: "lead-dem-3", dueAt: today0(3) + 10 * H, state: "Upcoming", priority: "Low" },
 ];
 
 export const SALES_MEETINGS: SalesMeeting[] = [

@@ -13,6 +13,7 @@
 // ============================================================
 
 import { writeAudit } from "./security-server";
+import { PERSONAL_SEEDS } from "./iam";
 import {
   ALL_MAIL,
   APPROVALS,
@@ -38,8 +39,13 @@ import { employees } from "./data";
 // ---------- demo role boundary (production derives from the session) ----------
 export type WorkspaceRole = "administrator" | "dept-head" | "sales-exec" | "hr-manager" | "employee";
 
-/** Who the signed-in user is in this demo: the session identity is fixed,
- *  while X-Qubit-Role previews permission boundaries (same model as Phase 3). */
+/**
+ * IAM: the acting identity is threaded explicitly through every personal-
+ * data function (actorId). SESSION_USER_ID remains ONLY as the legacy
+ * default for the standing fixture owner (sagar) — routes now pass the
+ * real session identity, so each employee's workspace is genuinely
+ * their own (tasks, mail, meetings, notifications, documents, profile).
+ */
 export const SESSION_USER_ID = "sagar";
 
 interface WorkspaceStore {
@@ -76,15 +82,15 @@ function store(): WorkspaceStore {
   if (!g.__qubitWorkspaceStore) {
     g.__qubitWorkspaceStore = {
       approvals: APPROVALS.map((a) => structuredClone(a)),
-      tasks: TASKS.map((t) => structuredClone(t)),
-      mail: ALL_MAIL.map((m) => structuredClone(m)),
+      tasks: [...TASKS, ...personalTaskSeeds()].map((t) => structuredClone(t)),
+      mail: [...ALL_MAIL.map((m) => ({ ...structuredClone(m), ownerId: SESSION_USER_ID })), ...personalMailSeeds()],
       documents: DOCUMENTS.map((d) => structuredClone(d)),
-      meetings: MEETINGS.map((m) => structuredClone(m)),
+      meetings: [...MEETINGS, ...personalMeetingSeeds()].map((m) => structuredClone(m)),
       events: EVENTS.map((e) => structuredClone(e)),
       meetingNotes: new Map(),
       meetingActions: new Map(),
       meetingActionsPromoted: new Map(),
-      notifications: NOTIFICATIONS.map((n) => structuredClone(n)),
+      notifications: [...NOTIFICATIONS, ...personalNotificationSeeds()].map((n) => structuredClone(n)),
     };
   }
   const s = g.__qubitWorkspaceStore;
@@ -100,6 +106,97 @@ function store(): WorkspaceStore {
 
 const emailLike = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
+// ---------- IAM personal workspace seeds (§11/§12) ----------
+// Each demo identity opens a genuinely personal workspace: own tasks,
+// meetings, notifications and mailbox. Anchored to the fixed demo clock.
+const HOUR = 60 * 60 * 1000;
+const DAY = 24 * HOUR;
+
+function personalTaskSeeds(): Task[] {
+  const out: Task[] = [];
+  for (const [userId, seed] of Object.entries(PERSONAL_SEEDS)) {
+    for (const t of seed.tasks) {
+      out.push({
+        id: t.id,
+        title: t.title,
+        detail: t.detail,
+        status: "Not Started",
+        priority: t.priority,
+        due: WORKSPACE_NOW + t.dueInDays * DAY,
+        source: t.source,
+        ownerId: userId,
+        assigneeId: userId,
+      });
+    }
+  }
+  return out;
+}
+
+function personalMeetingSeeds(): Meeting[] {
+  const out: Meeting[] = [];
+  for (const [userId, seed] of Object.entries(PERSONAL_SEEDS)) {
+    for (const m of seed.meetings) {
+      const start = WORKSPACE_NOW + m.startInHours * HOUR;
+      out.push({
+        id: m.id,
+        title: m.title,
+        start,
+        end: start + m.durationMin * 60 * 1000,
+        organizerId: userId,
+        participantIds: [userId],
+        location: m.location,
+        platform: "Qubit Meet",
+        status: "Scheduled",
+        agenda: m.agenda,
+      });
+    }
+  }
+  return out;
+}
+
+function personalNotificationSeeds(): WorkspaceNotification[] {
+  const out: WorkspaceNotification[] = [];
+  for (const [userId, seed] of Object.entries(PERSONAL_SEEDS)) {
+    seed.notifications.forEach((n, i) => {
+      out.push({
+        id: n.id,
+        recipientId: userId,
+        title: n.title,
+        body: n.body,
+        category: n.category,
+        ts: WORKSPACE_NOW - i * 30 * 60 * 1000,
+        unread: n.unread,
+        priority: n.priority,
+        source: "Workspace",
+      });
+    });
+  }
+  return out;
+}
+
+function personalMailSeeds(): MailMessage[] {
+  const out: MailMessage[] = [];
+  for (const [userId, seed] of Object.entries(PERSONAL_SEEDS)) {
+    seed.mails.forEach((m, i) => {
+      out.push({
+        id: m.id,
+        folder: m.folder,
+        ownerId: userId,
+        fromId: null,
+        fromExternal: { name: m.fromName, email: m.fromEmail },
+        to: [userId],
+        subject: m.subject,
+        preview: m.preview,
+        body: m.body,
+        ts: WORKSPACE_NOW - (i + 1) * 2 * HOUR,
+        read: !m.unread,
+        starred: m.starred || undefined,
+      });
+    });
+  }
+  return out;
+}
+
 const MAX_ATTACHMENTS = 10;
 const MAX_TOTAL_KB = 10_240; // 10 MB
 
@@ -110,14 +207,14 @@ const MAX_TOTAL_KB = 10_240; // 10 MB
 // if the UI somehow renders the button.
 // ============================================================
 
-export function listApprovals(role: WorkspaceRole) {
+export function listApprovals(role: WorkspaceRole, actorId: string = SESSION_USER_ID) {
   const s = store();
-  // Queue scope: requests routed to the session user. In the demo the
-  // routing authority is the Approval Matrix (screen 09); the "employee"
-  // boundary sees an empty action queue because nothing is routed to it.
+  // Queue scope: requests routed to the acting identity. In the demo the
+  // routing authority is the Approval Matrix; the "employee" boundary sees
+  // an empty action queue because nothing is routed to it.
   if (role === "employee" || role === "sales-exec") {
     return {
-      queue: s.approvals.filter((a) => a.requesterId === SESSION_USER_ID),
+      queue: s.approvals.filter((a) => a.requesterId === actorId),
       note: "No approvals are routed to this role. Requests you submitted appear here.",
     };
   }
@@ -171,6 +268,7 @@ export function pushApproval(input: {
 export function decideApproval(
   role: WorkspaceRole,
   input: { id: string; decision: "Approved" | "Rejected" | "Changes requested"; note?: string; stepUpPassword?: string },
+  actorId: string = SESSION_USER_ID,
 ) {
   const s = store();
   const req = s.approvals.find((a) => a.id === input.id);
@@ -181,7 +279,7 @@ export function decideApproval(
 
   // Server-side authorization: employee boundaries hold no approval authority.
   if (role === "employee" || role === "sales-exec") {
-    writeAudit({ actorId: SESSION_USER_ID, action: "Approval decision denied", resource: req.title, result: "Blocked", severity: "Warning", context: "Role holds no approval authority for this request type" });
+    writeAudit({ actorId, action: "Approval decision denied", resource: req.title, result: "Blocked", severity: "Warning", context: "Role holds no approval authority for this request type" });
     return { ok: false as const, status: 403, code: "forbidden", message: "Your role does not hold approval authority for this request." };
   }
 
@@ -199,15 +297,15 @@ export function decideApproval(
 
   req.status = input.decision;
   req.decidedAt = Date.now();
-  req.decidedBy = SESSION_USER_ID;
+  req.decidedBy = actorId;
   req.decisionNote = input.note?.trim() || undefined;
   req.history = [
     ...(req.history ?? []),
-    { at: Date.now(), actor: "Sagar Singh", event: input.decision + (input.note ? ` — ${input.note.trim()}` : "") },
+    { at: Date.now(), actor: employees.find((e) => e.id === actorId)?.name ?? actorId, event: input.decision + (input.note ? ` — ${input.note.trim()}` : "") },
   ];
 
   writeAudit({
-    actorId: SESSION_USER_ID,
+    actorId,
     action: `Approval ${input.decision.toLowerCase()}`,
     resource: `${req.kind} · ${req.title}`,
     result: "Success",
@@ -225,11 +323,11 @@ export function decideApproval(
 // Tasks — creation and status transitions are server-validated.
 // ============================================================
 
-export function listTasks() {
-  return store().tasks.filter((t) => t.assigneeId === SESSION_USER_ID);
+export function listTasks(actorId: string = SESSION_USER_ID) {
+  return store().tasks.filter((t) => t.assigneeId === actorId);
 }
 
-export function createTask(role: WorkspaceRole, input: { title: string; detail?: string; priority?: Task["priority"]; due?: number | null; /** Phase 20: origin of the task (defaults to Manual for the quick action) */ source?: Task["source"]; related?: Task["related"] }) {
+export function createTask(role: WorkspaceRole, input: { title: string; detail?: string; priority?: Task["priority"]; due?: number | null; /** Phase 20: origin of the task (defaults to Manual for the quick action) */ source?: Task["source"]; related?: Task["related"] }, actorId: string = SESSION_USER_ID) {
   const title = input.title?.trim() ?? "";
   if (title.length < 4) return { ok: false as const, status: 422, code: "invalid_title", message: "Task title must be at least 4 characters." };
   if (title.length > 140) return { ok: false as const, status: 422, code: "invalid_title", message: "Task title must be 140 characters or fewer." };
@@ -245,12 +343,12 @@ export function createTask(role: WorkspaceRole, input: { title: string; detail?:
     priority: input.priority ?? "Medium",
     due: input.due ?? null,
     source: input.source ?? "Manual",
-    ownerId: SESSION_USER_ID,
-    assigneeId: SESSION_USER_ID,
+    ownerId: actorId,
+    assigneeId: actorId,
     related: input.related,
   };
   store().tasks.unshift(t);
-  writeAudit({ actorId: SESSION_USER_ID, action: "Task created", resource: t.title, result: "Success", context: input.source ? `Created from ${input.source}` : "Created from Employee Home quick action" });
+  writeAudit({ actorId, action: "Task created", resource: t.title, result: "Success", context: input.source ? `Created from ${input.source}` : "Created from Employee Home quick action" });
   return { ok: true as const, task: t };
 }
 
@@ -263,12 +361,12 @@ const TASK_TRANSITIONS: Record<string, Task["status"][]> = {
   Cancelled: [],
 };
 
-export function updateTask(role: WorkspaceRole, input: { id: string; status: Task["status"] }) {
+export function updateTask(role: WorkspaceRole, input: { id: string; status: Task["status"] }, actorId: string = SESSION_USER_ID) {
   const t = store().tasks.find((x) => x.id === input.id);
   if (!t) return { ok: false as const, status: 404, code: "not_found", message: "Task not found." };
   // Authorization: only the assignee transitions their own task.
-  if (t.assigneeId !== SESSION_USER_ID) {
-    writeAudit({ actorId: SESSION_USER_ID, action: "Task update denied", resource: t.title, result: "Blocked", severity: "Warning", context: "Caller is not the task assignee" });
+  if (t.assigneeId !== actorId) {
+    writeAudit({ actorId, action: "Task update denied", resource: t.title, result: "Blocked", severity: "Warning", context: "Caller is not the task assignee" });
     return { ok: false as const, status: 403, code: "forbidden", message: "Only the task assignee can update this task." };
   }
   const allowed = TASK_TRANSITIONS[t.status] ?? [];
@@ -277,7 +375,7 @@ export function updateTask(role: WorkspaceRole, input: { id: string; status: Tas
   }
   t.status = input.status;
   if (input.status === "Completed") t.completedAt = Date.now();
-  writeAudit({ actorId: SESSION_USER_ID, action: "Task status changed", resource: t.title, result: "Success", context: `${t.status === "Completed" ? "Marked completed" : `Moved to ${input.status}`}` });
+  writeAudit({ actorId, action: "Task status changed", resource: t.title, result: "Success", context: `${t.status === "Completed" ? "Marked completed" : `Moved to ${input.status}`}` });
   return { ok: true as const, task: t };
 }
 
@@ -287,11 +385,14 @@ export function updateTask(role: WorkspaceRole, input: { id: string; status: Tas
 // every query filters on the caller's own folders first.
 // ============================================================
 
-export function listMail(role: WorkspaceRole, params: { folder?: string; q?: string; unreadOnly?: boolean; label?: string; limit?: number }) {
+export function listMail(role: WorkspaceRole, params: { folder?: string; q?: string; unreadOnly?: boolean; label?: string; limit?: number }, actorId: string = SESSION_USER_ID) {
   const s = store();
   const folder = params.folder ?? "inbox";
-  let items = folder === "all" ? [...s.mail] : s.mail.filter((m) => m.folder === folder);
-  // Authorization scope: the session mailbox only (demo: single-user store).
+  // IAM: mailbox partition — every message carries an explicit ownerId and
+  // the read is scoped to the acting identity's OWN mailbox (§19: private
+  // mail stays private; §30: no other mailbox is reachable, whatever role).
+  let items = s.mail.filter((m) => (m.ownerId ?? SESSION_USER_ID) === actorId);
+  items = folder === "all" ? [...items] : items.filter((m) => m.folder === folder);
   const q = params.q?.trim().toLowerCase();
   if (q) {
     items = items.filter((m) => {
@@ -307,7 +408,7 @@ export function listMail(role: WorkspaceRole, params: { folder?: string; q?: str
   return { items: items.slice(0, limit), total: items.length, scopeNote: "Search is scoped to your authorized mailbox server-side." };
 }
 
-export function sendMail(role: WorkspaceRole, input: { to: string[]; cc?: string[]; bcc?: string[]; subject: string; body: string; attachments?: { name: string; sizeKb: number; type: string }[] }) {
+export function sendMail(role: WorkspaceRole, input: { to: string[]; cc?: string[]; bcc?: string[]; subject: string; body: string; attachments?: { name: string; sizeKb: number; type: string }[] }, actorId: string = SESSION_USER_ID) {
   const to = (input.to ?? []).map((v) => v.trim()).filter(Boolean);
   const cc = (input.cc ?? []).map((v) => v.trim()).filter(Boolean);
   if (to.length === 0) return { ok: false as const, status: 422, code: "no_recipients", message: "Add at least one recipient." };
@@ -323,7 +424,8 @@ export function sendMail(role: WorkspaceRole, input: { to: string[]; cc?: string
   const msg: MailMessage = {
     id: `s-${Math.floor(Date.now() / 1000) % 100000}`,
     folder: "sent",
-    fromId: SESSION_USER_ID,
+    ownerId: actorId,
+    fromId: actorId,
     to,
     cc: cc.length ? cc : undefined,
     subject: input.subject?.trim() || "(no subject)",
@@ -337,14 +439,19 @@ export function sendMail(role: WorkspaceRole, input: { to: string[]; cc?: string
       : undefined,
   };
   store().mail.unshift(msg);
-  writeAudit({ actorId: SESSION_USER_ID, action: "Mail sent", resource: msg.subject, result: "Success", context: `${to.length} recipient(s)${cc.length ? `, ${cc.length} cc` : ""}${atts.length ? `, ${atts.length} attachment(s)` : ""}` });
+  writeAudit({ actorId, action: "Mail sent", resource: msg.subject, result: "Success", context: `${to.length} recipient(s)${cc.length ? `, ${cc.length} cc` : ""}${atts.length ? `, ${atts.length} attachment(s)` : ""}` });
   return { ok: true as const, message: msg };
 }
 
-export function saveDraft(role: WorkspaceRole, input: Partial<MailMessage> & { draftId?: string }) {
+export function saveDraft(role: WorkspaceRole, input: Partial<MailMessage> & { draftId?: string }, actorId: string = SESSION_USER_ID) {
   const s = store();
   if (input.draftId) {
     const existing = s.mail.find((m) => m.id === input.draftId && m.folder === "drafts");
+    // IAM: a draft may only be edited by its own mailbox owner.
+    if (existing && (existing.ownerId ?? SESSION_USER_ID) !== actorId) {
+      writeAudit({ actorId, action: "Mail draft update denied", resource: existing.subject || "(draft)", result: "Blocked", severity: "Warning", context: "Caller is not the mailbox owner" });
+      return { ok: false as const, status: 403, code: "forbidden", message: "This draft belongs to another mailbox." };
+    }
     if (existing) {
       Object.assign(existing, {
         to: input.to ?? existing.to,
@@ -360,7 +467,8 @@ export function saveDraft(role: WorkspaceRole, input: Partial<MailMessage> & { d
   const draft: MailMessage = {
     id: `d-${Math.floor(Date.now() / 1000) % 100000}`,
     folder: "drafts",
-    fromId: SESSION_USER_ID,
+    ownerId: actorId,
+    fromId: actorId,
     to: input.to ?? [],
     subject: input.subject ?? "",
     preview: (input.body ?? "").replace(/\s+/g, " ").trim().slice(0, 140),
@@ -372,21 +480,31 @@ export function saveDraft(role: WorkspaceRole, input: Partial<MailMessage> & { d
   return { ok: true as const, draft };
 }
 
-export function retryMail(role: WorkspaceRole, id: string) {
+export function retryMail(role: WorkspaceRole, id: string, actorId: string = SESSION_USER_ID) {
   const m = store().mail.find((x) => x.id === id);
   if (!m || m.folder !== "sent") return { ok: false as const, status: 404, code: "not_found", message: "Message not found in Sent." };
+  // IAM: ownership — only the sender's own mailbox is retryable.
+  if ((m.ownerId ?? SESSION_USER_ID) !== actorId) {
+    writeAudit({ actorId, action: "Mail retry denied", resource: m.subject, result: "Blocked", severity: "Warning", context: "Caller is not the mailbox owner" });
+    return { ok: false as const, status: 403, code: "forbidden", message: "This message belongs to another mailbox." };
+  }
   if (m.sendStatus !== "Failed" && m.sendStatus !== "Pending") {
     return { ok: false as const, status: 409, code: "not_retryable", message: `This message is already ${(m.sendStatus ?? "sent").toLowerCase()}.` };
   }
   m.sendStatus = "Sent";
   m.sendDetail = undefined;
-  writeAudit({ actorId: SESSION_USER_ID, action: "Mail retry succeeded", resource: m.subject, result: "Success", context: "Delivery retried after failure" });
+  writeAudit({ actorId, action: "Mail retry succeeded", resource: m.subject, result: "Success", context: "Delivery retried after failure" });
   return { ok: true as const, message: m };
 }
 
-export function markMail(role: WorkspaceRole, id: string, patch: { read?: boolean; starred?: boolean; archive?: boolean }) {
+export function markMail(role: WorkspaceRole, id: string, patch: { read?: boolean; starred?: boolean; archive?: boolean }, actorId: string = SESSION_USER_ID) {
   const m = store().mail.find((x) => x.id === id);
   if (!m) return { ok: false as const, status: 404, code: "not_found", message: "Message not found." };
+  // IAM: mail state may only be changed inside the owner's mailbox (§19).
+  if ((m.ownerId ?? SESSION_USER_ID) !== actorId) {
+    writeAudit({ actorId, action: "Mail update denied", resource: m.subject, result: "Blocked", severity: "Warning", context: "Caller is not the mailbox owner" });
+    return { ok: false as const, status: 403, code: "forbidden", message: "This message belongs to another mailbox." };
+  }
   if (patch.read !== undefined) m.read = patch.read;
   if (patch.starred !== undefined) m.starred = patch.starred;
   if (patch.archive) m.folder = "archive";
@@ -404,6 +522,7 @@ const SENSITIVE_DOC_ACTIONS = new Set(["download", "share"]);
 export function documentAction(
   role: WorkspaceRole,
   input: { action: "download" | "share" | "rename" | "move" | "upload"; docId?: string; name?: string; category?: string; toEmployeeId?: string; fileMeta?: { name: string; sizeKb: number; type: string } },
+  actorId: string = SESSION_USER_ID,
 ) {
   const s = store();
 
@@ -416,14 +535,14 @@ export function documentAction(
       name: f.name,
       type: (f.type?.toUpperCase() || "DOCX") as WorkspaceDoc["type"],
       category: "Personal",
-      ownerId: SESSION_USER_ID,
+      ownerId: actorId,
       sizeKb: f.sizeKb,
       modified: Date.now(),
       sensitivity: "Internal",
       description: "Uploaded from My Documents. File content remains in your enterprise storage; Qubit One holds the record.",
     };
     s.documents.unshift(doc);
-    writeAudit({ actorId: SESSION_USER_ID, action: "Document uploaded", resource: doc.name, result: "Success", context: "My Documents · metadata record only" });
+    writeAudit({ actorId, action: "Document uploaded", resource: doc.name, result: "Success", context: "My Documents · metadata record only" });
     return { ok: true as const, doc };
   }
 
@@ -431,7 +550,7 @@ export function documentAction(
   if (!doc) return { ok: false as const, status: 404, code: "not_found", message: "Document not found." };
 
   if (SENSITIVE_DOC_ACTIONS.has(input.action) && doc.sensitivity === "Restricted") {
-    writeAudit({ actorId: SESSION_USER_ID, action: `Document ${input.action} denied`, resource: doc.name, result: "Blocked", severity: "Warning", context: "Restricted document — HR-managed access only" });
+    writeAudit({ actorId, action: `Document ${input.action} denied`, resource: doc.name, result: "Blocked", severity: "Warning", context: "Restricted document — HR-managed access only" });
     return { ok: false as const, status: 403, code: "restricted", message: "This document is restricted. Access is managed by HR — request access from the document owner." };
   }
 
@@ -445,16 +564,16 @@ export function documentAction(
   if (
     SENSITIVE_DOC_ACTIONS.has(input.action) &&
     doc.sensitivity === "Confidential" &&
-    doc.ownerId !== SESSION_USER_ID &&
+    doc.ownerId !== actorId &&
     role !== "administrator" &&
     role !== "dept-head"
   ) {
-    writeAudit({ actorId: SESSION_USER_ID, action: `Document ${input.action} denied`, resource: doc.name, result: "Blocked", severity: "Warning", context: "Confidential document — only the owner, an administrator or a department head may download or share it" });
+    writeAudit({ actorId, action: `Document ${input.action} denied`, resource: doc.name, result: "Blocked", severity: "Warning", context: "Confidential document — only the owner, an administrator or a department head may download or share it" });
     return { ok: false as const, status: 403, code: "confidential", message: "Confidential documents can be downloaded or shared only by the document owner or an administrator — request access from the owner." };
   }
 
   if (input.action === "download") {
-    writeAudit({ actorId: SESSION_USER_ID, action: "Document downloaded", resource: doc.name, result: "Success", context: `Sensitivity: ${doc.sensitivity}` });
+    writeAudit({ actorId, action: "Document downloaded", resource: doc.name, result: "Success", context: `Sensitivity: ${doc.sensitivity}` });
     return { ok: true as const, doc };
   }
 
@@ -462,11 +581,11 @@ export function documentAction(
     if (!input.toEmployeeId || !employees.some((e) => e.id === input.toEmployeeId)) {
       return { ok: false as const, status: 422, code: "invalid_recipient", message: "Choose a colleague to share with." };
     }
-    writeAudit({ actorId: SESSION_USER_ID, action: "Document shared", resource: doc.name, result: "Success", context: `Shared with ${employees.find((e) => e.id === input.toEmployeeId)?.name}` });
+    writeAudit({ actorId, action: "Document shared", resource: doc.name, result: "Success", context: `Shared with ${employees.find((e) => e.id === input.toEmployeeId)?.name}` });
     return { ok: true as const, doc };
   }
 
-  if (doc.ownerId !== SESSION_USER_ID) {
+  if (doc.ownerId !== actorId) {
     return { ok: false as const, status: 403, code: "forbidden", message: "Only the owner can rename or move this document." };
   }
   if (input.action === "rename") {
@@ -492,11 +611,11 @@ export function documentAction(
 
 const EDITABLE_PROFILE_FIELDS = new Set(["phone", "about", "skills"]);
 
-export function updateProfile(role: WorkspaceRole, patch: Record<string, unknown>) {
+export function updateProfile(role: WorkspaceRole, patch: Record<string, unknown>, actorId: string = SESSION_USER_ID) {
   const keys = Object.keys(patch);
   const illegal = keys.filter((k) => !EDITABLE_PROFILE_FIELDS.has(k));
   if (illegal.length > 0) {
-    writeAudit({ actorId: SESSION_USER_ID, action: "Profile update denied", resource: illegal.join(", "), result: "Blocked", severity: "Warning", context: "Attempted edit of company-controlled fields" });
+    writeAudit({ actorId, action: "Profile update denied", resource: illegal.join(", "), result: "Blocked", severity: "Warning", context: "Attempted edit of company-controlled fields" });
     return { ok: false as const, status: 403, code: "company_controlled", message: `These fields are managed by authorized HR workflows: ${illegal.join(", ")}.` };
   }
   if (patch.phone !== undefined) {
@@ -511,7 +630,7 @@ export function updateProfile(role: WorkspaceRole, patch: Record<string, unknown
   if (patch.skills !== undefined && !Array.isArray(patch.skills)) {
     return { ok: false as const, status: 422, code: "invalid_skills", message: "Skills must be a list." };
   }
-  writeAudit({ actorId: SESSION_USER_ID, action: "Profile updated", resource: keys.join(", "), result: "Success", context: "Self-service fields only" });
+  writeAudit({ actorId, action: "Profile updated", resource: keys.join(", "), result: "Success", context: "Self-service fields only" });
   return { ok: true as const, updated: keys };
 }
 
@@ -549,8 +668,8 @@ export function updateProfile(role: WorkspaceRole, patch: Record<string, unknown
 //     never become two tasks.
 // ============================================================
 
-/** Session display name (demo identity is fixed). */
-const sessionName = employees.find((e) => e.id === SESSION_USER_ID)?.name ?? SESSION_USER_ID;
+/** Session display name for the acting identity. */
+const nameOfUser = (id: string) => employees.find((e) => e.id === id)?.name ?? id;
 
 /** Fixture record + session minutes merged into the wire shape.
  *  Phase 20: also stamps `promoted` onto action items from the
@@ -586,12 +705,12 @@ export interface MeetingsScopePayload {
   now: number;
 }
 
-export function listMeetings(role: WorkspaceRole): MeetingsScopePayload {
+export function listMeetings(role: WorkspaceRole, actorId: string = SESSION_USER_ID): MeetingsScopePayload {
   const s = store();
   // Personal participation scope — organizer or invited participant.
   // (Same boundary as listTasks; meetings are personal workspace data.)
   const meetings = s.meetings
-    .filter((m) => m.organizerId === SESSION_USER_ID || m.participantIds.includes(SESSION_USER_ID))
+    .filter((m) => m.organizerId === actorId || m.participantIds.includes(actorId))
     .sort((a, b) => a.start - b.start)
     .map((m) => materializeMeeting(s, m));
   const scoped = role === "employee" || role === "sales-exec";
@@ -620,11 +739,11 @@ export function listMeetings(role: WorkspaceRole): MeetingsScopePayload {
  * render "just now" against the workspace timeline every other surface
  * anchors to — consistent with relTime's contract in workspace-data.
  */
-function notifyMeetingParticipants(meeting: Meeting, kind: "created" | "cancelled", actorName: string): number {
+function notifyMeetingParticipants(meeting: Meeting, kind: "created" | "cancelled", actorName: string, actorId: string): number {
   const s = store();
   let notified = 0;
   for (const pid of meeting.participantIds) {
-    if (pid === SESSION_USER_ID) continue; // the acting organizer/manager never notifies themselves
+    if (pid === actorId) continue; // the acting organizer/manager never notifies themselves
     const id = `ntf-mtg-${meeting.id}-${kind}-${pid}`;
     if (s.notifications.some((n) => n.id === id)) continue; // idempotent
     const when = `${fmtDate(meeting.start)} · ${fmtTime(meeting.start)}–${fmtTime(meeting.end)}`;
@@ -656,10 +775,10 @@ function notifyMeetingParticipants(meeting: Meeting, kind: "created" | "cancelle
  *  invite is never returned to another viewer, whatever role they preview.
  *  The mobile read-state overlay stays in mobile-server (store().notifRead)
  *  on top of this list. */
-export function listNotifications(role: WorkspaceRole) {
+export function listNotifications(role: WorkspaceRole, actorId: string = SESSION_USER_ID) {
   const s = store();
   const notifications = s.notifications
-    .filter((n) => n.recipientId === SESSION_USER_ID)
+    .filter((n) => n.recipientId === actorId)
     .sort((a, b) => b.ts - a.ts);
   const scoped = role === "employee" || role === "sales-exec";
   return {
@@ -669,20 +788,20 @@ export function listNotifications(role: WorkspaceRole) {
   };
 }
 
-export function getMeeting(role: WorkspaceRole, id: string) {
+export function getMeeting(role: WorkspaceRole, id: string, actorId: string = SESSION_USER_ID) {
   const s = store();
   const m = s.meetings.find((x) => x.id === id);
   if (!m) return { ok: false as const, status: 404, code: "not_found", message: "Meeting not found." };
-  const participating = m.organizerId === SESSION_USER_ID || m.participantIds.includes(SESSION_USER_ID);
+  const participating = m.organizerId === actorId || m.participantIds.includes(actorId);
   const governance = role === "administrator" || role === "dept-head";
   if (!participating && !governance) {
-    writeAudit({ actorId: SESSION_USER_ID, action: "Meeting detail denied", resource: m.title, result: "Blocked", severity: "Warning", source: "Workspace", context: "Caller is neither the organizer nor a participant" });
+    writeAudit({ actorId, action: "Meeting detail denied", resource: m.title, result: "Blocked", severity: "Warning", source: "Workspace", context: "Caller is neither the organizer nor a participant" });
     return { ok: false as const, status: 403, code: "forbidden", message: "You are not a participant of this meeting." };
   }
   return { ok: true as const, meeting: materializeMeeting(s, m) };
 }
 
-export function cancelMeeting(role: WorkspaceRole, input: { id: string; reason: string }) {
+export function cancelMeeting(role: WorkspaceRole, input: { id: string; reason: string }, actorId: string = SESSION_USER_ID) {
   const s = store();
   const m = s.meetings.find((x) => x.id === input.id);
   if (!m) return { ok: false as const, status: 404, code: "not_found", message: "Meeting not found." };
@@ -694,10 +813,10 @@ export function cancelMeeting(role: WorkspaceRole, input: { id: string; reason: 
       message: m.status === "Cancelled" ? "This meeting was already cancelled." : `A meeting that is ${m.status.toLowerCase()} cannot be cancelled.`,
     };
   }
-  const isOrganizer = m.organizerId === SESSION_USER_ID;
+  const isOrganizer = m.organizerId === actorId;
   const governance = role === "administrator" || role === "dept-head";
   if (!isOrganizer && !governance) {
-    writeAudit({ actorId: SESSION_USER_ID, action: "Meeting cancellation denied", resource: `${m.title} (${m.id})`, result: "Blocked", severity: "Warning", source: "Workspace", context: "Only the organizer — or an administrator / department head — can cancel a meeting" });
+    writeAudit({ actorId, action: "Meeting cancellation denied", resource: `${m.title} (${m.id})`, result: "Blocked", severity: "Warning", source: "Workspace", context: "Only the organizer — or an administrator / department head — can cancel a meeting" });
     return { ok: false as const, status: 403, code: "forbidden", message: "Only the meeting organizer — or an administrator / department head — can cancel this meeting." };
   }
   const reason = input.reason?.trim() ?? "";
@@ -710,9 +829,9 @@ export function cancelMeeting(role: WorkspaceRole, input: { id: string; reason: 
   const before = s.events.length;
   s.events = s.events.filter((e) => e.meetingId !== m.id);
   const removedEvents = before - s.events.length;
-  const notified = notifyMeetingParticipants(m, "cancelled", sessionName);
+  const notified = notifyMeetingParticipants(m, "cancelled", nameOfUser(actorId), actorId);
   writeAudit({
-    actorId: SESSION_USER_ID,
+    actorId,
     action: "Meeting cancelled",
     resource: `${m.id} — ${m.title}`,
     result: "Success",
@@ -733,12 +852,12 @@ export function cancelMeeting(role: WorkspaceRole, input: { id: string; reason: 
 // organizer records minutes; the fixture-shaped record is never mutated.
 // Every read path materializes the map entries onto the meeting (see
 // materializeMeeting) so list, ?id= detail and the calendar drawer agree.
-export function saveMeetingNotes(role: WorkspaceRole, input: { id: string; text: string }) {
+export function saveMeetingNotes(role: WorkspaceRole, input: { id: string; text: string }, actorId: string = SESSION_USER_ID) {
   const s = store();
   const m = s.meetings.find((x) => x.id === input.id);
   if (!m) return { ok: false as const, status: 404, code: "not_found", message: "Meeting not found." };
-  if (m.organizerId !== SESSION_USER_ID) {
-    writeAudit({ actorId: SESSION_USER_ID, action: "Meeting note denied", resource: `${m.id} — ${m.title}`, result: "Blocked", severity: "Warning", source: "Workspace", context: "Only the organizer can record minutes" });
+  if (m.organizerId !== actorId) {
+    writeAudit({ actorId, action: "Meeting note denied", resource: `${m.id} — ${m.title}`, result: "Blocked", severity: "Warning", source: "Workspace", context: "Only the organizer can record minutes" });
     return { ok: false as const, status: 403, code: "forbidden", message: "Only the meeting organizer can record notes for this meeting." };
   }
   if (m.status !== "Completed") {
@@ -746,19 +865,19 @@ export function saveMeetingNotes(role: WorkspaceRole, input: { id: string; text:
   }
   const text = input.text?.trim() ?? "";
   if (text.length < 2) return { ok: false as const, status: 422, code: "invalid_note", message: "A note of at least 2 characters is required." };
-  const entry = { at: Date.now(), by: SESSION_USER_ID, text };
+  const entry = { at: Date.now(), by: actorId, text };
   const existing = s.meetingNotes.get(m.id) ?? [];
   s.meetingNotes.set(m.id, [...existing, entry]);
-  writeAudit({ actorId: SESSION_USER_ID, action: "Meeting notes saved", resource: `${m.id} — ${m.title}`, result: "Success", source: "Workspace", context: "Note appended to the meeting record" });
+  writeAudit({ actorId, action: "Meeting notes saved", resource: `${m.id} — ${m.title}`, result: "Success", source: "Workspace", context: "Note appended to the meeting record" });
   return { ok: true as const, meeting: materializeMeeting(s, m), message: "Note added to the meeting record." };
 }
 
-export function addMeetingAction(role: WorkspaceRole, input: { id: string; title: string; ownerId?: string; due?: number | null; /** Phase 20: also create a task in the ONE task store */ asTask?: boolean }) {
+export function addMeetingAction(role: WorkspaceRole, input: { id: string; title: string; ownerId?: string; due?: number | null; /** Phase 20: also create a task in the ONE task store */ asTask?: boolean }, actorId: string = SESSION_USER_ID) {
   const s = store();
   const m = s.meetings.find((x) => x.id === input.id);
   if (!m) return { ok: false as const, status: 404, code: "not_found", message: "Meeting not found." };
-  if (m.organizerId !== SESSION_USER_ID) {
-    writeAudit({ actorId: SESSION_USER_ID, action: "Meeting action item denied", resource: `${m.id} — ${m.title}`, result: "Blocked", severity: "Warning", source: "Workspace", context: "Only the organizer can record action items" });
+  if (m.organizerId !== actorId) {
+    writeAudit({ actorId, action: "Meeting action item denied", resource: `${m.id} — ${m.title}`, result: "Blocked", severity: "Warning", source: "Workspace", context: "Only the organizer can record action items" });
     return { ok: false as const, status: 403, code: "forbidden", message: "Only the meeting organizer can add action items." };
   }
   if (m.status !== "Completed") {
@@ -766,7 +885,7 @@ export function addMeetingAction(role: WorkspaceRole, input: { id: string; title
   }
   const title = input.title?.trim() ?? "";
   if (title.length < 4) return { ok: false as const, status: 422, code: "invalid_title", message: "Describe the action item (4+ characters)." };
-  const ownerId = input.ownerId ?? SESSION_USER_ID;
+  const ownerId = input.ownerId ?? actorId;
   if (!employees.some((e) => e.id === ownerId)) {
     return { ok: false as const, status: 422, code: "invalid_owner", message: "Choose a valid owner." };
   }
@@ -786,7 +905,7 @@ export function addMeetingAction(role: WorkspaceRole, input: { id: string; title
       due: input.due ?? null,
       source: "Meeting action item",
       related: { label: m.title, kind: "Meeting", ref: m.id },
-    });
+    }, actorId);
     if (!taskRes.ok) return taskRes;
     taskId = taskRes.task.id;
   }
@@ -802,10 +921,10 @@ export function addMeetingAction(role: WorkspaceRole, input: { id: string; title
 
   // ONE audit event carries both facts when a task is also created.
   if (taskId) {
-    writeAudit({ actorId: SESSION_USER_ID, action: "Meeting action item recorded", resource: `${m.id} — ${title}`, result: "Success", source: "Workspace", context: `Owner: ${employees.find((e) => e.id === ownerId)?.name ?? ownerId} · task created (${taskId})` });
+    writeAudit({ actorId, action: "Meeting action item recorded", resource: `${m.id} — ${title}`, result: "Success", source: "Workspace", context: `Owner: ${employees.find((e) => e.id === ownerId)?.name ?? ownerId} · task created (${taskId})` });
     return { ok: true as const, meeting: materializeMeeting(s, m), taskId, message: "Action item recorded on the meeting — task added to My Tasks." };
   }
-  writeAudit({ actorId: SESSION_USER_ID, action: "Meeting action item added", resource: `${m.id} — ${title}`, result: "Success", source: "Workspace", context: `Owner: ${employees.find((e) => e.id === ownerId)?.name ?? ownerId}` });
+  writeAudit({ actorId, action: "Meeting action item added", resource: `${m.id} — ${title}`, result: "Success", source: "Workspace", context: `Owner: ${employees.find((e) => e.id === ownerId)?.name ?? ownerId}` });
   return { ok: true as const, meeting: materializeMeeting(s, m), message: "Action item recorded on the meeting." };
 }
 
@@ -817,13 +936,13 @@ export function addMeetingAction(role: WorkspaceRole, input: { id: string; title
  * promotion is tracked per meeting/index so an item can never become two
  * tasks (409 on repeat).
  */
-export function promoteMeetingAction(role: WorkspaceRole, input: { id: string; index: number }) {
+export function promoteMeetingAction(role: WorkspaceRole, input: { id: string; index: number }, actorId: string = SESSION_USER_ID) {
   const s = store();
   const m = s.meetings.find((x) => x.id === input.id);
   if (!m) return { ok: false as const, status: 404, code: "not_found", message: "Meeting not found." };
-  const participating = m.organizerId === SESSION_USER_ID || m.participantIds.includes(SESSION_USER_ID);
+  const participating = m.organizerId === actorId || m.participantIds.includes(actorId);
   if (!participating) {
-    writeAudit({ actorId: SESSION_USER_ID, action: "Meeting action promotion denied", resource: `${m.id} — ${m.title}`, result: "Blocked", severity: "Warning", source: "Workspace", context: "Caller is neither the organizer nor a participant" });
+    writeAudit({ actorId, action: "Meeting action promotion denied", resource: `${m.id} — ${m.title}`, result: "Blocked", severity: "Warning", source: "Workspace", context: "Caller is neither the organizer nor a participant" });
     return { ok: false as const, status: 403, code: "forbidden", message: "You are not a participant of this meeting." };
   }
   const item = materializeMeeting(s, m).actionItems?.[input.index];
@@ -838,11 +957,11 @@ export function promoteMeetingAction(role: WorkspaceRole, input: { id: string; i
     due: item.due,
     source: "Meeting action item",
     related: { label: m.title, kind: "Meeting", ref: m.id },
-  });
+  }, actorId);
   if (!taskRes.ok) return taskRes;
   promoted.add(input.index);
   s.meetingActionsPromoted.set(m.id, promoted);
-  writeAudit({ actorId: SESSION_USER_ID, action: "Meeting action item promoted to task", resource: `${m.id} — ${item.title}`, result: "Success", source: "Workspace", context: `Task ${taskRes.task.id} created in My Tasks` });
+  writeAudit({ actorId, action: "Meeting action item promoted to task", resource: `${m.id} — ${item.title}`, result: "Success", source: "Workspace", context: `Task ${taskRes.task.id} created in My Tasks` });
   return { ok: true as const, task: taskRes.task, message: `"${item.title}" was added to My Tasks.` };
 }
 
@@ -853,7 +972,7 @@ export function promoteMeetingAction(role: WorkspaceRole, input: { id: string; i
  * SAME store that seeds the notification center, and the creation is
  * audited with participant count and time.
  */
-export function createMeeting(role: WorkspaceRole, input: { title: string; agenda?: string; start: number; end: number; location?: string; platform?: string; participantIds: string[] }) {
+export function createMeeting(role: WorkspaceRole, input: { title: string; agenda?: string; start: number; end: number; location?: string; platform?: string; participantIds: string[] }, actorId: string = SESSION_USER_ID) {
   const s = store();
   const title = input.title?.trim() ?? "";
   if (!title) return { ok: false as const, status: 422, code: "invalid_title", message: "Give the meeting a title." };
@@ -880,7 +999,7 @@ export function createMeeting(role: WorkspaceRole, input: { title: string; agend
   if (unknown.length > 0) {
     return { ok: false as const, status: 400, code: "invalid_participants", message: `Unknown participant${unknown.length === 1 ? "" : "s"}: ${unknown.join(", ")}.` };
   }
-  const participantIds = Array.from(new Set([SESSION_USER_ID, ...cleaned])); // organizer joins and duplicates collapse
+  const participantIds = Array.from(new Set([actorId, ...cleaned])); // organizer joins and duplicates collapse
   if (participantIds.length > 12) {
     return { ok: false as const, status: 422, code: "too_many_participants", message: "A meeting can have at most 12 participants." };
   }
@@ -892,7 +1011,7 @@ export function createMeeting(role: WorkspaceRole, input: { title: string; agend
     title,
     start: input.start,
     end: input.end,
-    organizerId: SESSION_USER_ID,
+    organizerId: actorId,
     participantIds,
     location: input.location?.trim() || platform,
     platform,
@@ -909,14 +1028,14 @@ export function createMeeting(role: WorkspaceRole, input: { title: string; agend
     type: "Meeting",
     start: meeting.start,
     end: meeting.end,
-    organizerId: SESSION_USER_ID,
+    organizerId: actorId,
     meetingId: meeting.id,
     location: meeting.location,
   };
   s.events.push(event);
-  const notified = notifyMeetingParticipants(meeting, "created", sessionName);
+  const notified = notifyMeetingParticipants(meeting, "created", nameOfUser(actorId), actorId);
   writeAudit({
-    actorId: SESSION_USER_ID,
+    actorId,
     action: "Meeting scheduled",
     resource: `${meeting.id} — ${title}`,
     result: "Success",
@@ -935,7 +1054,7 @@ export function createMeeting(role: WorkspaceRole, input: { title: string; agend
 // such as focus blocks and deadlines. Meeting invites WITH participants run
 // through the Meetings module; this records the entry on the session
 // calendar server-side so the screen holds no client-only business state.
-export function createCalendarEvent(role: WorkspaceRole, input: { title: string; type: CalendarEvent["type"]; start: number; end: number; location?: string }) {
+export function createCalendarEvent(role: WorkspaceRole, input: { title: string; type: CalendarEvent["type"]; start: number; end: number; location?: string }, actorId: string = SESSION_USER_ID) {
   const title = input.title?.trim() ?? "";
   if (title.length < 3) return { ok: false as const, status: 422, code: "invalid_title", message: "Give the event a title (at least 3 characters)." };
   const VALID_TYPES: CalendarEvent["type"][] = ["Meeting", "Deadline", "Company event", "Leave", "Focus time"];
@@ -951,10 +1070,10 @@ export function createCalendarEvent(role: WorkspaceRole, input: { title: string;
     type: input.type,
     start: input.start,
     end: input.end,
-    organizerId: SESSION_USER_ID,
+    organizerId: actorId,
     location: input.location?.trim() || undefined,
   };
   store().events.push(ev);
-  writeAudit({ actorId: SESSION_USER_ID, action: "Calendar event created", resource: title, result: "Success", source: "Workspace", context: `${ev.type} added from My Calendar` });
+  writeAudit({ actorId, action: "Calendar event created", resource: title, result: "Success", source: "Workspace", context: `${ev.type} added from My Calendar` });
   return { ok: true as const, event: ev, message: `"${title}" was added to your calendar.` };
 }

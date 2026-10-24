@@ -82,7 +82,7 @@ const SEV_DOT: Record<string, string> = {
 };
 
 export function AuditLogScreen() {
-  const { can, role } = useRole();
+  const { identity, can, role } = useRole();
   const { toast } = useToast();
   const isAdmin = can("audit.export") && can("security.admin");
 
@@ -120,7 +120,7 @@ export function AuditLogScreen() {
           action,
           result,
           severity,
-          actor: isAdmin ? actor : "sagar",
+          actor: isAdmin ? actor : (identity?.userId ?? "sagar"),
           range,
           page,
           pageSize: 12,

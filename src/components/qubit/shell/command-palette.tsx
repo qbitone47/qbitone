@@ -25,15 +25,22 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { SCREENS, ScreenId, ScreenParams, screensByModule } from "@/lib/qubit/screens";
+import { SCREENS, ScreenId, ScreenParams, screensByModule, type ScreenMeta } from "@/lib/qubit/screens";
 import { useQubitNav } from "../nav-context";
-import { useRole, VIEW_AS_ROLES } from "../role-context";
+import { useRole } from "../role-context";
 import { authedFetch } from "@/lib/qubit/api";
 
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { navigate } = useQubitNav();
-  const { role, setRole } = useRole();
+  const { entitlements, authState } = useRole();
   const router = useRouter();
+  // IAM: the palette only offers screens the signed-in identity may open —
+  // computed server-side. (The server still enforces every boundary.)
+  const allowed = React.useMemo(() => new Set(authState === "authenticated" ? entitlements?.allowedScreens ?? [] : []), [authState, entitlements]);
+  const filterAllowed = React.useCallback(
+    (screens: ScreenMeta[]): ScreenMeta[] => screens.filter((s) => allowed.has(s.id)),
+    [allowed],
+  );
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -58,7 +65,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
         <CommandEmpty>No results found.</CommandEmpty>
         <RecordsSection onSelect={(screen, params) => run(() => navigate(screen, params))} />
         <CommandGroup heading="Sales">
-          {screensByModule("sales").map((s) => (
+          {filterAllowed(screensByModule("sales")).map((s) => (
             <CommandItem
               key={s.id}
               value={`${s.num} ${s.title} ${s.shortTitle} sales lead customer opportunity pipeline forecast quotation order whatsapp visit expense`}
@@ -71,7 +78,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="CEO Command Center">
-          {screensByModule("executive").map((s) => (
+          {filterAllowed(screensByModule("executive")).map((s) => (
             <CommandItem
               key={s.id}
               value={`${s.num} ${s.title} ${s.shortTitle} ceo executive command center revenue sales finance people marketing service inventory field alerts approvals ai kpi reports`}
@@ -84,7 +91,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="Enterprise">
-          {screensByModule("enterprise").map((s) => (
+          {filterAllowed(screensByModule("enterprise")).map((s) => (
             <CommandItem
               key={s.id}
               value={`${s.num} ${s.title} ${s.shortTitle}`}
@@ -97,7 +104,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="Design System">
-          {screensByModule("design-system").map((s) => (
+          {filterAllowed(screensByModule("design-system")).map((s) => (
             <CommandItem
               key={s.id}
               value={`${s.num} ${s.title} ${s.shortTitle} design system`}
@@ -110,7 +117,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="Employee Workspace">
-          {screensByModule("workspace").map((s) => (
+          {filterAllowed(screensByModule("workspace")).map((s) => (
             <CommandItem
               key={s.id}
               value={`${s.num} ${s.title} ${s.shortTitle} workspace home tasks calendar approvals documents`}
@@ -123,7 +130,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="People & Mail">
-          {[...screensByModule("people"), ...screensByModule("mail")].map((s) => (
+          {filterAllowed([...screensByModule("people"), ...screensByModule("mail")]).map((s) => (
             <CommandItem
               key={s.id}
               value={`${s.num} ${s.title} ${s.shortTitle} people directory mail inbox compose sent search`}
@@ -136,7 +143,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="Security">
-          {screensByModule("security").map((s) => (
+          {filterAllowed(screensByModule("security")).map((s) => (
             <CommandItem
               key={s.id}
               value={`${s.num} ${s.title} ${s.shortTitle} security sign-in login mfa audit`}
@@ -149,11 +156,6 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="Actions">
-          {VIEW_AS_ROLES.map((r) => (
-            <CommandItem key={`role-${r.id}`} value={`preview as role ${r.label}`} onSelect={() => run(() => setRole(r.id))}>
-              <span className="text-[13px]">Preview as {r.label}</span>
-            </CommandItem>
-          ))}
           <CommandItem value="toggle sidebar" onSelect={() => run(() => router.refresh())}>
             <span className="text-[13px]">Refresh view</span>
           </CommandItem>

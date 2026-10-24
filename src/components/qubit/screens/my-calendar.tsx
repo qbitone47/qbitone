@@ -418,8 +418,9 @@ function evDurationMin(e: CalendarEvent) {
 }
 
 function EventBlock({ event: e, dayMid, onOpen }: { event: CalendarEvent; dayMid: number; onOpen: () => void }) {
+  const { identity } = useRole();
   const style = TYPE_STYLES[e.type];
-  const privateEvent = e.visibleTo === "organizer-only" && e.organizerId !== "sagar";
+  const privateEvent = e.visibleTo === "organizer-only" && e.organizerId !== (identity?.userId ?? "sagar");
   const top = (evMinutes(e) / 60) * HOUR_H;
   const height = Math.max(22, (evDurationMin(e) / 60) * HOUR_H - 2);
   return (
@@ -451,7 +452,8 @@ function EventBlock({ event: e, dayMid, onOpen }: { event: CalendarEvent; dayMid
 }
 
 function AllDayChip({ event: e, onOpen }: { event: CalendarEvent; onOpen: () => void }) {
-  const privateEvent = e.visibleTo === "organizer-only" && e.organizerId !== "sagar";
+  const { identity } = useRole();
+  const privateEvent = e.visibleTo === "organizer-only" && e.organizerId !== (identity?.userId ?? "sagar");
   const style = TYPE_STYLES[e.type];
   return (
     <button
@@ -478,6 +480,7 @@ function DayView({
   allDayOn: (d: number) => CalendarEvent[];
   onOpen: (e: CalendarEvent) => void;
 }) {
+  const { identity } = useRole();
   const hours = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i);
   const timed = timedOn(dayMid);
   const allDay = allDayOn(dayMid);
@@ -499,7 +502,7 @@ function DayView({
               <div className="flex-1 space-y-2">
                 {slotEvents.length === 0 && <div className="h-6 rounded-md bg-slate-50/60" aria-hidden />}
                 {slotEvents.map((e) => {
-                  const privateEvent = e.visibleTo === "organizer-only" && e.organizerId !== "sagar";
+                  const privateEvent = e.visibleTo === "organizer-only" && e.organizerId !== (identity?.userId ?? "sagar");
                   return (
                     <button
                       key={e.id}
@@ -556,6 +559,7 @@ function MonthGrid({
   onOpenDay: (d: number) => void;
   onOpenEvent: (e: CalendarEvent) => void;
 }) {
+  const { identity } = useRole();
   return (
     <div className="qubit-card overflow-hidden">
       <div className="grid grid-cols-7 border-b border-slate-200/90 bg-slate-50/80">
@@ -595,7 +599,7 @@ function MonthGrid({
               </div>
               <div className="space-y-0.5">
                 {shown.map((e) => {
-                  const privateEvent = e.visibleTo === "organizer-only" && e.organizerId !== "sagar";
+                  const privateEvent = e.visibleTo === "organizer-only" && e.organizerId !== (identity?.userId ?? "sagar");
                   return (
                     <button
                       key={e.id}
@@ -638,8 +642,9 @@ function EventDrawer({
   onNavigate: (s: Parameters<ReturnType<typeof useQubitNav>["navigate"]>[0], p?: Parameters<ReturnType<typeof useQubitNav>["navigate"]>[1]) => void;
 }) {
   const { toast } = useToast();
+  const { identity } = useRole();
   if (!event) return null;
-  const privateEvent = event.visibleTo === "organizer-only" && event.organizerId !== "sagar";
+  const privateEvent = event.visibleTo === "organizer-only" && event.organizerId !== (identity?.userId ?? "sagar");
   const organizer = getEmployee(event.organizerId);
   const meeting = event.meetingId ? meetingsById.get(event.meetingId) : undefined;
   return (

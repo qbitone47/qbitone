@@ -32,6 +32,7 @@ import {
 import { cn } from "@/lib/utils";
 import { screensByModule, type ScreenId, type ScreenModule } from "@/lib/qubit/screens";
 import { useQubitNav } from "../nav-context";
+import { useRole } from "../role-context";
 
 export interface SidebarModule {
   id: string;
@@ -120,17 +121,33 @@ export function SidebarContent({
   onNavigate?: () => void;
 }) {
   const { screen, navigate } = useQubitNav();
-  // Executive module starts expanded (Phase 5); workspace starts collapsed.
+  // IAM: navigation is permission-aware — the server-computed entitlements
+  // decide which entries exist. A module the user cannot access never
+  // renders (and its data APIs independently enforce the same boundary).
+  const { entitlements, authState } = useRole();
+  const allowedScreens = React.useMemo(() => new Set(entitlements?.allowedScreens ?? []), [entitlements]);
+  const allowedModules = React.useMemo(() => new Set(entitlements?.allowedModules ?? []), [entitlements]);
+  // Executive module starts expanded; workspace starts collapsed.
   const [open, setOpen] = React.useState<Record<string, boolean>>({ executive: true, workspace: false, enterprise: false, people: false, mail: false, "design-system": false, security: false, sales: false, ai: false, analytics: false, mobile: false, platform: false, operations: false, observability: false });
 
   const sections = React.useMemo(() => {
+    if (authState !== "authenticated") return [] as [string, SidebarModule[]][];
     const map = new Map<string, SidebarModule[]>();
     for (const m of SIDEBAR_MODULES) {
+      // Filter expandable groups to the screens the identity may open.
+      const groupScreens = m.expandableModule
+        ? screensByModule(m.expandableModule).filter((s) => allowedScreens.has(s.id))
+        : [];
+      const directAllowed = m.screen ? allowedScreens.has(m.screen) : false;
+      // "settings" (placeholder) is governance-only.
+      const placeholderAllowed = !m.screen && !m.expandableModule && allowedModules.has(m.id);
+      if (m.expandableModule && groupScreens.length === 0) continue;
+      if (!m.expandableModule && !directAllowed && !placeholderAllowed) continue;
       if (!map.has(m.section)) map.set(m.section, []);
       map.get(m.section)!.push(m);
     }
     return Array.from(map.entries());
-  }, []);
+  }, [allowedScreens, allowedModules, authState]);
 
   const goScreen = (s: ScreenId) => {
     navigate(s);
@@ -190,7 +207,7 @@ export function SidebarContent({
                 const Icon = m.icon;
                 const isActive = m.screen ? m.screen === screen : false;
                 const expandableScreens = m.expandableModule
-                  ? screensByModule(m.expandableModule)
+                  ? screensByModule(m.expandableModule).filter((s) => allowedScreens.has(s.id))
                   : [];
                 const groupActive =
                   m.expandableModule != null && expandableScreens.some((s) => s.id === screen);

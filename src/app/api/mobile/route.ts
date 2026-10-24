@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     if (!resolved) {
       return NextResponse.json({ code: "bad_section", message: "Unknown mobile section." }, { status: 400 });
     }
-    const result = await mobileGet(actor.role, resolved, req.nextUrl.searchParams);
+    const result = await mobileGet(actor.role, resolved, req.nextUrl.searchParams, actor.userId);
     if (!result.ok) {
       return NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
     }
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ code: "bad_request", message: "Provide the action type." }, { status: 400 });
     }
     const input = (body.input ?? {}) as Record<string, unknown>;
-    const result = await mobilePost(actor.role, { type, input } as unknown as MobileAction);
+    const result = await mobilePost(actor.role, { type, input } as unknown as MobileAction, actor.userId);
     if (!result.ok) {
       return NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
     }

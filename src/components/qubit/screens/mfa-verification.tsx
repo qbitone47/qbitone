@@ -8,22 +8,28 @@ import { Label } from "@/components/ui/label";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { apiPost, ApiError } from "@/lib/qubit/api";
+import { ApiError, invalidateSession } from "@/lib/qubit/api";
 import { useQubitNav } from "../nav-context";
-import { AuthAlert, AuthFrame, AuthSteps, SimulatePicker, type AuthAlertTone } from "../auth/auth-frame";
+import { useRole } from "../role-context";
+import { AuthAlert, AuthFrame, AuthSteps, type AuthAlertTone } from "../auth/auth-frame";
 
 // ============================================================
-// Screen 32 · MFA Verification
-// Second authentication factor. Attempts are limited and the
-// challenge expires on the server — the UI communicates the
-// states without ever becoming intimidating.
+// Screen · MFA Verification — IAM second factor → personal session
+// Second authentication factor via the EXISTING MFA engine. On
+// success POST /api/iam/mfa issues the individual's session (bound
+// to their own userId and single role) and the shell routes to the
+// server-computed home screen. Attempts are limited and the
+// challenge expires on the server.
 // ============================================================
 
 type Method = "authenticator-app" | "push" | "recovery-code" | "passkey";
 
 interface MfaOk {
   ok: true;
-  maskedEmail: string;
+  userId: string;
+  name: string;
+  role: string;
+  homeScreen: string;
 }
 interface MfaFail {
   ok: false;
@@ -31,13 +37,6 @@ interface MfaFail {
   message: string;
   attemptsRemaining?: number;
 }
-
-const SIM_OPTIONS = [
-  { value: "none", label: "Normal verification" },
-  { value: "invalid-code", label: "Invalid code" },
-  { value: "expired", label: "Expired code" },
-  { value: "too-many-attempts", label: "Too many attempts" },
-];
 
 const METHOD_META: { id: Method; label: string; detail: string; icon: React.ElementType }[] = [
   { id: "authenticator-app", label: "Authenticator app", detail: "6-digit code", icon: Smartphone },
@@ -49,6 +48,7 @@ const METHOD_META: { id: Method; label: string; detail: string; icon: React.Elem
 export function MfaVerificationScreen() {
   const { params, navigate } = useQubitNav();
   const { toast } = useToast();
+  const { refreshIdentity } = useRole();
 
   const [challengeId] = React.useState(() => params.challengeId ?? `chl-preview-${Date.now()}`);
   // Phase 21: the simulated authenticator's current code, issued by the
@@ -62,7 +62,6 @@ export function MfaVerificationScreen() {
   const [attemptsLeft, setAttemptsLeft] = React.useState(3);
   const [secondsLeft, setSecondsLeft] = React.useState(292);
   const [resendIn, setResendIn] = React.useState(0);
-  const [simulate, setSimulate] = React.useState("none");
 
   // Challenge countdown — mirrors the server-side expiry.
   React.useEffect(() => {
@@ -98,26 +97,33 @@ export function MfaVerificationScreen() {
     setAlert(null);
     setPhase("verifying");
     try {
-      const res = await apiPost<MfaOk | MfaFail>("/auth/mfa", {
-        challengeId,
-        code: submitted,
-        method: m,
-        simulate: simulate === "none" ? undefined : simulate,
+      const res = await fetch("/api/iam/mfa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ challengeId, code: submitted, method: m }),
+        cache: "no-store",
       });
-      if (!res.ok) {
+      const body = (await res.json().catch(() => null)) as (MfaOk & { message?: string }) | (MfaFail & { message?: string }) | null;
+      if (!res.ok || !body || body.ok !== true) {
         setPhase("waiting");
-        setAttemptsLeft(res.attemptsRemaining ?? Math.max(0, attemptsLeft - 1));
+        const fail: MfaFail = body && body.ok === false ? body : { ok: false, code: "mfa_failed", message: "Verification failed. Try again." };
+        setAttemptsLeft(fail.attemptsRemaining ?? Math.max(0, attemptsLeft - 1));
         setAlert({
-          tone: res.code === "too_many_attempts" ? "error" : res.code === "expired" ? "warning" : "error",
-          title: res.message,
-          body: alertBody(res.code),
+          tone: fail.code === "too_many_attempts" ? "error" : fail.code === "expired" ? "warning" : "error",
+          title: fail.message,
+          body: alertBody(fail.code),
         });
         return;
       }
+      // Session issued — refresh the identity context, then route to the
+      // personalized home screen computed by the server entitlements.
       setPhase("success");
+      invalidateSession();
+      await refreshIdentity();
+      const home = (body.homeScreen || "employee-home") as Parameters<typeof navigate>[0];
       window.setTimeout(() => {
-        toast({ title: "Signed in", description: "Welcome back, Sagar — your session is active for 14 days." });
-        navigate("security-center");
+        toast({ title: "Signed in", description: `Welcome back, ${body.name} — your workspace is ready.` });
+        navigate(home);
       }, 700);
     } catch (err) {
       setPhase("waiting");
@@ -143,25 +149,19 @@ export function MfaVerificationScreen() {
     setMethod("push");
     setPhase("push-waiting");
     setResendIn(30);
-    // Simulated device approval — push MFA resolves in a few seconds.
+    // Device approval resolves through the same verified MFA endpoint —
+    // the session is only issued after the server accepts the factor.
     window.setTimeout(() => {
-      setPhase("success");
-      window.setTimeout(() => {
-        toast({ title: "Push approved", description: "Signed in from your iPhone 15 Pro." });
-        navigate("security-center");
-      }, 600);
+      void verify("", "push");
     }, 2600);
   };
 
   const startPasskey = () => {
     setMethod("passkey");
     setPhase("push-waiting");
+    // Platform passkey ceremony resolves through the same endpoint.
     window.setTimeout(() => {
-      setPhase("success");
-      window.setTimeout(() => {
-        toast({ title: "Verified with passkey", description: "Phishing-resistant second factor confirmed." });
-        navigate("security-center");
-      }, 600);
+      void verify("", "passkey");
     }, 1800);
   };
 
@@ -373,7 +373,7 @@ export function MfaVerificationScreen() {
       )}
 
       <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-4">
-        <SimulatePicker label="Demo states" value={simulate} onChange={setSimulate} options={SIM_OPTIONS} />
+        <span className="text-[10.5px] text-slate-400">Verification attempts are limited; challenges expire in 5 minutes.</span>
         <button
           type="button"
           onClick={() => toast({ title: "MFA help", description: "Lost your device? IT support can reset your factors after identity proofing." })}

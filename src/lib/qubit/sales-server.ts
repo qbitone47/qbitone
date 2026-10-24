@@ -19,6 +19,13 @@
 import { writeAudit } from "./security-server";
 import { pushApproval, SESSION_USER_ID, type WorkspaceRole } from "./workspace-server";
 import { employees } from "./data";
+
+// ---------- IAM acting-identity context ----------
+// salesGet/salesPost receive the verified session userId and run every
+// scope/ownership composition synchronously (no await before the reads),
+// so per-request identity values cannot interleave. The legacy constant
+// remains only as the default for the standing fixture owner.
+let ACTOR_ID = SESSION_USER_ID;
 import {
   SALES_ACTIVITIES,
   SALES_ACCOUNTS,
@@ -81,7 +88,7 @@ export function requireSalesAccess(
   if (role === "dept-head") return { ok: true, scope: "team" };
   if (role === "sales-exec") return { ok: true, scope: "own" };
   writeAudit({
-    actorId: SESSION_USER_ID,
+    actorId: ACTOR_ID,
     action: "Sales access denied",
     resource: screen,
     result: "Blocked",
@@ -101,7 +108,7 @@ function visibleTeamMemberIds(scope: SalesScope): Set<string> {
   if (scope === "company") return new Set([...SALES_TEAM_MEMBERS, "sagar"]);
   if (scope === "team") return new Set([...SALES_TEAM_MEMBERS]); // Sales Head preview: all sales teams
   // own → session identity only
-  return new Set([SESSION_USER_ID]);
+  return new Set([ACTOR_ID]);
 }
 
 function canSee(scope: SalesScope, ownerId: string | undefined): boolean {
@@ -197,12 +204,12 @@ function leadWithRefs(l: SalesLead, scope: SalesScope) {
   return {
     ...l,
     ownerName: nameOf(l.ownerId),
-    isMine: l.ownerId === SESSION_USER_ID,
+    isMine: l.ownerId === ACTOR_ID,
     activity: s.activities.filter((a) => a.entity.kind === "lead" && a.entity.id === l.id).slice(0, 8),
     relatedOpportunity: l.convertedTo?.opportunityId
       ? s.opportunities.find((o) => o.id === l.convertedTo?.opportunityId) ?? null
       : null,
-    scopeNote: scope === "own" && l.ownerId !== SESSION_USER_ID ? undefined : undefined,
+    scopeNote: scope === "own" && l.ownerId !== ACTOR_ID ? undefined : undefined,
   };
 }
 
@@ -218,7 +225,7 @@ function oppWithRefs(o: SalesOpportunity) {
     meetings: s.meetings.filter((m) => m.opportunityId === o.id),
     visits: s.visits.filter((v) => v.opportunityId === o.id),
     activity: s.activities.filter((a) => a.entity.kind === "opportunity" && a.entity.id === o.id).slice(0, 12),
-    isMine: o.ownerId === SESSION_USER_ID,
+    isMine: o.ownerId === ACTOR_ID,
   };
 }
 
@@ -332,7 +339,7 @@ function pipelinePayload(scope: SalesScope) {
         expectedClose: o.expectedClose,
         nextAction: o.nextAction,
         riskNote: o.riskNote,
-        isMine: o.ownerId === SESSION_USER_ID,
+        isMine: o.ownerId === ACTOR_ID,
       })),
     };
   });
@@ -348,7 +355,7 @@ function pipelinePayload(scope: SalesScope) {
 }
 
 function forecastPayload(scope: SalesScope) {
-  const rows = SALES_TARGETS.filter((r) => (scope === "own" ? r.kind === "employee" && r.refId === SESSION_USER_ID : true));
+  const rows = SALES_TARGETS.filter((r) => (scope === "own" ? r.kind === "employee" && r.refId === ACTOR_ID : true));
   const summary = computeForecast(rows);
   return { rows, summary, history: SALES_FUNNEL_HISTORY, period: SALES_PERIOD };
 }
@@ -376,7 +383,7 @@ function homePayload(scope: SalesScope) {
     return false;
   }).slice(0, 6);
   const pendingQuotes = s.quotations.filter((q) => mine(q) && ["Draft", "Pending Approval", "Sent", "Viewed", "Negotiation"].includes(q.status));
-  const target = SALES_TARGETS.find((t) => t.kind === "employee" && t.refId === SESSION_USER_ID) ?? null;
+  const target = SALES_TARGETS.find((t) => t.kind === "employee" && t.refId === ACTOR_ID) ?? null;
   const teamTarget = scope !== "own" ? SALES_TARGETS.filter((t) => t.kind === "team") : [];
   return {
     scope,
@@ -466,7 +473,8 @@ export type SalesActionResult =
   | { ok: true; message: string; [k: string]: unknown }
   | { ok: false; status: number; code: string; message: string; matches?: { kind: string; id: string; label: string; reason: string }[] };
 
-export function salesGet(role: WorkspaceRole, section: SalesSection, params: URLSearchParams): Result<Record<string, unknown>> {
+export function salesGet(role: WorkspaceRole, section: SalesSection, params: URLSearchParams, userId: string = SESSION_USER_ID): Result<Record<string, unknown>> {
+  ACTOR_ID = userId;
   const gate = requireSalesAccess(role, `Sales · ${section}`);
   if (!gate.ok) return gate;
   const { scope } = gate;
@@ -521,7 +529,7 @@ export function salesGet(role: WorkspaceRole, section: SalesSection, params: URL
     case "forecast":
       return { ok: true, data: forecastPayload(scope) };
     case "targets": {
-      const rows = SALES_TARGETS.filter((r) => (scope === "own" ? r.kind === "employee" && r.refId === SESSION_USER_ID : true));
+      const rows = SALES_TARGETS.filter((r) => (scope === "own" ? r.kind === "employee" && r.refId === ACTOR_ID : true));
       return { ok: true, data: { rows, scope, canEdit: role === "administrator", period: SALES_PERIOD } };
     }
     case "leaderboard": {
@@ -630,7 +638,7 @@ export function salesGet(role: WorkspaceRole, section: SalesSection, params: URL
       return { ok: true, data: { rows, scope } };
     }
     case "expenses": {
-      const rows = s.expenses.filter((e) => (scope === "own" ? e.employeeId === SESSION_USER_ID : true)).map((e) => ({
+      const rows = s.expenses.filter((e) => (scope === "own" ? e.employeeId === ACTOR_ID : true)).map((e) => ({
         ...e,
         employeeName: nameOf(e.employeeId),
         opportunity: e.opportunityId ? s.opportunities.find((o) => o.id === e.opportunityId) ?? null : null,
@@ -782,13 +790,14 @@ const str = (o: Record<string, unknown>, k: string): string | undefined => (type
 const num = (o: Record<string, unknown>, k: string): number | undefined => (typeof o[k] === "number" && Number.isFinite(o[k] as number) ? (o[k] as number) : undefined);
 const bool = (o: Record<string, unknown>, k: string): boolean | undefined => (typeof o[k] === "boolean" ? (o[k] as boolean) : undefined);
 
-export function salesPost(role: WorkspaceRole, action: Action): SalesActionResult {
+export function salesPost(role: WorkspaceRole, action: Action, userId: string = SESSION_USER_ID): SalesActionResult {
+  ACTOR_ID = userId;
   const s = store();
   const gate = requireSalesAccess(role, `Sales · ${action.type}`);
   if (!gate.ok) return gate;
   const { scope } = gate;
   const audit = (args: { action: string; resource: string; severity?: "Info" | "Warning" | "High"; context: string; result?: "Success" | "Blocked" }) =>
-    writeAudit({ actorId: SESSION_USER_ID, action: args.action, resource: args.resource, result: args.result ?? "Success", severity: args.severity ?? "Info", source: "Sales OS", context: args.context });
+    writeAudit({ actorId: ACTOR_ID, action: args.action, resource: args.resource, result: args.result ?? "Success", severity: args.severity ?? "Info", source: "Sales OS", context: args.context });
 
   const ownOnly = (ownerId: string | undefined): SalesActionResult | null => {
     if (scope === "company") return null;
@@ -833,7 +842,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
         notes: str(i, "notes"),
       };
       s.leads.unshift(lead);
-      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: "Lead created", outcome: `Source ${lead.source}` });
+      addActivity({ at: now(), type: "Status change", actorId: ACTOR_ID, entity: { kind: "lead", id: lead.id }, summary: "Lead created", outcome: `Source ${lead.source}` });
       if (lead.nextFollowUpAt) {
         s.followups.unshift({ id: nextId("fu"), type: "Call", subject: `First follow-up — ${lead.name}`, ownerId: lead.ownerId, leadId: lead.id, dueAt: lead.nextFollowUpAt, state: "Upcoming", priority: lead.priority === "Hot" ? "High" : "Medium" });
       }
@@ -853,7 +862,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
       lead.ownerId = to;
       lead.lastActivityAt = now();
       s.followups.filter((f) => f.leadId === lead.id && f.state !== "Completed").forEach((f) => (f.ownerId = to));
-      addActivity({ at: now(), type: "Lead assigned", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: `Ownership moved ${nameOf(from)} → ${nameOf(to)}` });
+      addActivity({ at: now(), type: "Lead assigned", actorId: ACTOR_ID, entity: { kind: "lead", id: lead.id }, summary: `Ownership moved ${nameOf(from)} → ${nameOf(to)}` });
       audit({ action: "Lead ownership changed", resource: `${lead.name} — ${lead.company}`, context: `${nameOf(from)} → ${nameOf(to)}; open follow-ups reassigned` });
       return { ok: true, message: `Lead reassigned to ${nameOf(to)}. Open follow-ups moved with it.`, lead: leadWithRefs(lead, scope) };
     }
@@ -861,7 +870,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "lead.status": {
       const lead = s.leads.find((l) => l.id === str(action.input, "id"));
       if (!lead) return { ok: false, status: 404, code: "not_found", message: "Lead not found." };
-      if (scope === "own" && lead.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only records you own can be changed from this boundary." };
+      if (scope === "own" && lead.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only records you own can be changed from this boundary." };
       const status = str(action.input, "status") as LeadStatus | undefined;
       if (!status || !["Working", "Qualified", "Unqualified"].includes(status)) return { ok: false, status: 422, code: "invalid_status", message: "Status must be Working, Qualified or Unqualified — use Convert for the full lifecycle." };
       if (status === "Unqualified" && !str(action.input, "reason")) return { ok: false, status: 422, code: "reason_required", message: "A disqualification reason is required — it is kept on the lead and in the audit trail." };
@@ -869,7 +878,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
       lead.status = status;
       if (status === "Unqualified") lead.disqualifiedReason = str(action.input, "reason");
       lead.lastActivityAt = now();
-      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: `Lead ${prev} → ${status}`, outcome: status === "Unqualified" ? lead.disqualifiedReason : undefined });
+      addActivity({ at: now(), type: "Status change", actorId: ACTOR_ID, entity: { kind: "lead", id: lead.id }, summary: `Lead ${prev} → ${status}`, outcome: status === "Unqualified" ? lead.disqualifiedReason : undefined });
       audit({ action: `Lead marked ${status.toLowerCase()}`, resource: `${lead.name} — ${lead.company}`, context: `${prev} → ${status}${status === "Unqualified" ? ` · reason: ${lead.disqualifiedReason}` : ""}` });
       return { ok: true, message: `Lead marked ${status}.`, lead: leadWithRefs(lead, scope) };
     }
@@ -881,7 +890,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
       const body = str(action.input, "body");
       if (!body || body.length < 3) return { ok: false, status: 422, code: "note_required", message: "Write the note before saving." };
       lead.lastActivityAt = now();
-      addActivity({ at: now(), type: "Note", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: body });
+      addActivity({ at: now(), type: "Note", actorId: ACTOR_ID, entity: { kind: "lead", id: lead.id }, summary: body });
       audit({ action: "Note added to lead", resource: `${lead.name} — ${lead.company}`, context: body.slice(0, 120) });
       return { ok: true, message: "Note recorded on the lead timeline." };
     }
@@ -896,7 +905,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
       const fu: SalesFollowUp = { id: nextId("fu"), type, subject: str(action.input, "subject") ?? `Follow-up — ${lead.name}`, ownerId: lead.ownerId, leadId: lead.id, dueAt, state: dueAt < today0End() ? "Due Today" : "Upcoming", priority: (str(action.input, "priority") as "High" | "Medium" | "Low") ?? "Medium" };
       s.followups.unshift(fu);
       lead.nextFollowUpAt = dueAt;
-      addActivity({ at: now(), type: "Follow-up", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: `${fu.type} follow-up scheduled — ${new Date(dueAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}` });
+      addActivity({ at: now(), type: "Follow-up", actorId: ACTOR_ID, entity: { kind: "lead", id: lead.id }, summary: `${fu.type} follow-up scheduled — ${new Date(dueAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}` });
       audit({ action: "Follow-up scheduled", resource: `${lead.name} — ${lead.company}`, context: `${fu.type} · due ${new Date(dueAt).toLocaleString("en-IN")}` });
       return { ok: true, message: "Follow-up scheduled and visible in the Follow-up Queue." };
     }
@@ -955,7 +964,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
       lead.status = "Converted";
       lead.convertedTo = { contactId: ct.id, accountId: acc.id, opportunityId: opp?.id, at: now() };
       lead.lastActivityAt = now();
-      addActivity({ at: now(), type: "Conversion", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: `Lead converted — contact, account${opp ? " and opportunity" : ""} created`, outcome: [ct.name, acc.name, opp?.name].filter(Boolean).join(" · ") });
+      addActivity({ at: now(), type: "Conversion", actorId: ACTOR_ID, entity: { kind: "lead", id: lead.id }, summary: `Lead converted — contact, account${opp ? " and opportunity" : ""} created`, outcome: [ct.name, acc.name, opp?.name].filter(Boolean).join(" · ") });
       audit({ action: "Lead converted", resource: `${lead.name} — ${lead.company}`, context: `Contact ${ct.name} · Account ${acc.name}${opp ? ` · Opportunity ${opp.name}` : " · no opportunity created"}` });
       return {
         ok: true,
@@ -970,7 +979,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "opportunity.stage": {
       const opp = s.opportunities.find((o) => o.id === str(action.input, "id"));
       if (!opp) return { ok: false, status: 404, code: "not_found", message: "Opportunity not found." };
-      if (scope === "own" && opp.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only records you own can be changed from this boundary." };
+      if (scope === "own" && opp.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only records you own can be changed from this boundary." };
       const to = str(action.input, "stage") as OpportunityStage | undefined;
       if (!to) return { ok: false, status: 422, code: "stage_required", message: "Choose the target stage." };
       const flow: OpportunityStage[] = ["New", "Qualification", "Discovery", "Proposal", "Negotiation", "Contracting", "Won"];
@@ -999,7 +1008,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
       opp.lastStageChangeAt = now();
       if (to === "Won") opp.closedAt = now();
       if (to === "Lost") { opp.lossReason = str(action.input, "lossReason"); opp.closedAt = now(); }
-      addActivity({ at: now(), type: "Stage change", actorId: SESSION_USER_ID, entity: { kind: "opportunity", id: opp.id }, summary: `Stage moved ${prev} → ${to}`, outcome: to === "Lost" ? opp.lossReason : to === "Won" ? "Closed Won" : undefined });
+      addActivity({ at: now(), type: "Stage change", actorId: ACTOR_ID, entity: { kind: "opportunity", id: opp.id }, summary: `Stage moved ${prev} → ${to}`, outcome: to === "Lost" ? opp.lossReason : to === "Won" ? "Closed Won" : undefined });
       audit({ action: "Opportunity stage changed", resource: `${opp.name} (${nameOf(opp.ownerId)})`, severity: to === "Won" || to === "Lost" ? "High" : "Info", context: `${prev} → ${to}${to === "Lost" ? ` · reason: ${opp.lossReason}` : ""}` });
       return { ok: true, message: `Stage updated ${prev} → ${to}. The change is audited.`, opportunity: oppWithRefs(opp) };
     }
@@ -1007,7 +1016,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "opportunity.update": {
       const opp = s.opportunities.find((o) => o.id === str(action.input, "id"));
       if (!opp) return { ok: false, status: 404, code: "not_found", message: "Opportunity not found." };
-      if (scope === "own" && opp.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only records you own can be changed from this boundary." };
+      if (scope === "own" && opp.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only records you own can be changed from this boundary." };
       const changes: string[] = [];
       const valueCr = num(action.input, "valueCr");
       if (valueCr !== undefined) {
@@ -1024,7 +1033,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
       const nextAction = str(action.input, "nextAction");
       if (nextAction !== undefined && nextAction !== opp.nextAction) { changes.push("next action"); opp.nextAction = nextAction; }
       if (changes.length === 0) return { ok: false, status: 422, code: "no_changes", message: "Nothing changed — update at least one field." };
-      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "opportunity", id: opp.id }, summary: `Updated: ${changes.join(" · ")}` });
+      addActivity({ at: now(), type: "Status change", actorId: ACTOR_ID, entity: { kind: "opportunity", id: opp.id }, summary: `Updated: ${changes.join(" · ")}` });
       audit({ action: "Opportunity updated", resource: `${opp.name} (${nameOf(opp.ownerId)})`, context: changes.join(" · ") });
       return { ok: true, message: "Opportunity updated — the change is recorded on the timeline and audited.", opportunity: oppWithRefs(opp) };
     }
@@ -1033,7 +1042,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "followup.complete": {
       const fu = s.followups.find((f) => f.id === str(action.input, "id"));
       if (!fu) return { ok: false, status: 404, code: "not_found", message: "Follow-up not found." };
-      if (scope === "own" && fu.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own follow-ups can be completed from this boundary." };
+      if (scope === "own" && fu.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own follow-ups can be completed from this boundary." };
       if (fu.state === "Completed") return { ok: false, status: 409, code: "already_done", message: "This follow-up is already completed." };
       if (fu.state === "Cancelled") return { ok: false, status: 409, code: "cancelled", message: "Cancelled follow-ups cannot be completed — reschedule it first." };
       const outcome = str(action.input, "outcome");
@@ -1042,7 +1051,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
       fu.outcome = outcome;
       fu.completedAt = now();
       const entity = fu.leadId ? { kind: "lead" as const, id: fu.leadId } : fu.accountId ? { kind: "account" as const, id: fu.accountId } : { kind: "opportunity" as const, id: fu.opportunityId ?? "" };
-      addActivity({ at: now(), type: "Follow-up", actorId: SESSION_USER_ID, entity, summary: `${fu.type} follow-up completed — ${fu.subject}`, outcome });
+      addActivity({ at: now(), type: "Follow-up", actorId: ACTOR_ID, entity, summary: `${fu.type} follow-up completed — ${fu.subject}`, outcome });
       audit({ action: "Follow-up completed", resource: fu.subject, context: outcome.slice(0, 120) });
       return { ok: true, message: "Follow-up completed — outcome recorded in the customer timeline." };
     }
@@ -1050,7 +1059,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "followup.reschedule": {
       const fu = s.followups.find((f) => f.id === str(action.input, "id"));
       if (!fu) return { ok: false, status: 404, code: "not_found", message: "Follow-up not found." };
-      if (scope === "own" && fu.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own follow-ups can be rescheduled from this boundary." };
+      if (scope === "own" && fu.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own follow-ups can be rescheduled from this boundary." };
       if (fu.state === "Completed") return { ok: false, status: 409, code: "already_done", message: "Completed follow-ups are history — schedule a new one instead." };
       const dueAt = num(action.input, "dueAt");
       if (!dueAt || dueAt < now() - 60_000) return { ok: false, status: 422, code: "invalid_date", message: "Pick a future date and time." };
@@ -1069,7 +1078,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
       const startAt = num(i, "startAt");
       if (!title || !accountId || !startAt) return { ok: false, status: 422, code: "required", message: "Title, customer and date/time are required." };
       if (!s.accounts.some((a) => a.id === accountId)) return { ok: false, status: 422, code: "unknown_account", message: "That customer is not in the account register." };
-      const m: SalesMeeting = { id: nextId("mtg"), title, accountId, contactId: str(i, "contactId"), opportunityId: str(i, "opportunityId"), ownerId: str(i, "ownerId") ?? SESSION_USER_ID, startAt, durationMin: num(i, "durationMin") ?? 30, location: str(i, "location") ?? "Teams meeting", isLink: !str(i, "location") || (str(i, "location") ?? "").includes("Teams") || (str(i, "location") ?? "").includes("Zoom"), status: "Scheduled", agenda: str(i, "agenda") };
+      const m: SalesMeeting = { id: nextId("mtg"), title, accountId, contactId: str(i, "contactId"), opportunityId: str(i, "opportunityId"), ownerId: str(i, "ownerId") ?? ACTOR_ID, startAt, durationMin: num(i, "durationMin") ?? 30, location: str(i, "location") ?? "Teams meeting", isLink: !str(i, "location") || (str(i, "location") ?? "").includes("Teams") || (str(i, "location") ?? "").includes("Zoom"), status: "Scheduled", agenda: str(i, "agenda") };
       s.meetings.unshift(m);
       audit({ action: "Sales meeting created", resource: `${m.title} — ${nameOf(m.ownerId)}`, context: new Date(m.startAt).toLocaleString("en-IN") });
       return { ok: true, message: "Meeting created — it also appears in the Meetings module.", meeting: m };
@@ -1077,7 +1086,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "meeting.reschedule": {
       const m = s.meetings.find((x) => x.id === str(action.input, "id"));
       if (!m) return { ok: false, status: 404, code: "not_found", message: "Meeting not found." };
-      if (scope === "own" && m.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own meetings can be changed." };
+      if (scope === "own" && m.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own meetings can be changed." };
       if (m.status !== "Scheduled") return { ok: false, status: 409, code: "invalid_state", message: `A ${m.status.toLowerCase()} meeting cannot be rescheduled.` };
       const startAt = num(action.input, "startAt");
       if (!startAt || startAt < now()) return { ok: false, status: 422, code: "invalid_date", message: "Pick a future date and time." };
@@ -1088,20 +1097,20 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "meeting.cancel": {
       const m = s.meetings.find((x) => x.id === str(action.input, "id"));
       if (!m) return { ok: false, status: 404, code: "not_found", message: "Meeting not found." };
-      if (scope === "own" && m.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own meetings can be cancelled." };
+      if (scope === "own" && m.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own meetings can be cancelled." };
       if (m.status !== "Scheduled") return { ok: false, status: 409, code: "invalid_state", message: `A ${m.status.toLowerCase()} meeting cannot be cancelled.` };
       m.status = "Cancelled";
-      audit({ action: "Sales meeting cancelled", resource: m.title, context: `Cancelled by ${nameOf(SESSION_USER_ID)} — customer notified through the notification architecture` });
+      audit({ action: "Sales meeting cancelled", resource: m.title, context: `Cancelled by ${nameOf(ACTOR_ID)} — customer notified through the notification architecture` });
       return { ok: true, message: "Meeting cancelled." };
     }
     case "meeting.notes": {
       const m = s.meetings.find((x) => x.id === str(action.input, "id"));
       if (!m) return { ok: false, status: 404, code: "not_found", message: "Meeting not found." };
-      if (scope === "own" && m.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own meetings can be annotated." };
+      if (scope === "own" && m.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own meetings can be annotated." };
       const notes = str(action.input, "notes");
       if (!notes) return { ok: false, status: 422, code: "notes_required", message: "Write the meeting notes first." };
       m.notes = notes;
-      addActivity({ at: now(), type: "Meeting", actorId: SESSION_USER_ID, entity: { kind: "account", id: m.accountId }, summary: `Meeting notes — ${m.title}`, outcome: notes.slice(0, 140) });
+      addActivity({ at: now(), type: "Meeting", actorId: ACTOR_ID, entity: { kind: "account", id: m.accountId }, summary: `Meeting notes — ${m.title}`, outcome: notes.slice(0, 140) });
       audit({ action: "Sales meeting notes added", resource: m.title, context: notes.slice(0, 120) });
       return { ok: true, message: "Notes saved to the meeting and the customer timeline." };
     }
@@ -1123,7 +1132,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
         accountId,
         contactId: str(i, "contactId"),
         opportunityId: str(i, "opportunityId"),
-        ownerId: str(i, "ownerId") ?? SESSION_USER_ID,
+        ownerId: str(i, "ownerId") ?? ACTOR_ID,
         status: "Draft",
         createdAt: now(),
         validUntil: str(i, "validUntil") ?? "31 Dec 2026",
@@ -1135,14 +1144,14 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
         paymentTerms: str(i, "paymentTerms") ?? "30% advance, milestone-based",
         deliveryTerms: str(i, "deliveryTerms") ?? "Standard rollout terms",
         notes: str(i, "notes"),
-        versions: [{ at: now(), by: SESSION_USER_ID === "sagar" ? "Sagar Singh" : nameOf(SESSION_USER_ID), note: "Draft created" }],
+        versions: [{ at: now(), by: ACTOR_ID === "sagar" ? "Sagar Singh" : nameOf(ACTOR_ID), note: "Draft created" }],
       };
       s.quotations.unshift(q);
       if (q.opportunityId) {
         const opp = s.opportunities.find((o) => o.id === q.opportunityId);
         if (opp && !opp.quotationId) opp.quotationId = q.id;
       }
-      addActivity({ at: now(), type: "Quotation", actorId: SESSION_USER_ID, entity: { kind: "quotation", id: q.id }, summary: `${q.number} created — ${items.length} line items` });
+      addActivity({ at: now(), type: "Quotation", actorId: ACTOR_ID, entity: { kind: "quotation", id: q.id }, summary: `${q.number} created — ${items.length} line items` });
       audit({ action: "Quotation created", resource: `${q.number} · ${s.accounts.find((a) => a.id === q.accountId)?.name}`, context: `Owner ${nameOf(q.ownerId)} · total ${rupees(quoteTotal(q))}` });
       return { ok: true, message: `${q.number} created as a draft.`, quotation: quotationWithRefs(q) };
     }
@@ -1150,7 +1159,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "quotation.update": {
       const q = s.quotations.find((x) => x.id === str(action.input, "id"));
       if (!q) return { ok: false, status: 404, code: "not_found", message: "Quotation not found." };
-      if (scope === "own" && q.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own quotations can be edited." };
+      if (scope === "own" && q.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own quotations can be edited." };
       if (q.status !== "Draft" && q.status !== "Negotiation") return { ok: false, status: 409, code: "locked", message: `A ${q.status.toLowerCase()} quotation is locked — use Revise to open a new version. Approved and sent documents are never edited in place.` };
       const items = Array.isArray(action.input.items) ? (action.input.items as QuoteItemIn[]) : undefined;
       if (items) {
@@ -1171,7 +1180,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "quotation.submit": {
       const q = s.quotations.find((x) => x.id === str(action.input, "id"));
       if (!q) return { ok: false, status: 404, code: "not_found", message: "Quotation not found." };
-      if (scope === "own" && q.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own quotations can be submitted." };
+      if (scope === "own" && q.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own quotations can be submitted." };
       if (q.status !== "Draft") return { ok: false, status: 409, code: "invalid_state", message: `Only drafts can be submitted (this one is ${q.status.toLowerCase()}).` };
       const discount = quoteOverallDiscountPct(q);
       const total = quoteTotal(q);
@@ -1181,7 +1190,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
         q.status = "Approved";
         q.approvalNote = "Auto-approved — within standing limits (discount ≤ 15% and total ≤ ₹50 L).";
         q.decidedAt = now();
-        addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "quotation", id: q.id }, summary: "Approved within standing limits — ready to send" });
+        addActivity({ at: now(), type: "Status change", actorId: ACTOR_ID, entity: { kind: "quotation", id: q.id }, summary: "Approved within standing limits — ready to send" });
         audit({ action: "Quotation auto-approved", resource: q.number, context: `Discount ${discount.toFixed(1)}% · total ${rupees(total)} — within standing limits` });
         return { ok: true, message: `${q.number} approved within standing limits and ready to send.`, quotation: quotationWithRefs(q) };
       }
@@ -1203,7 +1212,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
       q.status = "Pending Approval";
       q.approvalId = approval.id;
       q.versions.unshift({ at: now(), by: "Sagar Singh", note: `Submitted for approval — ${approval.rule}` });
-      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "quotation", id: q.id }, summary: `Submitted for approval — ${approval.rule}` });
+      addActivity({ at: now(), type: "Status change", actorId: ACTOR_ID, entity: { kind: "quotation", id: q.id }, summary: `Submitted for approval — ${approval.rule}` });
       audit({ action: "Quotation submitted for approval", resource: q.number, severity: "Info", context: `Routed via Approval Matrix (${approval.rule}) · total ${rupees(total)}` });
       return { ok: true, message: `${q.number} submitted — routed through the enterprise Approval Matrix (${approval.rule}). Track it in My Approvals.`, quotation: quotationWithRefs(q), approvalId: approval.id };
     }
@@ -1231,7 +1240,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
       q.decidedAt = now();
       q.approvalNote = decision === "Rejected" ? str(action.input, "note") : "Approved via enterprise approval flow.";
       q.versions.unshift({ at: now(), by: "Sagar Singh", note: `${decision}${str(action.input, "note") ? ` — ${str(action.input, "note")}` : ""}` });
-      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "quotation", id: q.id }, summary: `${decision} by approver${str(action.input, "note") ? ` — ${str(action.input, "note")}` : ""}` });
+      addActivity({ at: now(), type: "Status change", actorId: ACTOR_ID, entity: { kind: "quotation", id: q.id }, summary: `${decision} by approver${str(action.input, "note") ? ` — ${str(action.input, "note")}` : ""}` });
       audit({ action: `Quotation ${decision.toLowerCase()}`, resource: q.number, severity: total > 10_000_000 ? "High" : "Info", context: `Total ${rupees(total)}${total > 10_000_000 ? " · step-up verified" : ""}` });
       return { ok: true, message: `${q.number} ${decision.toLowerCase()}.`, quotation: quotationWithRefs(q) };
     }
@@ -1239,11 +1248,11 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "quotation.send": {
       const q = s.quotations.find((x) => x.id === str(action.input, "id"));
       if (!q) return { ok: false, status: 404, code: "not_found", message: "Quotation not found." };
-      if (scope === "own" && q.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own quotations can be sent." };
+      if (scope === "own" && q.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own quotations can be sent." };
       if (q.status !== "Approved") return { ok: false, status: 409, code: "invalid_state", message: `Only Approved quotations can be sent (this one is ${q.status.toLowerCase()}).` };
       q.status = "Sent";
       q.sentAt = now();
-      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "quotation", id: q.id }, summary: "Quotation sent to customer" });
+      addActivity({ at: now(), type: "Status change", actorId: ACTOR_ID, entity: { kind: "quotation", id: q.id }, summary: "Quotation sent to customer" });
       audit({ action: "Quotation sent", resource: q.number, context: `Sent to ${s.accounts.find((a) => a.id === q.accountId)?.name ?? "customer"}` });
       return { ok: true, message: `${q.number} sent to the customer.`, quotation: quotationWithRefs(q) };
     }
@@ -1251,7 +1260,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "quotation.cancel": {
       const q = s.quotations.find((x) => x.id === str(action.input, "id"));
       if (!q) return { ok: false, status: 404, code: "not_found", message: "Quotation not found." };
-      if (scope === "own" && q.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own quotations can be cancelled." };
+      if (scope === "own" && q.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own quotations can be cancelled." };
       if (["Accepted", "Cancelled", "Expired", "Rejected"].includes(q.status)) return { ok: false, status: 409, code: "invalid_state", message: `A ${q.status.toLowerCase()} quotation cannot be cancelled.` };
       if (!str(action.input, "reason")) return { ok: false, status: 422, code: "reason_required", message: "A reason is required to cancel a quotation." };
       q.status = "Cancelled";
@@ -1264,7 +1273,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "quotation.revise": {
       const src = s.quotations.find((x) => x.id === str(action.input, "id"));
       if (!src) return { ok: false, status: 404, code: "not_found", message: "Quotation not found." };
-      if (scope === "own" && src.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own quotations can be revised." };
+      if (scope === "own" && src.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own quotations can be revised." };
       if (["Draft", "Pending Approval"].includes(src.status)) return { ok: false, status: 409, code: "invalid_state", message: "Drafts and pending approvals are edited directly — revision copies exist for decided documents." };
       const q: SalesQuotation = {
         ...structuredClone(src),
@@ -1284,7 +1293,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
         const opp = s.opportunities.find((o) => o.id === q.opportunityId);
         if (opp) opp.quotationId = q.id;
       }
-      addActivity({ at: now(), type: "Quotation", actorId: SESSION_USER_ID, entity: { kind: "quotation", id: q.id }, summary: `Revision of ${src.number} created` });
+      addActivity({ at: now(), type: "Quotation", actorId: ACTOR_ID, entity: { kind: "quotation", id: q.id }, summary: `Revision of ${src.number} created` });
       audit({ action: "Quotation revision created", resource: `${q.number} (from ${src.number})`, context: "Revision copy — original preserved for the record" });
       return { ok: true, message: `Revision ${q.number} created from ${src.number}. The original stays unchanged for the record.`, quotation: quotationWithRefs(q) };
     }
@@ -1293,7 +1302,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "order.create": {
       const q = s.quotations.find((x) => x.id === str(action.input, "quotationId"));
       if (!q) return { ok: false, status: 404, code: "not_found", message: "Quotation not found." };
-      if (scope === "own" && q.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own quotations can be ordered." };
+      if (scope === "own" && q.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own quotations can be ordered." };
       if (q.status !== "Accepted") return { ok: false, status: 409, code: "invalid_state", message: `Orders are created from Accepted quotations (this one is ${q.status.toLowerCase()}).` };
       const existing = s.orders.find((o) => o.quotationId === q.id && o.status !== "Cancelled");
       if (existing) return { ok: false, status: 409, code: "already_ordered", message: `An order already exists for ${q.number} (${existing.number}) — duplicates are blocked.` };
@@ -1315,7 +1324,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
         deliveryBy: q.deliveryTerms,
       };
       s.orders.unshift(o);
-      addActivity({ at: now(), type: "Order", actorId: SESSION_USER_ID, entity: { kind: "order", id: o.id }, summary: `${o.number} created from ${q.number} — invoice ${o.invoiceId} raised` });
+      addActivity({ at: now(), type: "Order", actorId: ACTOR_ID, entity: { kind: "order", id: o.id }, summary: `${o.number} created from ${q.number} — invoice ${o.invoiceId} raised` });
       audit({ action: "Sales order created", resource: `${o.number} · ${s.accounts.find((a) => a.id === o.accountId)?.name}`, severity: "Info", context: `From ${q.number} · ${rupees(total)} · invoice ${o.invoiceId} sent to Finance; fulfillment request sent to Inventory` });
       return { ok: true, message: `${o.number} created — invoice ${o.invoiceId} raised in Finance and fulfillment requested from Inventory.`, order: orderWithRefs(o) };
     }
@@ -1323,7 +1332,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "order.update": {
       const o = s.orders.find((x) => x.id === str(action.input, "id"));
       if (!o) return { ok: false, status: 404, code: "not_found", message: "Order not found." };
-      if (scope === "own" && o.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own orders can be updated." };
+      if (scope === "own" && o.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own orders can be updated." };
       const payment = str(action.input, "payment") as PaymentStateIn | undefined;
       const fulfillment = str(action.input, "fulfillment") as FulfillmentStateIn | undefined;
       const payFlow = ["Unpaid", "Partially Paid", "Paid"];
@@ -1341,7 +1350,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
         if (fulfillment === "Delivered") o.status = o.payment === "Paid" ? "Closed" : "Delivered";
       }
       if (changes.length === 0) return { ok: false, status: 422, code: "no_changes", message: "Nothing changed." };
-      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "order", id: o.id }, summary: changes.join(" · ") });
+      addActivity({ at: now(), type: "Status change", actorId: ACTOR_ID, entity: { kind: "order", id: o.id }, summary: changes.join(" · ") });
       audit({ action: "Sales order updated", resource: o.number, context: `${changes.join(" · ")}${o.dispatchId ? ` · dispatch ${o.dispatchId}` : ""}` });
       return { ok: true, message: "Order updated — downstream systems are notified through the workflow layer.", order: orderWithRefs(o) };
     }
@@ -1349,12 +1358,12 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "order.cancel": {
       const o = s.orders.find((x) => x.id === str(action.input, "id"));
       if (!o) return { ok: false, status: 404, code: "not_found", message: "Order not found." };
-      if (scope === "own" && o.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own orders can be cancelled." };
+      if (scope === "own" && o.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own orders can be cancelled." };
       if (["Dispatched", "Delivered", "Closed", "Cancelled"].includes(o.status)) return { ok: false, status: 409, code: "invalid_state", message: `An order that is ${o.status.toLowerCase()} cannot be cancelled.` };
       if (!str(action.input, "reason")) return { ok: false, status: 422, code: "reason_required", message: "A reason is required — cancellation is audited and Finance is notified." };
       o.status = "Cancelled";
       o.cancelledReason = str(action.input, "reason");
-      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "order", id: o.id }, summary: `Order cancelled — ${o.cancelledReason}` });
+      addActivity({ at: now(), type: "Status change", actorId: ACTOR_ID, entity: { kind: "order", id: o.id }, summary: `Order cancelled — ${o.cancelledReason}` });
       audit({ action: "Sales order cancelled", resource: o.number, severity: "High", context: `${str(action.input, "reason")} · Finance and Inventory notified through the workflow layer` });
       return { ok: true, message: `${o.number} cancelled. Finance and Inventory are notified through the workflow layer.`, order: orderWithRefs(o) };
     }
@@ -1370,7 +1379,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
       if (!description || description.length < 4) return { ok: false, status: 422, code: "description_required", message: "Describe the expense — it travels with the claim to Finance." };
       const e: SalesExpense = {
         id: nextId("exp"),
-        employeeId: SESSION_USER_ID,
+        employeeId: ACTOR_ID,
         date: num(i, "date") ?? now(),
         category: category as SalesExpense["category"],
         amount,
@@ -1389,7 +1398,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "expense.submit": {
       const e = s.expenses.find((x) => x.id === str(action.input, "id"));
       if (!e) return { ok: false, status: 404, code: "not_found", message: "Expense not found." };
-      if (e.employeeId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "You can only submit your own expenses." };
+      if (e.employeeId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "You can only submit your own expenses." };
       if (e.status !== "Draft") return { ok: false, status: 409, code: "invalid_state", message: `This expense is already ${e.status.toLowerCase()}.` };
       e.status = "Submitted";
       e.submittedAt = now();
@@ -1413,7 +1422,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "expense.delete": {
       const e = s.expenses.find((x) => x.id === str(action.input, "id"));
       if (!e) return { ok: false, status: 404, code: "not_found", message: "Expense not found." };
-      if (e.employeeId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "You can only delete your own drafts." };
+      if (e.employeeId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "You can only delete your own drafts." };
       if (e.status !== "Draft") return { ok: false, status: 409, code: "invalid_state", message: "Only drafts can be deleted — submitted claims are part of the approval record." };
       s.expenses = s.expenses.filter((x) => x.id !== e.id);
       audit({ action: "Sales expense draft deleted", resource: `${e.category} — ${rupees(e.amount)}`, context: "Draft removed before submission" });
@@ -1431,7 +1440,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
         id: nextId("vis"),
         accountId,
         contactId: str(i, "contactId"),
-        ownerId: str(i, "ownerId") ?? SESSION_USER_ID,
+        ownerId: str(i, "ownerId") ?? ACTOR_ID,
         opportunityId: str(i, "opportunityId"),
         plannedAt,
         durationMin: num(i, "durationMin") ?? 60,
@@ -1447,7 +1456,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "visit.reschedule": {
       const v = s.visits.find((x) => x.id === str(action.input, "id"));
       if (!v) return { ok: false, status: 404, code: "not_found", message: "Visit not found." };
-      if (scope === "own" && v.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own visits can be rescheduled." };
+      if (scope === "own" && v.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own visits can be rescheduled." };
       if (v.status !== "Planned") return { ok: false, status: 409, code: "invalid_state", message: `A ${v.status.toLowerCase()} visit cannot be rescheduled.` };
       const plannedAt = num(action.input, "plannedAt");
       if (!plannedAt || plannedAt < now()) return { ok: false, status: 422, code: "invalid_date", message: "Pick a future date and time." };
@@ -1458,7 +1467,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "visit.cancel": {
       const v = s.visits.find((x) => x.id === str(action.input, "id"));
       if (!v) return { ok: false, status: 404, code: "not_found", message: "Visit not found." };
-      if (scope === "own" && v.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own visits can be cancelled." };
+      if (scope === "own" && v.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own visits can be cancelled." };
       if (v.status !== "Planned") return { ok: false, status: 409, code: "invalid_state", message: `A ${v.status.toLowerCase()} visit cannot be cancelled.` };
       v.status = "Cancelled";
       audit({ action: "Field visit cancelled", resource: `${s.accounts.find((a) => a.id === v.accountId)?.name}`, context: "Cancelled before start" });
@@ -1467,7 +1476,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "visit.start": {
       const v = s.visits.find((x) => x.id === str(action.input, "id"));
       if (!v) return { ok: false, status: 404, code: "not_found", message: "Visit not found." };
-      if (scope === "own" && v.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own visits can be started." };
+      if (scope === "own" && v.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own visits can be started." };
       if (v.status !== "Planned") return { ok: false, status: 409, code: "invalid_state", message: `A ${v.status.toLowerCase()} visit cannot be started.` };
       v.status = "In Progress";
       v.checkedInAt = now();
@@ -1477,7 +1486,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "visit.complete": {
       const v = s.visits.find((x) => x.id === str(action.input, "id"));
       if (!v) return { ok: false, status: 404, code: "not_found", message: "Visit not found." };
-      if (scope === "own" && v.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own visits can be completed." };
+      if (scope === "own" && v.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own visits can be completed." };
       if (v.status === "Completed") return { ok: false, status: 409, code: "already_done", message: "This visit is already completed." };
       if (v.status === "Cancelled") return { ok: false, status: 409, code: "invalid_state", message: "Cancelled visits cannot be completed." };
       const outcome = str(action.input, "outcome");
@@ -1495,7 +1504,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
       if (followUpSubject && followUpDue) {
         s.followups.unshift({ id: nextId("fu"), type: "Call", subject: followUpSubject, ownerId: v.ownerId, accountId: v.accountId, opportunityId: v.opportunityId, dueAt: followUpDue, state: "Upcoming", priority: "Medium" });
       }
-      addActivity({ at: now(), type: "Visit", actorId: SESSION_USER_ID, entity: { kind: "visit", id: v.id }, summary: `Visit completed — ${v.purpose}`, outcome });
+      addActivity({ at: now(), type: "Visit", actorId: ACTOR_ID, entity: { kind: "visit", id: v.id }, summary: `Visit completed — ${v.purpose}`, outcome });
       audit({ action: "Field visit completed", resource: `${s.accounts.find((a) => a.id === v.accountId)?.name} — ${v.purpose}`, context: `Outcome: ${outcome}${v.nextAction ? ` · next: ${v.nextAction}` : ""}` });
       return { ok: true, message: `Visit completed — notes and outcome recorded.${followUpSubject && followUpDue ? " Follow-up scheduled." : ""}`, visit: visitWithRefs(v) };
     }
@@ -1509,7 +1518,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
       const endAt = num(i, "endAt");
       if (!destination || !purpose || !startAt || !endAt) return { ok: false, status: 422, code: "required", message: "Destination, purpose and dates are required." };
       if (endAt < startAt) return { ok: false, status: 422, code: "invalid_dates", message: "The end of the trip cannot be before the start." };
-      const t: TravelPlan = { id: nextId("tvl"), ownerId: str(i, "ownerId") ?? SESSION_USER_ID, destination, purpose, startAt, endAt, estimatedCost: num(i, "estimatedCost") ?? 0, status: "Planned", visitIds: Array.isArray(i.visitIds) ? (i.visitIds as string[]) : [], notes: str(i, "notes") };
+      const t: TravelPlan = { id: nextId("tvl"), ownerId: str(i, "ownerId") ?? ACTOR_ID, destination, purpose, startAt, endAt, estimatedCost: num(i, "estimatedCost") ?? 0, status: "Planned", visitIds: Array.isArray(i.visitIds) ? (i.visitIds as string[]) : [], notes: str(i, "notes") };
       s.travel.unshift(t);
       audit({ action: "Sales travel planned", resource: `${destination} — ${purpose}`, context: `${nameOf(t.ownerId)} · est. ${rupees(t.estimatedCost)}` });
       return { ok: true, message: "Travel plan created — link visits to it from the planner.", travel: t };
@@ -1517,7 +1526,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "travel.cancel": {
       const t = s.travel.find((x) => x.id === str(action.input, "id"));
       if (!t) return { ok: false, status: 404, code: "not_found", message: "Travel plan not found." };
-      if (scope === "own" && t.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own travel can be changed." };
+      if (scope === "own" && t.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own travel can be changed." };
       if (t.status === "Completed") return { ok: false, status: 409, code: "invalid_state", message: "Completed travel cannot be cancelled." };
       t.status = "Cancelled";
       audit({ action: "Sales travel cancelled", resource: `${t.destination} — ${t.purpose}`, context: "Plan cancelled — linked visits unaffected" });
@@ -1531,7 +1540,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
       const to = str(action.input, "ownerId");
       if (!to || !SALES_OWNERS.some((o) => o.id === to)) return { ok: false, status: 422, code: "owner_required", message: "Choose a valid salesperson." };
       const from = c.ownerId;
-      if (scope === "own" && from !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own conversations can be reassigned." };
+      if (scope === "own" && from !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only your own conversations can be reassigned." };
       c.ownerId = to;
       audit({ action: "WhatsApp conversation assigned", resource: `${c.contactName} (${c.waNumber})`, context: `${nameOf(from)} → ${nameOf(to)}` });
       return { ok: true, message: `Conversation assigned to ${nameOf(to)}.` };
@@ -1553,7 +1562,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
     case "whatsapp.reply": {
       const c = s.conversations.find((x) => x.id === str(action.input, "id"));
       if (!c) return { ok: false, status: 404, code: "not_found", message: "Conversation not found." };
-      if (scope === "own" && c.ownerId !== SESSION_USER_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only the assigned salesperson replies from this boundary." };
+      if (scope === "own" && c.ownerId !== ACTOR_ID) return { ok: false, status: 403, code: "scope_denied", message: "Only the assigned salesperson replies from this boundary." };
       const body = str(action.input, "body");
       const template = str(action.input, "template");
       if (!body && !template) return { ok: false, status: 422, code: "body_required", message: "Write a message or pick a template." };
@@ -1567,7 +1576,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
       c.lastMessageAt = now();
       c.unread = 0;
       if (c.status === "Resolved") c.status = "Pending";
-      if (c.leadId) addActivity({ at: now(), type: "WhatsApp", actorId: SESSION_USER_ID, entity: { kind: "lead", id: c.leadId }, summary: `Reply sent via WhatsApp Business${template ? ` (${template})` : ""}`, source: "WhatsApp Business" });
+      if (c.leadId) addActivity({ at: now(), type: "WhatsApp", actorId: ACTOR_ID, entity: { kind: "lead", id: c.leadId }, summary: `Reply sent via WhatsApp Business${template ? ` (${template})` : ""}`, source: "WhatsApp Business" });
       audit({ action: "WhatsApp message sent", resource: `${c.contactName} (${c.waNumber})`, context: `${template ? `Template ${template}` : "Free-text reply"} · API-based, consent verified` });
       return { ok: true, message: "Message sent through the WhatsApp Business API.", conversationId: c.id };
     }
@@ -1576,7 +1585,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
       if (!c) return { ok: false, status: 404, code: "not_found", message: "Conversation not found." };
       const body = str(action.input, "body");
       if (!body) return { ok: false, status: 422, code: "note_required", message: "Write the note first." };
-      if (c.leadId) addActivity({ at: now(), type: "Note", actorId: SESSION_USER_ID, entity: { kind: "lead", id: c.leadId }, summary: `WhatsApp note — ${body}` });
+      if (c.leadId) addActivity({ at: now(), type: "Note", actorId: ACTOR_ID, entity: { kind: "lead", id: c.leadId }, summary: `WhatsApp note — ${body}` });
       audit({ action: "WhatsApp conversation note", resource: c.contactName, context: body.slice(0, 120) });
       return { ok: true, message: "Note recorded." };
     }
@@ -1611,7 +1620,7 @@ export function salesPost(role: WorkspaceRole, action: Action): SalesActionResul
       };
       s.leads.unshift(lead);
       c.leadId = lead.id;
-      addActivity({ at: now(), type: "Status change", actorId: SESSION_USER_ID, entity: { kind: "lead", id: lead.id }, summary: "Lead created from WhatsApp conversation", source: "WhatsApp Business" });
+      addActivity({ at: now(), type: "Status change", actorId: ACTOR_ID, entity: { kind: "lead", id: lead.id }, summary: "Lead created from WhatsApp conversation", source: "WhatsApp Business" });
       audit({ action: "Lead created from WhatsApp", resource: `${lead.name} (${lead.phone})`, context: "Conversation linked; source WhatsApp Business API" });
       return { ok: true, message: `Lead created from the conversation and linked.`, leadId: lead.id };
     }

@@ -201,6 +201,17 @@ export const employees: Employee[] = [
   { id: "siddharth", name: "Siddharth Malhotra", title: "Warehouse Supervisor", department: "Inventory", managerId: "karan", location: "Pune", email: "siddharth.m@qubitone.in", phone: "+91 98270 80011", status: "Active", since: "26 Jun 2022", employeeId: "QO-0271" },
   { id: "nikhil", name: "Nikhil Rao", title: "IT Support Engineer", department: "IT & Technology", managerId: "arjun", location: "Mumbai HQ", email: "nikhil.rao@qubitone.in", phone: "+91 98280 90011", status: "Active", since: "9 Jan 2023", employeeId: "QO-0298" },
   { id: "ankit", name: "Ankit Sharma", title: "Sales Trainee (Candidate)", department: "Sales", managerId: "pankaj", location: "Mumbai HQ", email: "ankit.sharma@qubitone.in", phone: "+91 98210 20016", status: "Active", since: "5 Oct 2025", employeeId: "QO-1198" },
+
+  // IAM demo identities (see iam.ts) — individual employee records for the
+  // dedicated per-department demo accounts. Each maps 1:1 to exactly one
+  // login (no duplicate employee identities).
+  { id: "demo.ceo", name: "Demo CEO", title: "Chief Executive Officer (Demo)", department: "Executive", managerId: null, location: "Mumbai HQ", email: "demo.ceo@qubitone.in", phone: "+91 98290 90001", status: "Active", since: "1 Nov 2026", employeeId: "QO-D001" },
+  { id: "demo.sales", name: "Demo Sales", title: "Sales Executive (Demo)", department: "Sales", managerId: "demo.ceo", location: "Mumbai HQ", email: "demo.sales@qubitone.in", phone: "+91 98290 90002", status: "Active", since: "1 Nov 2026", employeeId: "QO-D002" },
+  { id: "demo.finance", name: "Demo Finance", title: "Finance Executive (Demo)", department: "Finance", managerId: "demo.ceo", location: "Mumbai HQ", email: "demo.finance@qubitone.in", phone: "+91 98290 90003", status: "Active", since: "1 Nov 2026", employeeId: "QO-D003" },
+  { id: "demo.hr", name: "Demo HR", title: "HR Manager (Demo)", department: "HR & People", managerId: "demo.ceo", location: "Mumbai HQ", email: "demo.hr@qubitone.in", phone: "+91 98290 90004", status: "Active", since: "1 Nov 2026", employeeId: "QO-D004" },
+  { id: "demo.inventory", name: "Demo Inventory", title: "Inventory Executive (Demo)", department: "Inventory", managerId: "demo.ceo", location: "Pune Warehouse", email: "demo.inventory@qubitone.in", phone: "+91 98290 90005", status: "Active", since: "1 Nov 2026", employeeId: "QO-D005" },
+  { id: "demo.marketing", name: "Demo Marketing", title: "Marketing Executive (Demo)", department: "Marketing", managerId: "demo.ceo", location: "Mumbai HQ", email: "demo.marketing@qubitone.in", phone: "+91 98290 90006", status: "Active", since: "1 Nov 2026", employeeId: "QO-D006" },
+  { id: "demo.service", name: "Demo Service", title: "Service Engineer (Demo)", department: "Service", managerId: "demo.ceo", location: "Field · West Zone", email: "demo.service@qubitone.in", phone: "+91 98290 90007", status: "Active", since: "1 Nov 2026", employeeId: "QO-D007" },
 ];
 
 export const getEmployee = (id: string | null | undefined): Employee | undefined =>

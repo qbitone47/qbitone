@@ -8,10 +8,10 @@ import { withMeter } from "@/lib/qubit/telemetry-server";
 // Phase 21: the acting role is derived from the signed session cookie
 // (server-verified) — a client-declared role header is never trusted.
 // Fail-closed: requests without a valid session receive 401.
-async function identityFrom(req: NextRequest): Promise<{ ok: true; role: WorkspaceRole } | { ok: false; response: NextResponse }> {
+async function identityFrom(req: NextRequest): Promise<{ ok: true; role: WorkspaceRole; department: string } | { ok: false; response: NextResponse }> {
   const auth = await requireIdentity(req);
   return auth.ok
-    ? { ok: true, role: auth.identity.role as WorkspaceRole }
+    ? { ok: true, role: auth.identity.role as WorkspaceRole, department: auth.identity.department }
     : { ok: false, response: auth.response };
 }
 
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     if (!resolved) {
       return NextResponse.json({ code: "bad_section", message: "Unknown analytics section." }, { status: 400 });
     }
-    const result = await analyticsGet(actor.role, resolved, req.nextUrl.searchParams);
+    const result = await analyticsGet(actor.role, resolved, req.nextUrl.searchParams, actor.department);
     if (!result.ok) {
       return NextResponse.json({ code: result.code, message: result.message }, { status: result.status });
     }

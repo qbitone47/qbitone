@@ -711,7 +711,7 @@ const QUICK_ACTIONS: AiQuickAction[] = [
   { label: "Ask Sales AI", description: "Grounded answers from authorized sales data", screen: "ai-sales-qa" },
 ];
 
-export function salesAiGet(role: WorkspaceRole, section: SalesAiSection, params: URLSearchParams): { ok: true; data: Record<string, unknown> } | { ok: false; status: number; code: string; message: string } {
+export function salesAiGet(role: WorkspaceRole, section: SalesAiSection, params: URLSearchParams, userId: string = "sagar"): { ok: true; data: Record<string, unknown> } | { ok: false; status: number; code: string; message: string } {
   const g = gate(role, `Sales AI · ${section}`);
   if (!g.ok) return g;
   const { scope } = g;
@@ -841,7 +841,9 @@ export function salesAiGet(role: WorkspaceRole, section: SalesAiSection, params:
 
     case "brief": {
       const refresh = params.get("refresh") === "1";
-      const key = `${role}:${scope}`;
+      // IAM: cache is keyed PER USER (not per role) so one user's brief can
+      // never surface to another identity sharing the same role boundary.
+      const key = `${userId}:${role}:${scope}`;
       const cached = aiStore().briefCache.get(key);
       const todayKey = new Date().toDateString();
       if (!refresh && cached && new Date(cached.at).toDateString() === todayKey && now() - cached.at < 5 * 60_000) {
@@ -1523,7 +1525,7 @@ Hard rules:
 - Never present inference as fact. Never speculate about customers not in the context.
 - No markdown, no code fences — JSON only.`;
 
-export async function salesAiAsk(role: WorkspaceRole, scope: SalesScope, sessionId: string, question: string): Promise<SalesAiActionResult> {
+export async function salesAiAsk(role: WorkspaceRole, scope: SalesScope, sessionId: string, question: string, userId: string = "sagar"): Promise<SalesAiActionResult> {
   const q = question.trim();
   if (q.length < 3 || q.length > 500) {
     return { ok: false, status: 422, code: "invalid_question", message: "Ask a question between 3 and 500 characters." };
@@ -1532,11 +1534,14 @@ export async function salesAiAsk(role: WorkspaceRole, scope: SalesScope, session
   const retrieval = retrieveForQuestion(role, scope, q);
 
   // session history (kept short; content truncated for retention discipline)
+  // IAM: sessions and the answer cache are namespaced PER USER — with real
+  // multi-user identity, role-keyed state would bleed across accounts.
   const s = aiStore();
-  let session = s.qaSessions.get(sessionId);
+  const sessionKey = `${userId}:${sessionId}`;
+  let session = s.qaSessions.get(sessionKey);
   if (!session || session.role !== role) {
     session = { role, turns: [] };
-    s.qaSessions.set(sessionId, session);
+    s.qaSessions.set(sessionKey, session);
     if (s.qaSessions.size > 20) {
       const first = [...s.qaSessions.keys()][0];
       s.qaSessions.delete(first);
@@ -1544,8 +1549,8 @@ export async function salesAiAsk(role: WorkspaceRole, scope: SalesScope, session
   }
   const history = session.turns.slice(-4).map((t) => ({ role: "user" as const, content: t.q }));
 
-  // cache check (cost control) — exact normalized question + role
-  const cacheKey = `${role}:${q.toLowerCase().replace(/\s+/g, " ")}`;
+  // cache check (cost control) — exact normalized question + user + role
+  const cacheKey = `${userId}:${role}:${q.toLowerCase().replace(/\s+/g, " ")}`;
   const cached = s.qaCache.get(cacheKey);
   if (cached && now() - cached.at < 10 * 60_000) {
     return {
@@ -1851,7 +1856,7 @@ export function salesAiDraftRecord(role: WorkspaceRole, scope: SalesScope, input
 // POST actions — recommendations, insights, feedback, brief
 // ============================================================
 
-export async function salesAiPost(role: WorkspaceRole, type: string, input: Record<string, unknown>): Promise<SalesAiActionResult> {
+export async function salesAiPost(role: WorkspaceRole, type: string, input: Record<string, unknown>, userId: string = "sagar"): Promise<SalesAiActionResult> {
   const g = gate(role, `Sales AI · ${type}`);
   if (!g.ok) return g;
   const { scope } = g;
@@ -1861,7 +1866,7 @@ export async function salesAiPost(role: WorkspaceRole, type: string, input: Reco
     case "qa.ask": {
       const sessionId = typeof input.sessionId === "string" && input.sessionId.length >= 6 ? input.sessionId : nextAiId("qa");
       const question = typeof input.question === "string" ? input.question : "";
-      return salesAiAsk(role, scope, sessionId, question);
+      return salesAiAsk(role, scope, sessionId, question, userId);
     }
 
     case "qa.newSession": {

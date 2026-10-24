@@ -1,13 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { TriangleAlert } from "lucide-react";
+import { TriangleAlert, Loader2 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { AUTH_SCREENS, SCREENS, type ScreenId } from "@/lib/qubit/screens";
 import { PageHeader } from "../page-header";
 import { EmptyState, SectionCard } from "../primitives";
 import { useQubitNav } from "../nav-context";
+import { useRole } from "../role-context";
 import { SidebarContent, SIDEBAR_MODULES, MODULE_LABEL } from "./sidebar";
 import { TopBar } from "./topbar";
 import { CommandPalette } from "./command-palette";
@@ -59,8 +60,52 @@ function ScreenLoadError({ screen, title }: { screen: ScreenId; title: string })
   );
 }
 
+/**
+ * IAM screen guard (defense-in-depth UI): a screen outside the identity's
+ * server-computed entitlements never renders. The server enforces the same
+ * boundary on every API call — this keeps the workspace honest.
+ */
+function NoAccessScreen({ screen }: { screen: ScreenId }) {
+  const { entitlements } = useRole();
+  const { navigate } = useQubitNav();
+  const home = entitlements?.homeScreen ?? "employee-home";
+  return (
+    <div>
+      <PageHeader
+        crumbs={[{ label: "Access control" }, { label: "Not available" }]}
+        title="This workspace is not part of your access"
+        description="Your sign-in does not include this module. If you believe you need it, submit an access request to your administrator."
+      />
+      <SectionCard>
+        <EmptyState
+          icon={<TriangleAlert />}
+          title={`Access to “${SCREENS.find((s) => s.id === screen)?.title ?? screen}” is restricted`}
+          message="Navigation, data and actions for this screen are authorized server-side — the UI, the API and the audit trail all agree on this boundary."
+          action={
+            <Button type="button" onClick={() => navigate(home)}>
+              Back to your workspace
+            </Button>
+          }
+        />
+      </SectionCard>
+    </div>
+  );
+}
+
+function BootLoading() {
+  return (
+    <div className="flex h-dvh items-center justify-center bg-workspace" role="status" aria-label="Loading Qubit One">
+      <div className="flex flex-col items-center gap-3 text-slate-400">
+        <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
+        <p className="text-[13px] font-medium">Loading your workspace…</p>
+      </div>
+    </div>
+  );
+}
+
 export function AppShell() {
-  const { screen, navKey } = useQubitNav();
+  const { screen, navKey, navigate } = useQubitNav();
+  const { authState, entitlements } = useRole();
   const [collapsed, setCollapsed] = React.useState(false);
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
   const [paletteOpen, setPaletteOpen] = React.useState(false);
@@ -73,13 +118,45 @@ export function AppShell() {
     ? SIDEBAR_MODULES.find((m) => m.id === previewModule)?.label ?? ""
     : "";
 
+  const isAuthScreen = AUTH_SCREENS.includes(screen);
+
+  // Boot routing: anonymous → sign-in; authenticated → the personalized
+  // home screen computed by the server (CEO → CEO Command Center,
+  // Sales → Sales workspace, everyone else → Employee Home).
+  React.useEffect(() => {
+    if (authState === "anonymous" && !isAuthScreen) navigate("login");
+    if (authState === "authenticated" && isAuthScreen && entitlements) {
+      navigate(entitlements.homeScreen);
+    }
+  }, [authState, isAuthScreen, entitlements, navigate]);
+
+  // Entitled-screen guard (skipped for auth screens).
+  const screenAllowed =
+    authState === "loading" ||
+    isAuthScreen ||
+    (entitlements ? entitlements.allowedScreens.includes(screen) : false);
+
   // Authentication screens render standalone — the real
   // sign-in experience has no workspace chrome around it.
-  if (AUTH_SCREENS.includes(screen)) {
+  if (isAuthScreen) {
+    if (authState === "loading") return <BootLoading />;
     if (!ScreenComp) return <ScreenLoadError screen={screen} title={meta.title} />;
     return (
       <div key={`${screen}-${navKey}`} className="h-dvh overflow-hidden">
         <ScreenComp />
+      </div>
+    );
+  }
+
+  if (authState === "loading") return <BootLoading />;
+  if (authState === "anonymous") {
+    // The boot effect routes to login; render the loading frame meanwhile.
+    return <BootLoading />;
+  }
+  if (!screenAllowed) {
+    return (
+      <div className="h-dvh overflow-hidden">
+        <NoAccessScreen screen={screen} />
       </div>
     );
   }
@@ -124,7 +201,7 @@ export function AppShell() {
         </main>
       </div>
 
-      {/* Phase 25 — global client telemetry collector (headless, fire-and-forget) */}
+      {/* Global client telemetry collector (headless, fire-and-forget) */}
       <TelemetryReporter screen={screen} />
 
       {/* Mobile navigation */}
