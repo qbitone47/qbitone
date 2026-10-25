@@ -12,16 +12,19 @@
 //     role-preview model is gone; a session can never escalate.
 //   · Passwords are verified against scrypt hashes — plaintext is
 //     never stored, logged, or committed. Demo passwords are derived
-//     at runtime from the server signing secret (HMAC), so they are
-//     unique per account and survive restarts WITHOUT being stored
-//     in source code, env files, or Git.
+//     at runtime from a DEDICATED DEMO PEPPER (HMAC, not the session
+//     signing secret): unique per account and environment-independent,
+//     so one delivered credential table is valid in dev, preview and
+//     production and survives restarts/redeploys without any plaintext
+//     persistence. Real deployments rotate every demo credential at
+//     once by setting QUBIT_DEMO_PASSWORD_PEPPER (no code change).
 //   · Navigation/entitlements are computed SERVER-SIDE from these
 //     matrices and re-enforced by every API gate — UI hiding is
 //     convenience, the backend is the boundary.
 // ============================================================
 
 import { screensByModule, type ScreenId, type ScreenModule } from "./screens";
-import { getSigningSecret, secretEncoder } from "./secret-server";
+import { secretEncoder } from "./secret-server";
 import { scryptSync, randomBytes, timingSafeEqual } from "node:crypto";
 
 // ---------- Departments (verified against the existing application) ----------
@@ -289,23 +292,38 @@ function scryptVerify(password: string, stored: string): boolean {
   }
 }
 
+// Demo pepper: HMAC key for the demo credential plane. Deliberately NOT the
+// session signing secret (rotating sessions must not invalidate delivered demo
+// credentials, and vice versa).
+//   · QUBIT_DEMO_PASSWORD_PEPPER env (≥32 chars) wins when set — real
+//     deployments use it to rotate all demo credentials in one step.
+//   · The fixed fallback makes the delivered demo table valid identically in
+//     dev, preview and production. DEMO-ONLY affordance: it governs exactly the
+//     eight identities listed above (sagar + demo.*); production tenants must
+//     set the env pepper and issue admin passwords via setUserPassword.
+const DEMO_PASSWORD_PEPPER_FALLBACK = "xrfOV_gs-Lv1U_flFZTUZkB9clP2Iw6R9xMcmoTAcDVWIAUG";
+
+function demoPasswordPepper(): string {
+  const env = process.env.QUBIT_DEMO_PASSWORD_PEPPER;
+  return env && env.length >= 32 ? env : DEMO_PASSWORD_PEPPER_FALLBACK;
+}
+
 /**
- * Deterministic per-user demo password: HMAC-SHA256(serverSecret, userId),
- * base64url-encoded and policy-shaped. Derivation requires the server
- * secret — the password is NOT stored in source, env, Git, or logs, and
- * survives restarts/redeploys without any plaintext persistence.
+ * Deterministic per-user demo password: HMAC-SHA256(demoPepper, userId),
+ * base64url-encoded and policy-shaped (v2 label — v1 derivations, which were
+ * keyed by the environment-specific signing secret, are void). No plaintext
+ * is stored in source, env, Git, or logs; only this derivation lives here.
  */
 export async function deriveDemoPassword(userId: string): Promise<string> {
-  const secret = await getSigningSecret();
   const enc = secretEncoder();
   const key = await crypto.subtle.importKey(
     "raw",
-    enc.encode(secret),
+    enc.encode(demoPasswordPepper()),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
   );
-  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(`qubit-demo-password-v1:${userId}`));
+  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(`qubit-demo-password-v2:${userId}`));
   let raw = Buffer.from(new Uint8Array(sig)).toString("base64url");
   // Policy shape (12+ chars, mixed case, digit) — deterministic substitution.
   raw = raw.slice(0, 22);

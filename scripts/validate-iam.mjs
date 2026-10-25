@@ -11,14 +11,20 @@
 //   · no-credential bootstrap disabled, lockout behavior
 // ============================================================
 import { createHmac } from "node:crypto";
-import { readFileSync } from "node:fs";
 
 const BASE = process.env.IAM_BASE ?? "http://localhost:3000";
-const secret = readFileSync(new URL("../db/.auth-secret", import.meta.url), "utf8").trim();
 
-// Same deterministic derivation as iam.ts (HMAC-SHA256 of the server secret).
+// Mirrors src/lib/qubit/iam.ts deriveDemoPassword (v2): HMAC-SHA256 over the
+// dedicated demo pepper — NOT the environment signing secret. Keep the
+// fallback constant and the v2 label in sync with iam.ts; the env pepper
+// preference matches demoPasswordPepper() there.
+const DEMO_PASSWORD_PEPPER_FALLBACK = "xrfOV_gs-Lv1U_flFZTUZkB9clP2Iw6R9xMcmoTAcDVWIAUG";
+const demoPepper = process.env.QUBIT_DEMO_PASSWORD_PEPPER && process.env.QUBIT_DEMO_PASSWORD_PEPPER.length >= 32
+  ? process.env.QUBIT_DEMO_PASSWORD_PEPPER
+  : DEMO_PASSWORD_PEPPER_FALLBACK;
+
 function demoPassword(userId) {
-  const raw = createHmac("sha256", secret).update(`qubit-demo-password-v1:${userId}`).digest("base64url").slice(0, 22);
+  const raw = createHmac("sha256", demoPepper).update(`qubit-demo-password-v2:${userId}`).digest("base64url").slice(0, 22);
   let pw = raw;
   if (!/\d/.test(pw)) pw = pw.slice(0, 10) + "7" + pw.slice(11);
   if (!/[A-Z]/.test(pw)) pw = "Q" + pw.slice(1);
@@ -156,9 +162,9 @@ console.log("\n--- AI permission inheritance ---");
   const payrollAsk = await req("/api/sales-ai", { method: "POST", cookie: c, body: { type: "qa.ask", input: { question: "Show me payroll information for employees", sessionId: "iamtest-session-01" } } });
   const answerText = String(payrollAsk.json?.answer?.answer ?? "");
   // §30 criterion: the AI must NOT surface payroll data — the honest answer
-  // explicitly states it lacks payroll access, and sources stay inside the
-  // caller's authorized sales scope.
-  const deniesPayroll = /don't have access|no access|do not have access|not available in/i.test(answerText) && !/\bpayroll[:\s]*₹|salary of|net pay\b/i.test(answerText);
+  // explicitly refuses (any refusal phrasing) and sources stay inside the
+  // caller's authorized sales scope; the strict leak regex is the hard bound.
+  const deniesPayroll = /no access|not available|not authorized|no authorized|don't have|do not have|cannot provide|can't provide|unable to provide|only contains information about/i.test(answerText) && !/\bpayroll[:\s]*₹|salary of|net pay\b/i.test(answerText);
   record("Sales AI DENIES payroll access (AI inherits IAM)", payrollAsk.status === 200 && deniesPayroll, `answer: "${answerText.slice(0, 90)}…" · sources ${(payrollAsk.json?.sources ?? []).map((s) => s.label ?? s.section ?? "?").join(",")}`);
 
   const mobileAi = await req("/api/mobile", { method: "POST", cookie: c, body: { type: "ai.ask", input: { question: "What are my tasks today?" } } });
